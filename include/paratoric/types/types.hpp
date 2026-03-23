@@ -102,6 +102,29 @@ struct OutSpec {
 };
 
 /**
+ * @brief Parallel tempering specification (input parsing only in step 2).
+ *
+ * @param enabled enable PT mode
+ * @param parameter parameter name to temper (e.g. "J")
+ * @param replicas number of PT replicas
+ * @param swap_period swap attempt interval in local update steps
+ * @param ladder_min lower bound for the tempered parameter ladder
+ * @param ladder_max upper bound for the tempered parameter ladder
+ * @param ladder_values optional explicit ladder values (overrides min/max when non-empty)
+ */
+struct PTSpec {
+    bool        enabled     = false;
+    std::string parameter{};
+    int         replicas    = 0;
+    int         swap_period = 0;
+    double      ladder_min  = 0.0;
+    double      ladder_max  = 0.0;
+    std::vector<double> ladder_values{};
+    bool        trace_enabled  = false;
+    int         trace_interval = 0;
+};
+
+/**
  * @brief Configuration for starting a simulation
  * 
  * @param sim_spec Simulation parameters (N_samples, seed, ...) 
@@ -115,6 +138,7 @@ struct Config{
     ParamSpec param_spec{};
     LatSpec lat_spec{};
     OutSpec out_spec{};
+    PTSpec pt_spec{};
 };
 
 /**

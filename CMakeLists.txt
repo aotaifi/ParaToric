@@ -108,6 +108,8 @@ if (PARATORIC_LINK_MPI)
   find_package(MPI QUIET)
   if(MPI_FOUND)
     target_link_libraries(paratoric_core PRIVATE MPI::MPI_C MPI::MPI_CXX)
+    # Compile-time guard for MPI-specific PT scaffold code paths.
+    target_compile_definitions(paratoric_core PUBLIC PARATORIC_HAS_MPI=1)
   else()
     message(STATUS "MPI not found: building core without MPI")
   endif()
@@ -145,10 +147,26 @@ if(PARATORIC_BUILD_CLI)
   )
   set_target_properties(paratoric PROPERTIES OUTPUT_NAME paratoric)
   install(TARGETS paratoric RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+  add_executable(paratoric_tampered src/cli/paratoric_tampered.cpp)
+  target_sources(paratoric_tampered
+    PRIVATE
+      src/io/io.cpp
+      src/io/io.hpp
+  )
+  target_link_libraries(paratoric_tampered PRIVATE paratoric::core Boost::program_options Boost::log_setup Boost::log HDF5::HDF5)
+  target_include_directories(paratoric_tampered
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/include
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
+  )
+  set_target_properties(paratoric_tampered PROPERTIES OUTPUT_NAME paratoric_tampered)
+  install(TARGETS paratoric_tampered RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
   
   # sometimes useful, symbolic links/copies don't work on macOS due to permission issues
   if(PROJECT_IS_TOP_LEVEL)
     install(TARGETS paratoric RUNTIME DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/bin/)
+    install(TARGETS paratoric_tampered RUNTIME DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/bin/)
   endif()
 endif()
 

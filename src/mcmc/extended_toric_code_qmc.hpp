@@ -15,18 +15,26 @@
 
 #include <algorithm> 
 #include <chrono>
+#include <cctype>
+#include <cstdint>
 #include <cmath>
 #include <concepts>
 #include <complex>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <limits>
 #include <numeric>
 #include <random>
 #include <span>
+#include <string>
 #include <tuple>
 #include <variant>
 #include <vector>
+
+#ifdef PARATORIC_HAS_MPI
+#include <mpi.h>
+#endif
 
 #define UNUSED(expr) do { (void)(expr); } while (0)
 
@@ -34,6 +42,472 @@ namespace paratoric {
 
 template<char B>
 concept ValidBasis = (B == 'x' || B == 'z');
+
+namespace pt_detail {
+
+// Runtime PT metadata derived from input + MPI world.
+struct PTContext {
+    bool enabled = false;
+    int rank = 0;
+    int world_size = 1;
+    std::string parameter{};
+    double tempered_value = 0.0;
+    int tempered_index = 0;
+    std::vector<double> ladder_values{};
+};
+
+inline std::string to_lower_copy(std::string text) {
+    std::transform(
+        text.begin(),
+        text.end(),
+        text.begin(),
+        [](unsigned char c) { return static_cast<char>(std::tolower(c)); }
+    );
+    return text;
+}
+
+inline int odd_even_partner(int rank, int world_size, int phase) {
+    int partner = -1;
+    if (phase == 0) {
+        if (rank % 2 == 0 && rank + 1 < world_size) {
+            partner = rank + 1;
+        } else if (rank % 2 == 1) {
+            partner = rank - 1;
+        }
+    } else {
+        if (rank % 2 == 1 && rank + 1 < world_size) {
+            partner = rank + 1;
+        } else if (rank % 2 == 0) {
+            partner = rank - 1;
+        }
+    }
+    if (partner < 0 || partner >= world_size) {
+        return -1;
+    }
+    return partner;
+}
+
+inline std::filesystem::path swap_trace_file_path(const Config& config) {
+    // If each rank writes to a different subfolder, place one shared trace in the parent directory.
+    const auto parent = config.out_spec.path_out.parent_path();
+    if (!parent.empty()) {
+        return parent / "output_test.txt";
+    }
+    return config.out_spec.path_out / "output_test.txt";
+}
+
+inline std::filesystem::path binned_observable_file_path(const Config& config) {
+    // Write one shared PT-merged observable file next to output_test.txt.
+    const auto parent = config.out_spec.path_out.parent_path();
+    if (!parent.empty()) {
+        return parent / "pt_observables_by_ladder.tsv";
+    }
+    return config.out_spec.path_out / "pt_observables_by_ladder.tsv";
+}
+
+inline std::filesystem::path ladder_visit_file_path(const Config& config) {
+    const auto parent = config.out_spec.path_out.parent_path();
+    if (!parent.empty()) {
+        return parent / "pt_ladder_visits.tsv";
+    }
+    return config.out_spec.path_out / "pt_ladder_visits.tsv";
+}
+
+inline std::filesystem::path round_trip_file_path(const Config& config) {
+    const auto parent = config.out_spec.path_out.parent_path();
+    if (!parent.empty()) {
+        return parent / "pt_round_trips.tsv";
+    }
+    return config.out_spec.path_out / "pt_round_trips.tsv";
+}
+
+inline std::filesystem::path feedback_diag_file_path(const Config& config) {
+    const auto parent = config.out_spec.path_out.parent_path();
+    if (!parent.empty()) {
+        return parent / "pt_feedback_diagnostics.tsv";
+    }
+    return config.out_spec.path_out / "pt_feedback_diagnostics.tsv";
+}
+
+inline PTContext init_context(const Config& config) {
+    PTContext ctx{};
+    if (!config.pt_spec.enabled) {
+        return ctx;
+    }
+
+    if (config.pt_spec.replicas < 2) {
+        throw std::invalid_argument("pt_replicas must be >= 2 when PT is enabled.");
+    }
+    if (config.pt_spec.swap_period < 1) {
+        throw std::invalid_argument("pt_swap_period must be >= 1 when PT is enabled.");
+    }
+    if (config.pt_spec.ladder_values.empty()
+        && !(config.pt_spec.ladder_max > config.pt_spec.ladder_min)) {
+        throw std::invalid_argument("pt_ladder_max must be larger than pt_ladder_min when PT is enabled.");
+    }
+
+    ctx.parameter = to_lower_copy(config.pt_spec.parameter);
+    if (ctx.parameter == "lambda") {
+        // Accept "lambda" in input but normalize to existing ParaToric naming.
+        ctx.parameter = "lmbda";
+    }
+    if (ctx.parameter != "h" && ctx.parameter != "mu"
+        && ctx.parameter != "j" && ctx.parameter != "lmbda") {
+        throw std::invalid_argument(
+            std::format("Unsupported pt_parameter '{}'. Supported: h, mu, J, lmbda.",
+                        config.pt_spec.parameter));
+    }
+    if (ctx.parameter == "j") {
+        if (!config.pt_spec.ladder_values.empty()) {
+            for (double v : config.pt_spec.ladder_values) {
+                if (v < 0.0) {
+                    throw std::invalid_argument("All pt_ladder_values must be >= 0 when pt_parameter=J.");
+                }
+            }
+        } else if (config.pt_spec.ladder_min < 0.0) {
+            throw std::invalid_argument(
+                "pt_ladder_min must be >= 0 when pt_parameter=J."
+            );
+        }
+    }
+#ifdef PARATORIC_HAS_MPI
+    int initialized = 0;
+    MPI_Initialized(&initialized);
+    if (!initialized) {
+        throw std::runtime_error("PT requested but MPI is not initialized.");
+    }
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &ctx.rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &ctx.world_size);
+
+    if (ctx.world_size != config.pt_spec.replicas) {
+        throw std::invalid_argument(
+            std::format("pt_replicas ({}) must match MPI world size ({}).",
+                        config.pt_spec.replicas, ctx.world_size));
+    }
+
+    if (!config.pt_spec.ladder_values.empty()) {
+        if (static_cast<int>(config.pt_spec.ladder_values.size()) != ctx.world_size) {
+            throw std::invalid_argument(
+                std::format("pt_ladder_values length ({}) must match MPI world size ({}).",
+                            config.pt_spec.ladder_values.size(), ctx.world_size));
+        }
+        ctx.ladder_values = config.pt_spec.ladder_values;
+        for (int i = 1; i < ctx.world_size; ++i) {
+            if (!(ctx.ladder_values[static_cast<size_t>(i)]
+                  > ctx.ladder_values[static_cast<size_t>(i - 1)])) {
+                throw std::invalid_argument("pt_ladder_values must be strictly increasing.");
+            }
+        }
+    } else {
+        // Linear ladder assignment: rank 0 -> min, rank (R-1) -> max.
+        ctx.ladder_values.resize(static_cast<size_t>(ctx.world_size), config.pt_spec.ladder_min);
+        for (int i = 0; i < ctx.world_size; ++i) {
+            const double fraction = static_cast<double>(i)
+                                  / static_cast<double>(ctx.world_size - 1);
+            ctx.ladder_values[static_cast<size_t>(i)] =
+                config.pt_spec.ladder_min
+                + fraction * (config.pt_spec.ladder_max - config.pt_spec.ladder_min);
+        }
+    }
+    ctx.tempered_index = ctx.rank;
+    ctx.tempered_value = ctx.ladder_values[static_cast<size_t>(ctx.tempered_index)];
+#else
+    throw std::invalid_argument("PT requested but ParaToric was built without MPI support.");
+#endif
+
+    ctx.enabled = true;
+    return ctx;
+}
+
+inline void apply_tempered_parameter(
+    const PTContext& ctx,
+    double& h,
+    double& mu,
+    double& J,
+    double& lmbda
+) {
+    if (!ctx.enabled) {
+        return;
+    }
+    // PT scaffold updates exactly one coupling per replica.
+    if (ctx.parameter == "h") {
+        h = ctx.tempered_value;
+    } else if (ctx.parameter == "mu") {
+        mu = ctx.tempered_value;
+    } else if (ctx.parameter == "j") {
+        J = ctx.tempered_value;
+    } else if (ctx.parameter == "lmbda") {
+        lmbda = ctx.tempered_value;
+    }
+}
+
+inline void maybe_attempt_swap_scaffold(
+    const Config& config,
+    PTContext& ctx,
+    Lattice& lat,
+    rng::RNG& rng_engine,
+    int total_metropolis_step_count,
+    double& tempered_parameter_runtime,
+    double& integrated_pot_energy,
+    std::uint64_t& swap_attempted_local,
+    std::uint64_t& swap_accepted_local,
+    std::uint64_t& swap_rejected_local
+) {
+    if (!ctx.enabled) {
+        return;
+    }
+    if (ctx.parameter != "j") {
+        throw std::invalid_argument("PT swaps are currently implemented only for pt_parameter=J.");
+    }
+    if (config.lat_spec.basis != 'x' && config.lat_spec.basis != 'z') {
+        throw std::invalid_argument("PT swaps are supported only for basis=x or basis=z.");
+    }
+    if (total_metropolis_step_count <= 0
+        || (total_metropolis_step_count % config.pt_spec.swap_period) != 0) {
+        return;
+    }
+
+    // Alternate even/odd neighbor pairing like standard PT exchange schedules.
+    const int phase = (total_metropolis_step_count / config.pt_spec.swap_period) & 1;
+    const int partner = odd_even_partner(ctx.rank, ctx.world_size, phase);
+
+#ifdef PARATORIC_HAS_MPI
+    int accepted = -1;
+    double local_parameter_before = tempered_parameter_runtime;
+    double partner_parameter_before = std::numeric_limits<double>::quiet_NaN();
+    int local_index_before = ctx.tempered_index;
+    int partner_index_before = -1;
+    double local_tuple_count = std::numeric_limits<double>::quiet_NaN();
+    double partner_tuple_count = std::numeric_limits<double>::quiet_NaN();
+    double log_r = std::numeric_limits<double>::quiet_NaN();
+
+    if (partner >= 0) {
+        constexpr int kTagPtParameter = 4901;
+        MPI_Sendrecv(
+            &local_parameter_before, 1, MPI_DOUBLE, partner, kTagPtParameter,
+            &partner_parameter_before, 1, MPI_DOUBLE, partner, kTagPtParameter,
+            MPI_COMM_WORLD, MPI_STATUS_IGNORE
+        );
+        constexpr int kTagPtIndex = 4903;
+        MPI_Sendrecv(
+            &local_index_before, 1, MPI_INT, partner, kTagPtIndex,
+            &partner_index_before, 1, MPI_INT, partner, kTagPtIndex,
+            MPI_COMM_WORLD, MPI_STATUS_IGNORE
+        );
+
+        if (config.lat_spec.basis == 'x') {
+            local_tuple_count = config.lat_spec.beta * lat.get_non_diag_tuple_energy_x();
+        } else {
+            local_tuple_count = lat.total_integrated_plaquette_energy();
+        }
+        constexpr int kTagPtTupleCount = 4902;
+        MPI_Sendrecv(
+            &local_tuple_count, 1, MPI_DOUBLE, partner, kTagPtTupleCount,
+            &partner_tuple_count, 1, MPI_DOUBLE, partner, kTagPtTupleCount,
+            MPI_COMM_WORLD, MPI_STATUS_IGNORE
+        );
+
+        if (local_parameter_before == partner_parameter_before) {
+            log_r = 0.0;
+        } else if (config.lat_spec.basis == 'x'
+                   && (local_parameter_before == 0.0 || partner_parameter_before == 0.0)) {
+            // Handle J=0 with the limiting sign of log(J_partner/J_local),
+            // but keep log_r finite to avoid inf/NaN in downstream logging.
+            constexpr double kLogRCap = 1e6;
+            if (local_tuple_count == partner_tuple_count) {
+                log_r = 0.0;
+            } else if (local_parameter_before == 0.0) {
+                log_r = (local_tuple_count > partner_tuple_count) ? kLogRCap : -kLogRCap;
+            } else {
+                log_r = (local_tuple_count < partner_tuple_count) ? kLogRCap : -kLogRCap;
+            }
+        } else if (config.lat_spec.basis == 'x') {
+            log_r = (local_tuple_count - partner_tuple_count)
+                  * std::log(partner_parameter_before / local_parameter_before);
+        } else {
+            log_r = (partner_parameter_before - local_parameter_before)
+                  * (local_tuple_count - partner_tuple_count);
+        }
+
+        accepted = 0;
+        if (ctx.rank < partner) {
+            ++swap_attempted_local;
+            std::uniform_real_distribution<double> uniform_dist{0.0, 1.0};
+            const double random_uniform = uniform_dist(rng_engine);
+            const double log_uniform = std::log(std::max(random_uniform, std::numeric_limits<double>::min()));
+            if (log_r >= 0.0 || log_uniform < log_r) {
+                accepted = 1;
+            }
+            if (accepted == 1) {
+                ++swap_accepted_local;
+            } else {
+                ++swap_rejected_local;
+            }
+        }
+        const int decision_root = std::min(ctx.rank, partner);
+        MPI_Bcast(&accepted, 1, MPI_INT, decision_root, MPI_COMM_WORLD);
+
+        if (accepted == 1) {
+            const double local_parameter_after = partner_parameter_before;
+            // For basis=z, the diagonal potential includes -J * B where
+            // B = total_integrated_plaquette_energy(). Swapping J between ranks
+            // changes the Hamiltonian parameter instantaneously at fixed config,
+            // so we must shift cached integrated_pot_energy accordingly.
+            if (config.lat_spec.basis == 'z') {
+                integrated_pot_energy += -(local_parameter_after - local_parameter_before) * local_tuple_count;
+            }
+
+            tempered_parameter_runtime = partner_parameter_before;
+            ctx.tempered_value = tempered_parameter_runtime;
+            ctx.tempered_index = partner_index_before;
+        }
+    }
+
+    const bool emit_trace = config.pt_spec.trace_enabled
+        && config.pt_spec.trace_interval > 0
+        && (total_metropolis_step_count % config.pt_spec.trace_interval) == 0;
+    if (emit_trace) {
+        const double local_parameter_after = tempered_parameter_runtime;
+
+        // Collect rank-local swap diagnostics on rank 0 for compact trace lines.
+        std::vector<int> gathered_partners;
+        std::vector<int> gathered_accepted;
+        std::vector<double> gathered_parameter_before;
+        std::vector<double> gathered_parameter_after;
+        std::vector<double> gathered_tuple_count;
+        std::vector<double> gathered_log_r;
+        if (ctx.rank == 0) {
+            gathered_partners.resize(static_cast<size_t>(ctx.world_size), -1);
+            gathered_accepted.resize(static_cast<size_t>(ctx.world_size), -1);
+            gathered_parameter_before.resize(static_cast<size_t>(ctx.world_size), std::numeric_limits<double>::quiet_NaN());
+            gathered_parameter_after.resize(static_cast<size_t>(ctx.world_size), std::numeric_limits<double>::quiet_NaN());
+            gathered_tuple_count.resize(static_cast<size_t>(ctx.world_size), std::numeric_limits<double>::quiet_NaN());
+            gathered_log_r.resize(static_cast<size_t>(ctx.world_size), std::numeric_limits<double>::quiet_NaN());
+        }
+        MPI_Gather(
+            &partner,
+            1,
+            MPI_INT,
+            ctx.rank == 0 ? gathered_partners.data() : nullptr,
+            1,
+            MPI_INT,
+            0,
+            MPI_COMM_WORLD
+        );
+        MPI_Gather(
+            &accepted,
+            1,
+            MPI_INT,
+            ctx.rank == 0 ? gathered_accepted.data() : nullptr,
+            1,
+            MPI_INT,
+            0,
+            MPI_COMM_WORLD
+        );
+        MPI_Gather(
+            &local_parameter_before,
+            1,
+            MPI_DOUBLE,
+            ctx.rank == 0 ? gathered_parameter_before.data() : nullptr,
+            1,
+            MPI_DOUBLE,
+            0,
+            MPI_COMM_WORLD
+        );
+        MPI_Gather(
+            &local_parameter_after,
+            1,
+            MPI_DOUBLE,
+            ctx.rank == 0 ? gathered_parameter_after.data() : nullptr,
+            1,
+            MPI_DOUBLE,
+            0,
+            MPI_COMM_WORLD
+        );
+        MPI_Gather(
+            &local_tuple_count,
+            1,
+            MPI_DOUBLE,
+            ctx.rank == 0 ? gathered_tuple_count.data() : nullptr,
+            1,
+            MPI_DOUBLE,
+            0,
+            MPI_COMM_WORLD
+        );
+        MPI_Gather(
+            &log_r,
+            1,
+            MPI_DOUBLE,
+            ctx.rank == 0 ? gathered_log_r.data() : nullptr,
+            1,
+            MPI_DOUBLE,
+            0,
+            MPI_COMM_WORLD
+        );
+
+        if (ctx.rank == 0) {
+            std::ofstream trace_file(swap_trace_file_path(config), std::ios::app);
+            if (trace_file) {
+                trace_file << "step=" << total_metropolis_step_count
+                           << " phase=" << phase;
+                bool has_pairs = false;
+                for (int r = 0; r < ctx.world_size; ++r) {
+                    const int p = gathered_partners[static_cast<size_t>(r)];
+                    if (p >= 0 && r < p) {
+                        has_pairs = true;
+                        trace_file << " pair=(" << r << "<->" << p << ")"
+                                   << " accepted=" << gathered_accepted[static_cast<size_t>(r)]
+                                   << " j_before=("
+                                   << gathered_parameter_before[static_cast<size_t>(r)] << ","
+                                   << gathered_parameter_before[static_cast<size_t>(p)] << ")"
+                                   << " n_tuple=("
+                                   << gathered_tuple_count[static_cast<size_t>(r)] << ","
+                                   << gathered_tuple_count[static_cast<size_t>(p)] << ")"
+                                   << " logR=" << gathered_log_r[static_cast<size_t>(r)]
+                                   << " j_after=("
+                                   << gathered_parameter_after[static_cast<size_t>(r)] << ","
+                                   << gathered_parameter_after[static_cast<size_t>(p)] << ")";
+                    }
+                }
+                if (!has_pairs) {
+                    trace_file << " pairs=none";
+                }
+                trace_file << '\n';
+            }
+        }
+    }
+#endif
+
+#ifndef NDEBUG
+    BOOST_LOG_TRIVIAL(debug) << std::format(
+        "[PT] step={} phase={} rank={} partner={} {}={} swap_attempted_local={} swap_accepted_local={} swap_rejected_local={}",
+        total_metropolis_step_count,
+        phase,
+        ctx.rank,
+        partner,
+        ctx.parameter,
+        tempered_parameter_runtime,
+        swap_attempted_local,
+        swap_accepted_local,
+        swap_rejected_local
+    );
+#endif
+
+#ifndef PARATORIC_HAS_MPI
+    UNUSED(config);
+    UNUSED(lat);
+    UNUSED(rng_engine);
+    UNUSED(total_metropolis_step_count);
+    UNUSED(tempered_parameter_runtime);
+    UNUSED(integrated_pot_energy);
+    UNUSED(swap_attempted_local);
+    UNUSED(swap_accepted_local);
+    UNUSED(swap_rejected_local);
+#endif
+}
+
+} // namespace pt_detail
 
 template<char Basis>
 requires ValidBasis<Basis>
@@ -2986,27 +3460,73 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
         throw std::invalid_argument("Template parameter basis and config.lat_spec basis must match.");
     }
 
+    // Build PT runtime state once per simulation call.
+    auto pt_ctx = pt_detail::init_context(config);
+
+    // Runtime couplings (possibly tempered per rank).
+    double h_runtime = config.param_spec.h;
+    double mu_runtime = config.param_spec.mu;
+    double J_runtime = config.param_spec.J;
+    double lmbda_runtime = config.param_spec.lmbda;
+    pt_detail::apply_tempered_parameter(pt_ctx, h_runtime, mu_runtime, J_runtime, lmbda_runtime);
+
+    if (pt_ctx.enabled) {
+        if (pt_ctx.parameter != "j") {
+            throw std::invalid_argument("PT currently supports only pt_parameter=J.");
+        }
+        if constexpr (Basis != 'x' && Basis != 'z') {
+            throw std::invalid_argument("PT currently supports only basis=x or basis=z.");
+        }
+    }
+
     if constexpr (Basis == 'x') {
-        if (config.param_spec.J < 0) {
+        if (J_runtime < 0) {
             throw std::invalid_argument("J must be non-negative in the x-basis.");
-        } else if (config.param_spec.lmbda < 0) {
+        } else if (lmbda_runtime < 0) {
             throw std::invalid_argument("lmbda must be non-negative in the x-basis.");
         }
     } else if constexpr (Basis == 'z') {
-        if (config.param_spec.mu < 0) {
+        if (mu_runtime < 0) {
             throw std::invalid_argument("mu must be non-negative in the z-basis.");
-        } else if (config.param_spec.h < 0) {
+        } else if (h_runtime < 0) {
             throw std::invalid_argument("h must be non-negative in the z-basis.");
         }
     }
 
     if (config.sim_spec.seed != 0) rng->set_seed(config.sim_spec.seed);
 
+    if (pt_ctx.enabled) {
+        BOOST_LOG_TRIVIAL(info) << std::format(
+            "[PT] rank {}/{} initial {}={}",
+            pt_ctx.rank, pt_ctx.world_size, pt_ctx.parameter, pt_ctx.tempered_value
+        );
+#ifdef PARATORIC_HAS_MPI
+        if (pt_ctx.rank == 0) {
+            if (config.pt_spec.trace_enabled && config.pt_spec.trace_interval > 0) {
+                std::ofstream trace_file(pt_detail::swap_trace_file_path(config), std::ios::out | std::ios::trunc);
+                if (trace_file) {
+                    trace_file << "# PT swap trace\n";
+                    trace_file << "# fields: step phase pair accepted j_before n_tuple logR j_after\n";
+                }
+            }
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+#endif
+    }
+
     auto obs_func_vec = get_obs_func_vec(config.sim_spec.observables);
     auto obs_type_vec = get_obs_type_vec(config.sim_spec.observables);
+
+    const int pt_ladder_size = pt_ctx.enabled ? pt_ctx.world_size : 1;
     
     // Vector to store observable results for all snapshots
     std::vector<std::vector< std::variant< std::complex<double>, double> >> observable_vector;
+    // PT-binned local real-observable samples: [observable_index][ladder_index].
+    std::vector<std::vector<std::vector<double>>> pt_binned_local_real_samples;
+    // PT-binned local FM observable components: [observable_index][ladder_index].
+    std::vector<std::vector<std::vector<double>>> pt_binned_local_fm_real_samples;
+    std::vector<std::vector<std::vector<double>>> pt_binned_local_fm_imag_samples;
+    std::vector<std::vector<std::vector<double>>> pt_binned_local_fm_abs_samples;
     std::vector<double> acc_ratio_vector;
     std::vector<double> observable_mean_vector(config.sim_spec.observables.size(), 0.), 
                         observable_std_vector(config.sim_spec.observables.size(), 0.), 
@@ -3018,16 +3538,37 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
         UNUSED(obs_func);
         observable_vector.emplace_back( obs_temp );
     } 
+    if (pt_ctx.enabled) {
+        pt_binned_local_real_samples.resize(
+            config.sim_spec.observables.size(),
+            std::vector<std::vector<double>>(static_cast<size_t>(pt_ladder_size))
+        );
+        pt_binned_local_fm_real_samples.resize(
+            config.sim_spec.observables.size(),
+            std::vector<std::vector<double>>(static_cast<size_t>(pt_ladder_size))
+        );
+        pt_binned_local_fm_imag_samples.resize(
+            config.sim_spec.observables.size(),
+            std::vector<std::vector<double>>(static_cast<size_t>(pt_ladder_size))
+        );
+        pt_binned_local_fm_abs_samples.resize(
+            config.sim_spec.observables.size(),
+            std::vector<std::vector<double>>(static_cast<size_t>(pt_ladder_size))
+        );
+    }
 
     // Initialize Lattice
     auto lat = Lattice(config.lat_spec, rng);
     
     double integrated_pot_energy = total_integrated_pot_energy(
-        lat, config.param_spec.h, config.param_spec.mu, config.param_spec.J, config.param_spec.lmbda
+        lat, h_runtime, mu_runtime, J_runtime, lmbda_runtime
     );
     double acc_ratio = 1.;
 
     if (config.sim_spec.custom_therm) {
+        if (pt_ctx.enabled) {
+            throw std::invalid_argument("PT scaffold currently requires custom_therm=false.");
+        }
         // Pre-Thermalization 
         for (int i = 0; i < config.sim_spec.N_thermalization; ++i) {
             metropolis_step(
@@ -3079,14 +3620,13 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
         for (int i = 0; i < config.sim_spec.N_thermalization; ++i) {
             metropolis_step(
                 lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta, 
-                config.param_spec.h, config.param_spec.mu, config.param_spec.J, 
-                config.param_spec.lmbda
+                h_runtime, mu_runtime, J_runtime, lmbda_runtime
             );
         }
     }
 
     double integrated_pot_energy_check = total_integrated_pot_energy(
-        lat, config.param_spec.h, config.param_spec.mu, config.param_spec.J, config.param_spec.lmbda
+        lat, h_runtime, mu_runtime, J_runtime, lmbda_runtime
     );
 
     if (!almost_equal(integrated_pot_energy, integrated_pot_energy_check, 1e-5, 1e-13)) {
@@ -3095,13 +3635,44 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
 
     int total_metropolis_step_count = 0;
     int reset_potential_energy_count = static_cast<int>(lat.get_edge_count()*100000);
+    std::uint64_t pt_swap_attempted_local = 0;
+    std::uint64_t pt_swap_accepted_local = 0;
+    std::uint64_t pt_swap_rejected_local = 0;
+
+    std::vector<std::uint64_t> pt_visit_counts_local;
+    std::vector<std::uint64_t> pt_feedback_up_local;
+    std::vector<std::uint64_t> pt_feedback_dn_local;
+    int pt_feedback_source_end_local = -1;
+    std::uint64_t pt_round_trip_local = 0;
+    std::uint64_t pt_round_trip_strict_local = 0;
+    int pt_round_trip_last_end = -1;
+    int pt_round_trip_strict_start_end = -1;
+    bool pt_round_trip_strict_seen_opposite = false;
+    if (pt_ctx.enabled) {
+        pt_visit_counts_local.assign(static_cast<size_t>(pt_ladder_size), 0);
+        pt_feedback_up_local.assign(static_cast<size_t>(pt_ladder_size), 0);
+        pt_feedback_dn_local.assign(static_cast<size_t>(pt_ladder_size), 0);
+    }
 
     for (int i = 0; i < config.sim_spec.N_samples; ++i) {
         for (int j = 0; j < config.sim_spec.N_between_samples; ++j) {
             ++total_metropolis_step_count;
             metropolis_step(
-                lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta, config.param_spec.h, 
-                config.param_spec.mu, config.param_spec.J, config.param_spec.lmbda
+                lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta, h_runtime, 
+                mu_runtime, J_runtime, lmbda_runtime
+            );
+            // PT hook lives at sweep scheduling level, not inside local Metropolis kernels.
+            pt_detail::maybe_attempt_swap_scaffold(
+                config,
+                pt_ctx,
+                lat,
+                *rng,
+                total_metropolis_step_count,
+                J_runtime,
+                integrated_pot_energy,
+                pt_swap_attempted_local,
+                pt_swap_accepted_local,
+                pt_swap_rejected_local
             );
             acc_ratio_vector.emplace_back(acc_ratio);
             if (total_metropolis_step_count % reset_potential_energy_count == 0) {
@@ -3109,22 +3680,653 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
                 lat.init_potential_energy();
                 lat.rotate_imag_time();
                 integrated_pot_energy = total_integrated_pot_energy(
-                    lat, config.param_spec.h, config.param_spec.mu, 
-                    config.param_spec.J, config.param_spec.lmbda
+                    lat, h_runtime, mu_runtime, J_runtime, lmbda_runtime
                 );
             }
         }
 
+        int current_ladder_index = 0;
+        if (pt_ctx.enabled) {
+            current_ladder_index = pt_ctx.tempered_index;
+            if (current_ladder_index < 0 || current_ladder_index >= pt_ladder_size) {
+                throw std::runtime_error(
+                    std::format("Invalid PT ladder index {} at measurement step.", current_ladder_index)
+                );
+            }
+            pt_visit_counts_local[static_cast<size_t>(current_ladder_index)] += 1;
+            if (current_ladder_index == 0 || current_ladder_index == pt_ladder_size - 1) {
+                const int end_marker = (current_ladder_index == 0) ? 0 : 1;
+                if (pt_round_trip_last_end != -1 && pt_round_trip_last_end != end_marker) {
+                    ++pt_round_trip_local;
+                }
+                pt_round_trip_last_end = end_marker;
+
+                // Strict round trip: count complete end->opposite_end->same_end cycles.
+                if (pt_round_trip_strict_start_end == -1) {
+                    pt_round_trip_strict_start_end = end_marker;
+                    pt_round_trip_strict_seen_opposite = false;
+                } else if (end_marker != pt_round_trip_strict_start_end) {
+                    pt_round_trip_strict_seen_opposite = true;
+                } else if (pt_round_trip_strict_seen_opposite) {
+                    ++pt_round_trip_strict_local;
+                    pt_round_trip_strict_seen_opposite = false;
+                }
+
+                // Feedback label from the most recently visited endpoint.
+                pt_feedback_source_end_local = end_marker;
+            }
+            if (pt_feedback_source_end_local == 0) {
+                pt_feedback_up_local[static_cast<size_t>(current_ladder_index)] += 1;
+            } else if (pt_feedback_source_end_local == 1) {
+                pt_feedback_dn_local[static_cast<size_t>(current_ladder_index)] += 1;
+            }
+        }
+
         for (size_t k = 0; k < config.sim_spec.observables.size(); k++) {
-            observable_vector[k].emplace_back(
-                obs_func_vec[k](lat, config.param_spec.h, config.param_spec.lmbda, config.param_spec.mu, config.param_spec.J)
-            );
+            auto obs_value = obs_func_vec[k](lat, h_runtime, lmbda_runtime, mu_runtime, J_runtime);
+            observable_vector[k].emplace_back(obs_value);
+
+            if (pt_ctx.enabled && obs_type_vec[k] == "real") {
+                pt_binned_local_real_samples[k][static_cast<size_t>(current_ladder_index)]
+                    .emplace_back(std::get<double>(obs_value));
+            } else if (pt_ctx.enabled && obs_type_vec[k] == "fredenhagen_marcu") {
+                double re = 0.0;
+                double im = 0.0;
+                if (const auto* c = std::get_if<std::complex<double>>(&obs_value)) {
+                    re = c->real();
+                    im = c->imag();
+                } else {
+                    re = std::get<double>(obs_value);
+                }
+                const double absv = std::hypot(re, im);
+                const size_t ladder_idx = static_cast<size_t>(current_ladder_index);
+                pt_binned_local_fm_real_samples[k][ladder_idx].emplace_back(re);
+                pt_binned_local_fm_imag_samples[k][ladder_idx].emplace_back(im);
+                pt_binned_local_fm_abs_samples[k][ladder_idx].emplace_back(absv);
+            }
         }
 
         if (config.out_spec.save_snapshots) {
             lat.update_spin_string();
         }
     }
+
+#ifdef PARATORIC_HAS_MPI
+    if (pt_ctx.enabled) {
+        std::uint64_t attempted_sum = 0;
+        std::uint64_t accepted_sum = 0;
+        std::uint64_t rejected_sum = 0;
+        MPI_Reduce(
+            &pt_swap_attempted_local,
+            &attempted_sum,
+            1,
+            MPI_UINT64_T,
+            MPI_SUM,
+            0,
+            MPI_COMM_WORLD
+        );
+        MPI_Reduce(
+            &pt_swap_accepted_local,
+            &accepted_sum,
+            1,
+            MPI_UINT64_T,
+            MPI_SUM,
+            0,
+            MPI_COMM_WORLD
+        );
+        MPI_Reduce(
+            &pt_swap_rejected_local,
+            &rejected_sum,
+            1,
+            MPI_UINT64_T,
+            MPI_SUM,
+            0,
+            MPI_COMM_WORLD
+        );
+        if (pt_ctx.rank == 0) {
+            if (config.pt_spec.trace_enabled && config.pt_spec.trace_interval > 0) {
+                std::ofstream trace_file(pt_detail::swap_trace_file_path(config), std::ios::app);
+                if (trace_file) {
+                    const std::uint64_t attempted_pairs = attempted_sum;
+                    const std::uint64_t accepted_pairs = accepted_sum;
+                    const std::uint64_t rejected_pairs = rejected_sum;
+                    const double ratio_pairs = attempted_pairs > 0
+                        ? static_cast<double>(accepted_pairs) / static_cast<double>(attempted_pairs)
+                        : 0.0;
+                    trace_file << "summary attempted_local_sum=" << attempted_sum
+                               << " accepted_local_sum=" << accepted_sum
+                               << " rejected_local_sum=" << rejected_sum
+                               << " attempted_pairs=" << attempted_pairs
+                               << " accepted_pairs=" << accepted_pairs
+                               << " rejected_pairs=" << rejected_pairs
+                               << " acceptance_ratio_pairs=" << ratio_pairs
+                               << '\n';
+                }
+            }
+        }
+
+        if (pt_ctx.enabled) {
+            const int ladder_size = pt_ctx.world_size;
+            std::vector<std::uint64_t> visit_counts_total;
+            if (pt_ctx.rank == 0) {
+                visit_counts_total.assign(static_cast<size_t>(ladder_size), 0);
+            }
+            MPI_Reduce(
+                pt_visit_counts_local.data(),
+                pt_ctx.rank == 0 ? visit_counts_total.data() : nullptr,
+                ladder_size,
+                MPI_UINT64_T,
+                MPI_SUM,
+                0,
+                MPI_COMM_WORLD
+            );
+
+            std::vector<std::uint64_t> round_trip_counts;
+            std::vector<std::uint64_t> strict_round_trip_counts;
+            if (pt_ctx.rank == 0) {
+                round_trip_counts.assign(static_cast<size_t>(pt_ctx.world_size), 0);
+                strict_round_trip_counts.assign(static_cast<size_t>(pt_ctx.world_size), 0);
+            }
+            MPI_Gather(
+                &pt_round_trip_local,
+                1,
+                MPI_UINT64_T,
+                pt_ctx.rank == 0 ? round_trip_counts.data() : nullptr,
+                1,
+                MPI_UINT64_T,
+                0,
+                MPI_COMM_WORLD
+            );
+            MPI_Gather(
+                &pt_round_trip_strict_local,
+                1,
+                MPI_UINT64_T,
+                pt_ctx.rank == 0 ? strict_round_trip_counts.data() : nullptr,
+                1,
+                MPI_UINT64_T,
+                0,
+                MPI_COMM_WORLD
+            );
+
+            if (pt_ctx.rank == 0) {
+                const auto visits_path = pt_detail::ladder_visit_file_path(config);
+                std::ofstream visits_file(visits_path);
+                if (visits_file) {
+                    visits_file << "# ladder_index tempered_value visit_count visit_fraction\n";
+                    const std::uint64_t total_visits = std::accumulate(
+                        visit_counts_total.begin(), visit_counts_total.end(), std::uint64_t{0}
+                    );
+                    for (int idx = 0; idx < ladder_size; ++idx) {
+                        const auto count = visit_counts_total[static_cast<size_t>(idx)];
+                        const double frac = total_visits > 0
+                            ? static_cast<double>(count) / static_cast<double>(total_visits)
+                            : 0.0;
+                        visits_file << idx << '\t'
+                                    << pt_ctx.ladder_values[static_cast<size_t>(idx)] << '\t'
+                                    << count << '\t'
+                                    << frac << '\n';
+                    }
+                }
+
+                const auto roundtrip_path = pt_detail::round_trip_file_path(config);
+                std::ofstream roundtrip_file(roundtrip_path);
+                if (roundtrip_file) {
+                    roundtrip_file << "# rank end_to_end_trips strict_round_trips\n";
+                    for (int r = 0; r < pt_ctx.world_size; ++r) {
+                        roundtrip_file << r << '\t'
+                                       << round_trip_counts[static_cast<size_t>(r)]
+                                       << '\t'
+                                       << strict_round_trip_counts[static_cast<size_t>(r)]
+                                       << '\n';
+                    }
+                }
+            }
+
+            std::vector<std::uint64_t> feedback_up_total;
+            std::vector<std::uint64_t> feedback_dn_total;
+            if (pt_ctx.rank == 0) {
+                feedback_up_total.assign(static_cast<size_t>(ladder_size), 0);
+                feedback_dn_total.assign(static_cast<size_t>(ladder_size), 0);
+            }
+            MPI_Reduce(
+                pt_feedback_up_local.data(),
+                pt_ctx.rank == 0 ? feedback_up_total.data() : nullptr,
+                ladder_size,
+                MPI_UINT64_T,
+                MPI_SUM,
+                0,
+                MPI_COMM_WORLD
+            );
+            MPI_Reduce(
+                pt_feedback_dn_local.data(),
+                pt_ctx.rank == 0 ? feedback_dn_total.data() : nullptr,
+                ladder_size,
+                MPI_UINT64_T,
+                MPI_SUM,
+                0,
+                MPI_COMM_WORLD
+            );
+
+            if (pt_ctx.rank == 0) {
+                const auto feedback_path = pt_detail::feedback_diag_file_path(config);
+                std::ofstream feedback_file(feedback_path);
+                if (feedback_file) {
+                    std::vector<double> f_beta(static_cast<size_t>(ladder_size), 1.0);
+                    std::vector<double> f_drop(
+                        ladder_size > 1 ? static_cast<size_t>(ladder_size - 1) : 0,
+                        0.0
+                    );
+                    std::uint64_t visits_sum = 0;
+                    std::uint64_t visits_min = std::numeric_limits<std::uint64_t>::max();
+                    int bottleneck_pair = -1;
+                    double bottleneck_drop = std::numeric_limits<double>::infinity();
+                    for (int idx = 0; idx < ladder_size; ++idx) {
+                        const auto n_up = feedback_up_total[static_cast<size_t>(idx)];
+                        const auto n_dn = feedback_dn_total[static_cast<size_t>(idx)];
+                        const auto visits_both = n_up + n_dn;
+                        visits_sum += visits_both;
+                        visits_min = std::min(visits_min, visits_both);
+                        if (visits_both > 0) {
+                            f_beta[static_cast<size_t>(idx)]
+                                = static_cast<double>(n_up) / static_cast<double>(visits_both);
+                        } else if (idx > 0) {
+                            f_beta[static_cast<size_t>(idx)] = f_beta[static_cast<size_t>(idx - 1)];
+                        }
+                    }
+                    for (int idx = 0; idx + 1 < ladder_size; ++idx) {
+                        const double drop = f_beta[static_cast<size_t>(idx)]
+                                          - f_beta[static_cast<size_t>(idx + 1)];
+                        f_drop[static_cast<size_t>(idx)] = drop;
+                        if (drop < bottleneck_drop) {
+                            bottleneck_drop = drop;
+                            bottleneck_pair = idx;
+                        }
+                    }
+                    const double visits_avg = ladder_size > 0
+                        ? static_cast<double>(visits_sum) / static_cast<double>(ladder_size)
+                        : 0.0;
+                    const auto strict_roundtrip_sum = std::accumulate(
+                        strict_round_trip_counts.begin(),
+                        strict_round_trip_counts.end(),
+                        std::uint64_t{0}
+                    );
+                    feedback_file << "# ladder_index tempered_value n_up n_dn visits_both f_beta f_drop_to_next\n";
+                    feedback_file << "# summary visits_avg=" << visits_avg
+                                  << " visits_min=" << visits_min
+                                  << " bottleneck_pair=" << bottleneck_pair
+                                  << " bottleneck_drop=" << bottleneck_drop
+                                  << " strict_roundtrip_sum=" << strict_roundtrip_sum
+                                  << '\n';
+                    for (int idx = 0; idx < ladder_size; ++idx) {
+                        const auto n_up = feedback_up_total[static_cast<size_t>(idx)];
+                        const auto n_dn = feedback_dn_total[static_cast<size_t>(idx)];
+                        const auto visits_both = n_up + n_dn;
+                        feedback_file << idx << '\t'
+                                      << pt_ctx.ladder_values[static_cast<size_t>(idx)] << '\t'
+                                      << n_up << '\t'
+                                      << n_dn << '\t'
+                                      << visits_both << '\t'
+                                      << f_beta[static_cast<size_t>(idx)] << '\t';
+                        if (idx + 1 < ladder_size) {
+                            feedback_file << f_drop[static_cast<size_t>(idx)];
+                        }
+                        feedback_file << '\n';
+                    }
+                }
+            }
+        }
+    }
+#endif
+
+#ifdef PARATORIC_HAS_MPI
+    if (pt_ctx.enabled) {
+        const size_t observable_count = config.sim_spec.observables.size();
+        const size_t ladder_size = static_cast<size_t>(pt_ladder_size);
+        const double nan_value = std::numeric_limits<double>::quiet_NaN();
+
+        std::vector<std::vector<std::uint64_t>> binned_count(
+            observable_count, std::vector<std::uint64_t>(ladder_size, 0)
+        );
+        std::vector<std::vector<double>> binned_mean(
+            observable_count, std::vector<double>(ladder_size, nan_value)
+        );
+        std::vector<std::vector<double>> binned_mean_std(
+            observable_count, std::vector<double>(ladder_size, nan_value)
+        );
+        std::vector<std::vector<double>> binned_binder(
+            observable_count, std::vector<double>(ladder_size, nan_value)
+        );
+        std::vector<std::vector<double>> binned_binder_std(
+            observable_count, std::vector<double>(ladder_size, nan_value)
+        );
+        std::vector<std::vector<double>> binned_tau(
+            observable_count, std::vector<double>(ladder_size, nan_value)
+        );
+        std::vector<std::vector<double>> binned_fm_re_mean(
+            observable_count, std::vector<double>(ladder_size, nan_value)
+        );
+        std::vector<std::vector<std::uint64_t>> binned_fm_count(
+            observable_count, std::vector<std::uint64_t>(ladder_size, 0)
+        );
+        std::vector<std::vector<double>> binned_fm_re_std(
+            observable_count, std::vector<double>(ladder_size, nan_value)
+        );
+        std::vector<std::vector<double>> binned_fm_re_binder(
+            observable_count, std::vector<double>(ladder_size, nan_value)
+        );
+        std::vector<std::vector<double>> binned_fm_re_binder_std(
+            observable_count, std::vector<double>(ladder_size, nan_value)
+        );
+        std::vector<std::vector<double>> binned_fm_re_tau(
+            observable_count, std::vector<double>(ladder_size, nan_value)
+        );
+        std::vector<std::vector<double>> binned_fm_im_mean(
+            observable_count, std::vector<double>(ladder_size, nan_value)
+        );
+        std::vector<std::vector<double>> binned_fm_im_std(
+            observable_count, std::vector<double>(ladder_size, nan_value)
+        );
+        std::vector<std::vector<double>> binned_fm_im_binder(
+            observable_count, std::vector<double>(ladder_size, nan_value)
+        );
+        std::vector<std::vector<double>> binned_fm_im_binder_std(
+            observable_count, std::vector<double>(ladder_size, nan_value)
+        );
+        std::vector<std::vector<double>> binned_fm_im_tau(
+            observable_count, std::vector<double>(ladder_size, nan_value)
+        );
+        std::vector<std::vector<double>> binned_fm_abs_mean(
+            observable_count, std::vector<double>(ladder_size, nan_value)
+        );
+        std::vector<std::vector<double>> binned_fm_abs_std(
+            observable_count, std::vector<double>(ladder_size, nan_value)
+        );
+        std::vector<std::vector<double>> binned_fm_abs_binder(
+            observable_count, std::vector<double>(ladder_size, nan_value)
+        );
+        std::vector<std::vector<double>> binned_fm_abs_binder_std(
+            observable_count, std::vector<double>(ladder_size, nan_value)
+        );
+        std::vector<std::vector<double>> binned_fm_abs_tau(
+            observable_count, std::vector<double>(ladder_size, nan_value)
+        );
+
+        for (size_t k = 0; k < observable_count; ++k) {
+            if (obs_type_vec[k] != "real") {
+                continue;
+            }
+
+            for (size_t b = 0; b < ladder_size; ++b) {
+                const auto& local_values = pt_binned_local_real_samples[k][b];
+                const int local_n = static_cast<int>(local_values.size());
+
+                std::vector<int> recv_counts;
+                if (pt_ctx.rank == 0) {
+                    recv_counts.resize(static_cast<size_t>(pt_ctx.world_size), 0);
+                }
+                MPI_Gather(
+                    &local_n,
+                    1,
+                    MPI_INT,
+                    pt_ctx.rank == 0 ? recv_counts.data() : nullptr,
+                    1,
+                    MPI_INT,
+                    0,
+                    MPI_COMM_WORLD
+                );
+
+                std::vector<int> displs;
+                int total_n = 0;
+                if (pt_ctx.rank == 0) {
+                    displs.resize(static_cast<size_t>(pt_ctx.world_size), 0);
+                    for (int r = 0; r < pt_ctx.world_size; ++r) {
+                        displs[static_cast<size_t>(r)] = total_n;
+                        total_n += recv_counts[static_cast<size_t>(r)];
+                    }
+                }
+
+                std::vector<double> gathered_values;
+                if (pt_ctx.rank == 0 && total_n > 0) {
+                    gathered_values.resize(static_cast<size_t>(total_n), 0.0);
+                }
+                MPI_Gatherv(
+                    local_n > 0 ? local_values.data() : nullptr,
+                    local_n,
+                    MPI_DOUBLE,
+                    (pt_ctx.rank == 0 && total_n > 0) ? gathered_values.data() : nullptr,
+                    pt_ctx.rank == 0 ? recv_counts.data() : nullptr,
+                    pt_ctx.rank == 0 ? displs.data() : nullptr,
+                    MPI_DOUBLE,
+                    0,
+                    MPI_COMM_WORLD
+                );
+
+                if (pt_ctx.rank == 0) {
+                    binned_count[k][b] = static_cast<std::uint64_t>(total_n);
+                    if (total_n <= 0) {
+                        continue;
+                    }
+
+                    if (total_n == 1) {
+                        const double v = gathered_values.front();
+                        binned_mean[k][b] = v;
+                        binned_mean_std[k][b] = 0.0;
+                        binned_binder[k][b] = 1.0;
+                        binned_binder_std[k][b] = 0.0;
+                        binned_tau[k][b] = 0.5;
+                        continue;
+                    }
+
+                    const auto& [mean_v, mean_std_v, binder_v, binder_std_v]
+                        = paratoric::statistics::get_bootstrap_statistics(
+                            gathered_values, rng, config.sim_spec.N_resamples
+                        );
+                    binned_mean[k][b] = mean_v;
+                    binned_mean_std[k][b] = mean_std_v;
+                    binned_binder[k][b] = binder_v;
+                    binned_binder_std[k][b] = binder_std_v;
+                    binned_tau[k][b] = paratoric::statistics::get_autocorrelation_time(
+                        paratoric::statistics::get_autocorrelation_function(gathered_values)
+                    );
+                }
+            }
+        }
+
+        auto reduce_binned_component = [&](const std::vector<std::vector<std::vector<double>>>& local_samples,
+                                           std::vector<std::vector<double>>& out_mean,
+                                           std::vector<std::vector<double>>& out_std,
+                                           std::vector<std::vector<double>>& out_binder,
+                                           std::vector<std::vector<double>>& out_binder_std,
+                                           std::vector<std::vector<double>>& out_tau) {
+            for (size_t k = 0; k < observable_count; ++k) {
+                if (obs_type_vec[k] != "fredenhagen_marcu") {
+                    continue;
+                }
+                for (size_t b = 0; b < ladder_size; ++b) {
+                    const auto& local_values = local_samples[k][b];
+                    const int local_n = static_cast<int>(local_values.size());
+
+                    std::vector<int> recv_counts;
+                    if (pt_ctx.rank == 0) {
+                        recv_counts.resize(static_cast<size_t>(pt_ctx.world_size), 0);
+                    }
+                    MPI_Gather(
+                        &local_n,
+                        1,
+                        MPI_INT,
+                        pt_ctx.rank == 0 ? recv_counts.data() : nullptr,
+                        1,
+                        MPI_INT,
+                        0,
+                        MPI_COMM_WORLD
+                    );
+
+                    std::vector<int> displs;
+                    int total_n = 0;
+                    if (pt_ctx.rank == 0) {
+                        displs.resize(static_cast<size_t>(pt_ctx.world_size), 0);
+                        for (int r = 0; r < pt_ctx.world_size; ++r) {
+                            displs[static_cast<size_t>(r)] = total_n;
+                            total_n += recv_counts[static_cast<size_t>(r)];
+                        }
+                    }
+
+                    std::vector<double> gathered_values;
+                    if (pt_ctx.rank == 0 && total_n > 0) {
+                        gathered_values.resize(static_cast<size_t>(total_n), 0.0);
+                    }
+                    MPI_Gatherv(
+                        local_n > 0 ? local_values.data() : nullptr,
+                        local_n,
+                        MPI_DOUBLE,
+                        (pt_ctx.rank == 0 && total_n > 0) ? gathered_values.data() : nullptr,
+                        pt_ctx.rank == 0 ? recv_counts.data() : nullptr,
+                        pt_ctx.rank == 0 ? displs.data() : nullptr,
+                        MPI_DOUBLE,
+                        0,
+                        MPI_COMM_WORLD
+                    );
+
+                    if (pt_ctx.rank == 0) {
+                        binned_fm_count[k][b] = static_cast<std::uint64_t>(total_n);
+                        if (total_n <= 0) {
+                            continue;
+                        }
+
+                        if (total_n == 1) {
+                            const double v = gathered_values.front();
+                            out_mean[k][b] = v;
+                            out_std[k][b] = 0.0;
+                            out_binder[k][b] = 1.0;
+                            out_binder_std[k][b] = 0.0;
+                            out_tau[k][b] = 0.5;
+                            continue;
+                        }
+
+                        const auto& [mean_v, mean_std_v, binder_v, binder_std_v]
+                            = paratoric::statistics::get_bootstrap_statistics(
+                                gathered_values, rng, config.sim_spec.N_resamples
+                            );
+                        out_mean[k][b] = mean_v;
+                        out_std[k][b] = mean_std_v;
+                        out_binder[k][b] = binder_v;
+                        out_binder_std[k][b] = binder_std_v;
+                        out_tau[k][b] = paratoric::statistics::get_autocorrelation_time(
+                            paratoric::statistics::get_autocorrelation_function(gathered_values)
+                        );
+                    }
+                }
+            }
+        };
+
+        reduce_binned_component(
+            pt_binned_local_fm_real_samples,
+            binned_fm_re_mean,
+            binned_fm_re_std,
+            binned_fm_re_binder,
+            binned_fm_re_binder_std,
+            binned_fm_re_tau
+        );
+        reduce_binned_component(
+            pt_binned_local_fm_imag_samples,
+            binned_fm_im_mean,
+            binned_fm_im_std,
+            binned_fm_im_binder,
+            binned_fm_im_binder_std,
+            binned_fm_im_tau
+        );
+        reduce_binned_component(
+            pt_binned_local_fm_abs_samples,
+            binned_fm_abs_mean,
+            binned_fm_abs_std,
+            binned_fm_abs_binder,
+            binned_fm_abs_binder_std,
+            binned_fm_abs_tau
+        );
+
+        if (pt_ctx.rank == 0) {
+            std::ofstream binned_file(
+                pt_detail::binned_observable_file_path(config),
+                std::ios::out | std::ios::trunc
+            );
+            if (binned_file) {
+                binned_file << "# PT merged observable statistics by tempered ladder index\n";
+                binned_file << "# columns: observable ladder_index tempered_value count mean mean_error binder binder_error tau_int\n";
+                for (size_t k = 0; k < observable_count; ++k) {
+                    if (obs_type_vec[k] != "real") {
+                        continue;
+                    }
+                    for (size_t b = 0; b < ladder_size; ++b) {
+                        const double tempered_value = !pt_ctx.ladder_values.empty()
+                            ? pt_ctx.ladder_values[b]
+                            : config.pt_spec.ladder_min;
+                        binned_file << config.sim_spec.observables[k]
+                                    << '\t' << b
+                                    << '\t' << tempered_value
+                                    << '\t' << binned_count[k][b]
+                                    << '\t' << binned_mean[k][b]
+                                    << '\t' << binned_mean_std[k][b]
+                                    << '\t' << binned_binder[k][b]
+                                    << '\t' << binned_binder_std[k][b]
+                                    << '\t' << binned_tau[k][b]
+                                    << '\n';
+                    }
+                }
+                for (size_t k = 0; k < observable_count; ++k) {
+                    if (obs_type_vec[k] != "fredenhagen_marcu") {
+                        continue;
+                    }
+                    for (size_t b = 0; b < ladder_size; ++b) {
+                        const double tempered_value = !pt_ctx.ladder_values.empty()
+                            ? pt_ctx.ladder_values[b]
+                            : config.pt_spec.ladder_min;
+                        auto write_fm_component = [&](const std::string& suffix,
+                                                      const std::vector<std::vector<double>>& means,
+                                                      const std::vector<std::vector<double>>& stds,
+                                                      const std::vector<std::vector<double>>& binders,
+                                                      const std::vector<std::vector<double>>& binder_stds,
+                                                      const std::vector<std::vector<double>>& taus) {
+                            binned_file << (config.sim_spec.observables[k] + suffix)
+                                        << '\t' << b
+                                        << '\t' << tempered_value
+                                        << '\t' << binned_fm_count[k][b]
+                                        << '\t' << means[k][b]
+                                        << '\t' << stds[k][b]
+                                        << '\t' << binders[k][b]
+                                        << '\t' << binder_stds[k][b]
+                                        << '\t' << taus[k][b]
+                                        << '\n';
+                        };
+                        write_fm_component(
+                            "_re",
+                            binned_fm_re_mean,
+                            binned_fm_re_std,
+                            binned_fm_re_binder,
+                            binned_fm_re_binder_std,
+                            binned_fm_re_tau
+                        );
+                        write_fm_component(
+                            "_im",
+                            binned_fm_im_mean,
+                            binned_fm_im_std,
+                            binned_fm_im_binder,
+                            binned_fm_im_binder_std,
+                            binned_fm_im_tau
+                        );
+                        write_fm_component(
+                            "_abs",
+                            binned_fm_abs_mean,
+                            binned_fm_abs_std,
+                            binned_fm_abs_binder,
+                            binned_fm_abs_binder_std,
+                            binned_fm_abs_tau
+                        );
+                    }
+                }
+            }
+        }
+    }
+#endif
 
     if (config.out_spec.save_snapshots) {
         lat.write_graph("snapshots", config.out_spec.path_out);
@@ -3202,7 +4404,7 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
             if ((config.sim_spec.observables[k] == "sigma_z_static_susceptibility" && Basis == 'x')) {
                 const auto& [observable_mean, observable_std, binder_mean, binder_std] 
                 = paratoric::statistics::bootstrap_offdiag_susceptibility(
-                    obs_real, config.lat_spec.beta, config.param_spec.lmbda, 
+                    obs_real, config.lat_spec.beta, lmbda_runtime, 
                     lat.get_edge_count(), rng, config.sim_spec.N_resamples
                 );
                 observable_mean_vector[k] = observable_mean;
@@ -3214,7 +4416,7 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
             } else if (config.sim_spec.observables[k] == "sigma_x_static_susceptibility" && Basis == 'z') {
                 const auto& [observable_mean, observable_std, binder_mean, binder_std] 
                 = paratoric::statistics::bootstrap_offdiag_susceptibility(
-                    obs_real, config.lat_spec.beta, config.param_spec.h, 
+                    obs_real, config.lat_spec.beta, h_runtime, 
                     lat.get_edge_count(), rng, config.sim_spec.N_resamples
                 );
                 observable_mean_vector[k] = observable_mean;
@@ -3251,7 +4453,7 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
     }
 
     integrated_pot_energy_check = total_integrated_pot_energy(
-        lat, config.param_spec.h, config.param_spec.mu, config.param_spec.J, config.param_spec.lmbda
+        lat, h_runtime, mu_runtime, J_runtime, lmbda_runtime
     );
 
     if (!almost_equal(integrated_pot_energy, integrated_pot_energy_check, 1e-5, 1e-13)) {

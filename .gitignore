@@ -7,6 +7,8 @@
 /bin/
 /log/
 !/scripts/job_script_creator.ipynb
+!/scripts/run_pt_jx_smoke.sh
+!/scripts/compare_pt_swap_on_off.sh
 command.txt
 .DS_Store
 /Testing/
