@@ -47,7 +47,7 @@ mkdir -p "${PT_ON_ROOT}" "${PT_OFF_ROOT}"
 
 COMMON_ARGS=(
   --simulation etc_sample
-  --basis x
+  --basis z
   --lattice_type square
   --system_size 4
   --beta 4.0
@@ -55,7 +55,7 @@ COMMON_ARGS=(
   --N_samples 50
   --N_between_samples 20
   --N_resamples 100
-  --observables energy energy_J plaquette_z
+  --observables energy energy_h energy_mu energy_J energy_lmbda plaquette_z
   --seed "${SEED}"
 )
 

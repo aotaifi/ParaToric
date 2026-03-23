@@ -41,7 +41,7 @@ export HDF5_USE_FILE_LOCKING
 
 "${MPI_CMD[@]}" "${BIN}" \
   --simulation etc_sample \
-  --basis x \
+  --basis z \
   --lattice_type square \
   --system_size 2 \
   --beta 2.0 \
@@ -49,9 +49,9 @@ export HDF5_USE_FILE_LOCKING
   --N_samples 4 \
   --N_between_samples 5 \
   --N_resamples 10 \
-  --observables energy energy_J \
+  --observables energy energy_h energy_mu energy_J energy_lmbda plaquette_z \
   --output_directory "${OUT_ROOT}" \
-  --folder_name smoke_pt_jx \
+  --folder_name smoke_pt_jz \
   --pt_enabled true \
   --pt_parameter J \
   --pt_replicas "${RANKS}" \
@@ -62,8 +62,8 @@ export HDF5_USE_FILE_LOCKING
 
 echo
 echo "PT smoke run completed."
-TRACE_FILE="${OUT_ROOT}/smoke_pt_jx/output_test.txt"
-MERGED_FILE="${OUT_ROOT}/smoke_pt_jx/pt_observables_by_ladder.tsv"
+TRACE_FILE="${OUT_ROOT}/smoke_pt_jz/output_test.txt"
+MERGED_FILE="${OUT_ROOT}/smoke_pt_jz/pt_observables_by_ladder.tsv"
 echo "Trace file: ${TRACE_FILE}"
 echo "Merged file: ${MERGED_FILE}"
 if [[ -f "${TRACE_FILE}" ]]; then

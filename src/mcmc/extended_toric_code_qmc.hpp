@@ -4,6 +4,7 @@
 #pragma once
 
 #include "lattice/lattice.hpp"
+#include "mcmc/parallel_tempering.hpp"
 #include "paratoric/types/types.hpp"
 #include "rng/rng.hpp"
 #include "statistics/autocorrelation.hpp"
@@ -15,26 +16,18 @@
 
 #include <algorithm> 
 #include <chrono>
-#include <cctype>
-#include <cstdint>
 #include <cmath>
 #include <concepts>
 #include <complex>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <limits>
 #include <numeric>
 #include <random>
 #include <span>
-#include <string>
 #include <tuple>
 #include <variant>
 #include <vector>
-
-#ifdef PARATORIC_HAS_MPI
-#include <mpi.h>
-#endif
 
 #define UNUSED(expr) do { (void)(expr); } while (0)
 
@@ -42,472 +35,6 @@ namespace paratoric {
 
 template<char B>
 concept ValidBasis = (B == 'x' || B == 'z');
-
-namespace pt_detail {
-
-// Runtime PT metadata derived from input + MPI world.
-struct PTContext {
-    bool enabled = false;
-    int rank = 0;
-    int world_size = 1;
-    std::string parameter{};
-    double tempered_value = 0.0;
-    int tempered_index = 0;
-    std::vector<double> ladder_values{};
-};
-
-inline std::string to_lower_copy(std::string text) {
-    std::transform(
-        text.begin(),
-        text.end(),
-        text.begin(),
-        [](unsigned char c) { return static_cast<char>(std::tolower(c)); }
-    );
-    return text;
-}
-
-inline int odd_even_partner(int rank, int world_size, int phase) {
-    int partner = -1;
-    if (phase == 0) {
-        if (rank % 2 == 0 && rank + 1 < world_size) {
-            partner = rank + 1;
-        } else if (rank % 2 == 1) {
-            partner = rank - 1;
-        }
-    } else {
-        if (rank % 2 == 1 && rank + 1 < world_size) {
-            partner = rank + 1;
-        } else if (rank % 2 == 0) {
-            partner = rank - 1;
-        }
-    }
-    if (partner < 0 || partner >= world_size) {
-        return -1;
-    }
-    return partner;
-}
-
-inline std::filesystem::path swap_trace_file_path(const Config& config) {
-    // If each rank writes to a different subfolder, place one shared trace in the parent directory.
-    const auto parent = config.out_spec.path_out.parent_path();
-    if (!parent.empty()) {
-        return parent / "output_test.txt";
-    }
-    return config.out_spec.path_out / "output_test.txt";
-}
-
-inline std::filesystem::path binned_observable_file_path(const Config& config) {
-    // Write one shared PT-merged observable file next to output_test.txt.
-    const auto parent = config.out_spec.path_out.parent_path();
-    if (!parent.empty()) {
-        return parent / "pt_observables_by_ladder.tsv";
-    }
-    return config.out_spec.path_out / "pt_observables_by_ladder.tsv";
-}
-
-inline std::filesystem::path ladder_visit_file_path(const Config& config) {
-    const auto parent = config.out_spec.path_out.parent_path();
-    if (!parent.empty()) {
-        return parent / "pt_ladder_visits.tsv";
-    }
-    return config.out_spec.path_out / "pt_ladder_visits.tsv";
-}
-
-inline std::filesystem::path round_trip_file_path(const Config& config) {
-    const auto parent = config.out_spec.path_out.parent_path();
-    if (!parent.empty()) {
-        return parent / "pt_round_trips.tsv";
-    }
-    return config.out_spec.path_out / "pt_round_trips.tsv";
-}
-
-inline std::filesystem::path feedback_diag_file_path(const Config& config) {
-    const auto parent = config.out_spec.path_out.parent_path();
-    if (!parent.empty()) {
-        return parent / "pt_feedback_diagnostics.tsv";
-    }
-    return config.out_spec.path_out / "pt_feedback_diagnostics.tsv";
-}
-
-inline PTContext init_context(const Config& config) {
-    PTContext ctx{};
-    if (!config.pt_spec.enabled) {
-        return ctx;
-    }
-
-    if (config.pt_spec.replicas < 2) {
-        throw std::invalid_argument("pt_replicas must be >= 2 when PT is enabled.");
-    }
-    if (config.pt_spec.swap_period < 1) {
-        throw std::invalid_argument("pt_swap_period must be >= 1 when PT is enabled.");
-    }
-    if (config.pt_spec.ladder_values.empty()
-        && !(config.pt_spec.ladder_max > config.pt_spec.ladder_min)) {
-        throw std::invalid_argument("pt_ladder_max must be larger than pt_ladder_min when PT is enabled.");
-    }
-
-    ctx.parameter = to_lower_copy(config.pt_spec.parameter);
-    if (ctx.parameter == "lambda") {
-        // Accept "lambda" in input but normalize to existing ParaToric naming.
-        ctx.parameter = "lmbda";
-    }
-    if (ctx.parameter != "h" && ctx.parameter != "mu"
-        && ctx.parameter != "j" && ctx.parameter != "lmbda") {
-        throw std::invalid_argument(
-            std::format("Unsupported pt_parameter '{}'. Supported: h, mu, J, lmbda.",
-                        config.pt_spec.parameter));
-    }
-    if (ctx.parameter == "j") {
-        if (!config.pt_spec.ladder_values.empty()) {
-            for (double v : config.pt_spec.ladder_values) {
-                if (v < 0.0) {
-                    throw std::invalid_argument("All pt_ladder_values must be >= 0 when pt_parameter=J.");
-                }
-            }
-        } else if (config.pt_spec.ladder_min < 0.0) {
-            throw std::invalid_argument(
-                "pt_ladder_min must be >= 0 when pt_parameter=J."
-            );
-        }
-    }
-#ifdef PARATORIC_HAS_MPI
-    int initialized = 0;
-    MPI_Initialized(&initialized);
-    if (!initialized) {
-        throw std::runtime_error("PT requested but MPI is not initialized.");
-    }
-
-    MPI_Comm_rank(MPI_COMM_WORLD, &ctx.rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &ctx.world_size);
-
-    if (ctx.world_size != config.pt_spec.replicas) {
-        throw std::invalid_argument(
-            std::format("pt_replicas ({}) must match MPI world size ({}).",
-                        config.pt_spec.replicas, ctx.world_size));
-    }
-
-    if (!config.pt_spec.ladder_values.empty()) {
-        if (static_cast<int>(config.pt_spec.ladder_values.size()) != ctx.world_size) {
-            throw std::invalid_argument(
-                std::format("pt_ladder_values length ({}) must match MPI world size ({}).",
-                            config.pt_spec.ladder_values.size(), ctx.world_size));
-        }
-        ctx.ladder_values = config.pt_spec.ladder_values;
-        for (int i = 1; i < ctx.world_size; ++i) {
-            if (!(ctx.ladder_values[static_cast<size_t>(i)]
-                  > ctx.ladder_values[static_cast<size_t>(i - 1)])) {
-                throw std::invalid_argument("pt_ladder_values must be strictly increasing.");
-            }
-        }
-    } else {
-        // Linear ladder assignment: rank 0 -> min, rank (R-1) -> max.
-        ctx.ladder_values.resize(static_cast<size_t>(ctx.world_size), config.pt_spec.ladder_min);
-        for (int i = 0; i < ctx.world_size; ++i) {
-            const double fraction = static_cast<double>(i)
-                                  / static_cast<double>(ctx.world_size - 1);
-            ctx.ladder_values[static_cast<size_t>(i)] =
-                config.pt_spec.ladder_min
-                + fraction * (config.pt_spec.ladder_max - config.pt_spec.ladder_min);
-        }
-    }
-    ctx.tempered_index = ctx.rank;
-    ctx.tempered_value = ctx.ladder_values[static_cast<size_t>(ctx.tempered_index)];
-#else
-    throw std::invalid_argument("PT requested but ParaToric was built without MPI support.");
-#endif
-
-    ctx.enabled = true;
-    return ctx;
-}
-
-inline void apply_tempered_parameter(
-    const PTContext& ctx,
-    double& h,
-    double& mu,
-    double& J,
-    double& lmbda
-) {
-    if (!ctx.enabled) {
-        return;
-    }
-    // PT scaffold updates exactly one coupling per replica.
-    if (ctx.parameter == "h") {
-        h = ctx.tempered_value;
-    } else if (ctx.parameter == "mu") {
-        mu = ctx.tempered_value;
-    } else if (ctx.parameter == "j") {
-        J = ctx.tempered_value;
-    } else if (ctx.parameter == "lmbda") {
-        lmbda = ctx.tempered_value;
-    }
-}
-
-inline void maybe_attempt_swap_scaffold(
-    const Config& config,
-    PTContext& ctx,
-    Lattice& lat,
-    rng::RNG& rng_engine,
-    int total_metropolis_step_count,
-    double& tempered_parameter_runtime,
-    double& integrated_pot_energy,
-    std::uint64_t& swap_attempted_local,
-    std::uint64_t& swap_accepted_local,
-    std::uint64_t& swap_rejected_local
-) {
-    if (!ctx.enabled) {
-        return;
-    }
-    if (ctx.parameter != "j") {
-        throw std::invalid_argument("PT swaps are currently implemented only for pt_parameter=J.");
-    }
-    if (config.lat_spec.basis != 'x' && config.lat_spec.basis != 'z') {
-        throw std::invalid_argument("PT swaps are supported only for basis=x or basis=z.");
-    }
-    if (total_metropolis_step_count <= 0
-        || (total_metropolis_step_count % config.pt_spec.swap_period) != 0) {
-        return;
-    }
-
-    // Alternate even/odd neighbor pairing like standard PT exchange schedules.
-    const int phase = (total_metropolis_step_count / config.pt_spec.swap_period) & 1;
-    const int partner = odd_even_partner(ctx.rank, ctx.world_size, phase);
-
-#ifdef PARATORIC_HAS_MPI
-    int accepted = -1;
-    double local_parameter_before = tempered_parameter_runtime;
-    double partner_parameter_before = std::numeric_limits<double>::quiet_NaN();
-    int local_index_before = ctx.tempered_index;
-    int partner_index_before = -1;
-    double local_tuple_count = std::numeric_limits<double>::quiet_NaN();
-    double partner_tuple_count = std::numeric_limits<double>::quiet_NaN();
-    double log_r = std::numeric_limits<double>::quiet_NaN();
-
-    if (partner >= 0) {
-        constexpr int kTagPtParameter = 4901;
-        MPI_Sendrecv(
-            &local_parameter_before, 1, MPI_DOUBLE, partner, kTagPtParameter,
-            &partner_parameter_before, 1, MPI_DOUBLE, partner, kTagPtParameter,
-            MPI_COMM_WORLD, MPI_STATUS_IGNORE
-        );
-        constexpr int kTagPtIndex = 4903;
-        MPI_Sendrecv(
-            &local_index_before, 1, MPI_INT, partner, kTagPtIndex,
-            &partner_index_before, 1, MPI_INT, partner, kTagPtIndex,
-            MPI_COMM_WORLD, MPI_STATUS_IGNORE
-        );
-
-        if (config.lat_spec.basis == 'x') {
-            local_tuple_count = config.lat_spec.beta * lat.get_non_diag_tuple_energy_x();
-        } else {
-            local_tuple_count = lat.total_integrated_plaquette_energy();
-        }
-        constexpr int kTagPtTupleCount = 4902;
-        MPI_Sendrecv(
-            &local_tuple_count, 1, MPI_DOUBLE, partner, kTagPtTupleCount,
-            &partner_tuple_count, 1, MPI_DOUBLE, partner, kTagPtTupleCount,
-            MPI_COMM_WORLD, MPI_STATUS_IGNORE
-        );
-
-        if (local_parameter_before == partner_parameter_before) {
-            log_r = 0.0;
-        } else if (config.lat_spec.basis == 'x'
-                   && (local_parameter_before == 0.0 || partner_parameter_before == 0.0)) {
-            // Handle J=0 with the limiting sign of log(J_partner/J_local),
-            // but keep log_r finite to avoid inf/NaN in downstream logging.
-            constexpr double kLogRCap = 1e6;
-            if (local_tuple_count == partner_tuple_count) {
-                log_r = 0.0;
-            } else if (local_parameter_before == 0.0) {
-                log_r = (local_tuple_count > partner_tuple_count) ? kLogRCap : -kLogRCap;
-            } else {
-                log_r = (local_tuple_count < partner_tuple_count) ? kLogRCap : -kLogRCap;
-            }
-        } else if (config.lat_spec.basis == 'x') {
-            log_r = (local_tuple_count - partner_tuple_count)
-                  * std::log(partner_parameter_before / local_parameter_before);
-        } else {
-            log_r = (partner_parameter_before - local_parameter_before)
-                  * (local_tuple_count - partner_tuple_count);
-        }
-
-        accepted = 0;
-        if (ctx.rank < partner) {
-            ++swap_attempted_local;
-            std::uniform_real_distribution<double> uniform_dist{0.0, 1.0};
-            const double random_uniform = uniform_dist(rng_engine);
-            const double log_uniform = std::log(std::max(random_uniform, std::numeric_limits<double>::min()));
-            if (log_r >= 0.0 || log_uniform < log_r) {
-                accepted = 1;
-            }
-            if (accepted == 1) {
-                ++swap_accepted_local;
-            } else {
-                ++swap_rejected_local;
-            }
-        }
-        const int decision_root = std::min(ctx.rank, partner);
-        MPI_Bcast(&accepted, 1, MPI_INT, decision_root, MPI_COMM_WORLD);
-
-        if (accepted == 1) {
-            const double local_parameter_after = partner_parameter_before;
-            // For basis=z, the diagonal potential includes -J * B where
-            // B = total_integrated_plaquette_energy(). Swapping J between ranks
-            // changes the Hamiltonian parameter instantaneously at fixed config,
-            // so we must shift cached integrated_pot_energy accordingly.
-            if (config.lat_spec.basis == 'z') {
-                integrated_pot_energy += -(local_parameter_after - local_parameter_before) * local_tuple_count;
-            }
-
-            tempered_parameter_runtime = partner_parameter_before;
-            ctx.tempered_value = tempered_parameter_runtime;
-            ctx.tempered_index = partner_index_before;
-        }
-    }
-
-    const bool emit_trace = config.pt_spec.trace_enabled
-        && config.pt_spec.trace_interval > 0
-        && (total_metropolis_step_count % config.pt_spec.trace_interval) == 0;
-    if (emit_trace) {
-        const double local_parameter_after = tempered_parameter_runtime;
-
-        // Collect rank-local swap diagnostics on rank 0 for compact trace lines.
-        std::vector<int> gathered_partners;
-        std::vector<int> gathered_accepted;
-        std::vector<double> gathered_parameter_before;
-        std::vector<double> gathered_parameter_after;
-        std::vector<double> gathered_tuple_count;
-        std::vector<double> gathered_log_r;
-        if (ctx.rank == 0) {
-            gathered_partners.resize(static_cast<size_t>(ctx.world_size), -1);
-            gathered_accepted.resize(static_cast<size_t>(ctx.world_size), -1);
-            gathered_parameter_before.resize(static_cast<size_t>(ctx.world_size), std::numeric_limits<double>::quiet_NaN());
-            gathered_parameter_after.resize(static_cast<size_t>(ctx.world_size), std::numeric_limits<double>::quiet_NaN());
-            gathered_tuple_count.resize(static_cast<size_t>(ctx.world_size), std::numeric_limits<double>::quiet_NaN());
-            gathered_log_r.resize(static_cast<size_t>(ctx.world_size), std::numeric_limits<double>::quiet_NaN());
-        }
-        MPI_Gather(
-            &partner,
-            1,
-            MPI_INT,
-            ctx.rank == 0 ? gathered_partners.data() : nullptr,
-            1,
-            MPI_INT,
-            0,
-            MPI_COMM_WORLD
-        );
-        MPI_Gather(
-            &accepted,
-            1,
-            MPI_INT,
-            ctx.rank == 0 ? gathered_accepted.data() : nullptr,
-            1,
-            MPI_INT,
-            0,
-            MPI_COMM_WORLD
-        );
-        MPI_Gather(
-            &local_parameter_before,
-            1,
-            MPI_DOUBLE,
-            ctx.rank == 0 ? gathered_parameter_before.data() : nullptr,
-            1,
-            MPI_DOUBLE,
-            0,
-            MPI_COMM_WORLD
-        );
-        MPI_Gather(
-            &local_parameter_after,
-            1,
-            MPI_DOUBLE,
-            ctx.rank == 0 ? gathered_parameter_after.data() : nullptr,
-            1,
-            MPI_DOUBLE,
-            0,
-            MPI_COMM_WORLD
-        );
-        MPI_Gather(
-            &local_tuple_count,
-            1,
-            MPI_DOUBLE,
-            ctx.rank == 0 ? gathered_tuple_count.data() : nullptr,
-            1,
-            MPI_DOUBLE,
-            0,
-            MPI_COMM_WORLD
-        );
-        MPI_Gather(
-            &log_r,
-            1,
-            MPI_DOUBLE,
-            ctx.rank == 0 ? gathered_log_r.data() : nullptr,
-            1,
-            MPI_DOUBLE,
-            0,
-            MPI_COMM_WORLD
-        );
-
-        if (ctx.rank == 0) {
-            std::ofstream trace_file(swap_trace_file_path(config), std::ios::app);
-            if (trace_file) {
-                trace_file << "step=" << total_metropolis_step_count
-                           << " phase=" << phase;
-                bool has_pairs = false;
-                for (int r = 0; r < ctx.world_size; ++r) {
-                    const int p = gathered_partners[static_cast<size_t>(r)];
-                    if (p >= 0 && r < p) {
-                        has_pairs = true;
-                        trace_file << " pair=(" << r << "<->" << p << ")"
-                                   << " accepted=" << gathered_accepted[static_cast<size_t>(r)]
-                                   << " j_before=("
-                                   << gathered_parameter_before[static_cast<size_t>(r)] << ","
-                                   << gathered_parameter_before[static_cast<size_t>(p)] << ")"
-                                   << " n_tuple=("
-                                   << gathered_tuple_count[static_cast<size_t>(r)] << ","
-                                   << gathered_tuple_count[static_cast<size_t>(p)] << ")"
-                                   << " logR=" << gathered_log_r[static_cast<size_t>(r)]
-                                   << " j_after=("
-                                   << gathered_parameter_after[static_cast<size_t>(r)] << ","
-                                   << gathered_parameter_after[static_cast<size_t>(p)] << ")";
-                    }
-                }
-                if (!has_pairs) {
-                    trace_file << " pairs=none";
-                }
-                trace_file << '\n';
-            }
-        }
-    }
-#endif
-
-#ifndef NDEBUG
-    BOOST_LOG_TRIVIAL(debug) << std::format(
-        "[PT] step={} phase={} rank={} partner={} {}={} swap_attempted_local={} swap_accepted_local={} swap_rejected_local={}",
-        total_metropolis_step_count,
-        phase,
-        ctx.rank,
-        partner,
-        ctx.parameter,
-        tempered_parameter_runtime,
-        swap_attempted_local,
-        swap_accepted_local,
-        swap_rejected_local
-    );
-#endif
-
-#ifndef PARATORIC_HAS_MPI
-    UNUSED(config);
-    UNUSED(lat);
-    UNUSED(rng_engine);
-    UNUSED(total_metropolis_step_count);
-    UNUSED(tempered_parameter_runtime);
-    UNUSED(integrated_pot_energy);
-    UNUSED(swap_attempted_local);
-    UNUSED(swap_accepted_local);
-    UNUSED(swap_rejected_local);
-#endif
-}
-
-} // namespace pt_detail
 
 template<char Basis>
 requires ValidBasis<Basis>
@@ -3471,11 +2998,8 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
     pt_detail::apply_tempered_parameter(pt_ctx, h_runtime, mu_runtime, J_runtime, lmbda_runtime);
 
     if (pt_ctx.enabled) {
-        if (pt_ctx.parameter != "j") {
-            throw std::invalid_argument("PT currently supports only pt_parameter=J.");
-        }
-        if constexpr (Basis != 'x' && Basis != 'z') {
-            throw std::invalid_argument("PT currently supports only basis=x or basis=z.");
+        if constexpr (Basis != 'z') {
+            throw std::invalid_argument("PT currently supports only basis=z.");
         }
     }
 
@@ -3500,18 +3024,7 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
             "[PT] rank {}/{} initial {}={}",
             pt_ctx.rank, pt_ctx.world_size, pt_ctx.parameter, pt_ctx.tempered_value
         );
-#ifdef PARATORIC_HAS_MPI
-        if (pt_ctx.rank == 0) {
-            if (config.pt_spec.trace_enabled && config.pt_spec.trace_interval > 0) {
-                std::ofstream trace_file(pt_detail::swap_trace_file_path(config), std::ios::out | std::ios::trunc);
-                if (trace_file) {
-                    trace_file << "# PT swap trace\n";
-                    trace_file << "# fields: step phase pair accepted j_before n_tuple logR j_after\n";
-                }
-            }
-        }
-        MPI_Barrier(MPI_COMM_WORLD);
-#endif
+        pt_detail::initialize_trace_file_if_requested(config, pt_ctx);
     }
 
     auto obs_func_vec = get_obs_func_vec(config.sim_spec.observables);
@@ -3662,13 +3175,16 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
                 mu_runtime, J_runtime, lmbda_runtime
             );
             // PT hook lives at sweep scheduling level, not inside local Metropolis kernels.
-            pt_detail::maybe_attempt_swap_scaffold(
+            pt_detail::maybe_attempt_swap(
                 config,
                 pt_ctx,
                 lat,
                 *rng,
                 total_metropolis_step_count,
+                h_runtime,
+                mu_runtime,
                 J_runtime,
+                lmbda_runtime,
                 integrated_pot_energy,
                 pt_swap_attempted_local,
                 pt_swap_accepted_local,

@@ -224,7 +224,7 @@ int main(int argc, char** argv) {
             ("boundaries,bound", po::value(&boundaries), "Boundary condition of the lattice (periodic or open).")
             ("default_spin,dsp", po::value(&default_spin), "Default spin (electric field) for lattice initialization.")
             ("pt_enabled", po::value(&pt_enabled), "Enable parallel tempering mode.")
-            ("pt_parameter", po::value(&pt_parameter), "Tempered parameter name (e.g., J).")
+            ("pt_parameter", po::value(&pt_parameter), "Tempered parameter name in z-basis PT (h, mu, J, or lmbda).")
             ("pt_replicas", po::value(&pt_replicas), "Number of PT replicas.")
             ("pt_swap_period", po::value(&pt_swap_period), "Swap attempt interval in local update steps.")
             ("pt_ladder_min", po::value(&pt_ladder_min), "Lower bound of PT ladder.")
@@ -315,6 +315,9 @@ int main(int argc, char** argv) {
             }
             if (custom_therm) {
                 throw std::invalid_argument("PT scaffold currently requires custom_therm=false.");
+            }
+            if (basis != 'z') {
+                throw std::invalid_argument("PT scaffold currently supports basis=z only.");
             }
 #ifndef PARATORIC_HAS_MPI
             throw std::invalid_argument("pt_enabled=true requires MPI build support. Reconfigure with -DPARATORIC_LINK_MPI=ON.");
