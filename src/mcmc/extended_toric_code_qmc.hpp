@@ -3039,9 +3039,10 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
 
     // Vector to store observable results for all snapshots (kept only when requested).
     std::vector<std::vector< std::variant< std::complex<double>, double> >> observable_vector(observable_count);
-    // Always keep typed samples for statistics to avoid variant unpack pass at the end.
-    std::vector<std::vector<double>> stats_real_samples(observable_count);
-    std::vector<std::vector<double>> stats_imag_samples(observable_count);
+    // Typed samples for statistics are needed only when full series are not kept.
+    const bool use_typed_stats_buffers = !keep_full_series;
+    std::vector<std::vector<double>> stats_real_samples(use_typed_stats_buffers ? observable_count : 0);
+    std::vector<std::vector<double>> stats_imag_samples(use_typed_stats_buffers ? observable_count : 0);
     std::vector<int> obs_kind(observable_count, 0); // 0=real, 1=fredenhagen_marcu, 2=susceptibility
     bool has_susceptibility_obs = false;
 
@@ -3053,9 +3054,11 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
             obs_kind[k] = 2;
             has_susceptibility_obs = true;
         }
-        stats_real_samples[k].reserve(sample_reserve);
-        if (obs_kind[k] != 0) {
-            stats_imag_samples[k].reserve(sample_reserve);
+        if (use_typed_stats_buffers) {
+            stats_real_samples[k].reserve(sample_reserve);
+            if (obs_kind[k] != 0) {
+                stats_imag_samples[k].reserve(sample_reserve);
+            }
         }
         if (keep_full_series) {
             observable_vector[k].reserve(sample_reserve);
@@ -3277,20 +3280,23 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
                 observable_vector[k].emplace_back(obs_value);
             }
 
+            const bool need_components = use_typed_stats_buffers || pt_ctx.enabled;
             double re = 0.0;
             double im = 0.0;
-            if (const auto* c = std::get_if<std::complex<double>>(&obs_value)) {
-                re = c->real();
-                im = c->imag();
-            } else {
-                re = std::get<double>(obs_value);
-                if (obs_kind[k] != 0) {
-                    im = 0.0;
+            if (need_components) {
+                if (const auto* c = std::get_if<std::complex<double>>(&obs_value)) {
+                    re = c->real();
+                    im = c->imag();
+                } else {
+                    re = std::get<double>(obs_value);
                 }
             }
-            stats_real_samples[k].emplace_back(re);
-            if (obs_kind[k] != 0) {
-                stats_imag_samples[k].emplace_back(im);
+
+            if (use_typed_stats_buffers) {
+                stats_real_samples[k].emplace_back(re);
+                if (obs_kind[k] != 0) {
+                    stats_imag_samples[k].emplace_back(im);
+                }
             }
 
             if (pt_ctx.enabled && obs_kind[k] == 0) {
@@ -3892,8 +3898,43 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
     }
 
     for (size_t k = 0; k < config.sim_spec.observables.size(); k++) {
-        const auto& obs_real = stats_real_samples[k];
-        const auto& obs_imag = stats_imag_samples[k];
+        std::vector<double> obs_real_storage;
+        std::vector<double> obs_imag_storage;
+
+        const std::vector<double>* obs_real_ptr = nullptr;
+        const std::vector<double>* obs_imag_ptr = nullptr;
+
+        if (use_typed_stats_buffers) {
+            obs_real_ptr = &stats_real_samples[k];
+            if (obs_type_vec[k] != "real") {
+                obs_imag_ptr = &stats_imag_samples[k];
+            }
+        } else {
+            const auto& series = observable_vector[k];
+            obs_real_storage.reserve(series.size());
+            if (obs_type_vec[k] != "real") {
+                obs_imag_storage.reserve(series.size());
+            }
+            for (const auto& v : series) {
+                if (const auto* c = std::get_if<std::complex<double>>(&v)) {
+                    obs_real_storage.emplace_back(c->real());
+                    if (obs_type_vec[k] != "real") {
+                        obs_imag_storage.emplace_back(c->imag());
+                    }
+                } else {
+                    obs_real_storage.emplace_back(std::get<double>(v));
+                    if (obs_type_vec[k] != "real") {
+                        obs_imag_storage.emplace_back(0.0);
+                    }
+                }
+            }
+            obs_real_ptr = &obs_real_storage;
+            if (obs_type_vec[k] != "real") {
+                obs_imag_ptr = &obs_imag_storage;
+            }
+        }
+
+        const auto& obs_real = *obs_real_ptr;
 
         if (obs_type_vec[k] == "real") {
             const auto& [observable_mean, observable_std, binder_mean, binder_std] 
@@ -3905,65 +3946,68 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
             binder_std_vector[k] = binder_std;
             observable_autocorrelation_time_vector[k] 
             = paratoric::statistics::get_autocorrelation_time(paratoric::statistics::get_autocorrelation_function(obs_real));
-        } else if (obs_type_vec[k] == "fredenhagen_marcu") {
-            const auto& [observable_mean, observable_std, binder_mean, binder_std] 
-            = paratoric::statistics::get_bootstrap_statistics_fm(obs_real, obs_imag, rng, config.sim_spec.N_resamples);
+        } else {
+            const auto& obs_imag = *obs_imag_ptr;
+            if (obs_type_vec[k] == "fredenhagen_marcu") {
+                const auto& [observable_mean, observable_std, binder_mean, binder_std] 
+                = paratoric::statistics::get_bootstrap_statistics_fm(obs_real, obs_imag, rng, config.sim_spec.N_resamples);
 
-            observable_mean_vector[k] = observable_mean;
-            observable_std_vector[k] = observable_std;
-            binder_mean_vector[k] = binder_mean;
-            binder_std_vector[k] = binder_std;
-            observable_autocorrelation_time_vector[k] 
-            = paratoric::statistics::get_autocorrelation_time(paratoric::statistics::get_autocorrelation_function(obs_real));
-        } else if (obs_type_vec[k] == "susceptibility") {
-            //TODO fix this, every observable should just define their susceptibility function
-            if ((config.sim_spec.observables[k] == "sigma_z_static_susceptibility" && Basis == 'x')) {
-                const auto& [observable_mean, observable_std, binder_mean, binder_std] 
-                = paratoric::statistics::bootstrap_offdiag_susceptibility(
-                    obs_real, config.lat_spec.beta, lmbda_runtime, 
-                    lat.get_edge_count(), rng, config.sim_spec.N_resamples
-                );
                 observable_mean_vector[k] = observable_mean;
                 observable_std_vector[k] = observable_std;
                 binder_mean_vector[k] = binder_mean;
                 binder_std_vector[k] = binder_std;
                 observable_autocorrelation_time_vector[k] 
                 = paratoric::statistics::get_autocorrelation_time(paratoric::statistics::get_autocorrelation_function(obs_real));
-            } else if (config.sim_spec.observables[k] == "sigma_x_static_susceptibility" && Basis == 'z') {
-                const auto& [observable_mean, observable_std, binder_mean, binder_std] 
-                = paratoric::statistics::bootstrap_offdiag_susceptibility(
-                    obs_real, config.lat_spec.beta, h_runtime, 
-                    lat.get_edge_count(), rng, config.sim_spec.N_resamples
-                );
-                observable_mean_vector[k] = observable_mean;
-                observable_std_vector[k] = observable_std;
-                binder_mean_vector[k] = binder_mean;
-                binder_std_vector[k] = binder_std;
-                observable_autocorrelation_time_vector[k] 
-                = paratoric::statistics::get_autocorrelation_time(paratoric::statistics::get_autocorrelation_function(obs_real));
-            } else if ((config.sim_spec.observables[k] == "sigma_z_dynamical_susceptibility" && Basis == 'x')
-                        || (config.sim_spec.observables[k] == "sigma_x_dynamical_susceptibility" && Basis == 'z')) {
-                const auto& [observable_mean, observable_std, binder_mean, binder_std] 
-                = paratoric::statistics::bootstrap_offdiag_dynamical_susceptibility(
-                    obs_real, obs_imag, lat.get_edge_count(), rng, config.sim_spec.N_resamples
-                );
-                observable_mean_vector[k] = observable_mean;
-                observable_std_vector[k] = observable_std;
-                binder_mean_vector[k] = binder_mean;
-                binder_std_vector[k] = binder_std;
-                observable_autocorrelation_time_vector[k] 
-                = paratoric::statistics::get_autocorrelation_time(paratoric::statistics::get_autocorrelation_function(obs_real));
-            } else {
-                const auto& [observable_mean, observable_std, binder_mean, binder_std] 
-                = paratoric::statistics::get_bootstrap_statistics_susceptibility(
-                    obs_real, obs_imag, rng, config.sim_spec.N_resamples
-                );
-                observable_mean_vector[k] = observable_mean;
-                observable_std_vector[k] = observable_std;
-                binder_mean_vector[k] = binder_mean;
-                binder_std_vector[k] = binder_std;
-                observable_autocorrelation_time_vector[k] 
-                = paratoric::statistics::get_autocorrelation_time(paratoric::statistics::get_autocorrelation_function(obs_real));
+            } else if (obs_type_vec[k] == "susceptibility") {
+                //TODO fix this, every observable should just define their susceptibility function
+                if ((config.sim_spec.observables[k] == "sigma_z_static_susceptibility" && Basis == 'x')) {
+                    const auto& [observable_mean, observable_std, binder_mean, binder_std] 
+                    = paratoric::statistics::bootstrap_offdiag_susceptibility(
+                        obs_real, config.lat_spec.beta, lmbda_runtime, 
+                        lat.get_edge_count(), rng, config.sim_spec.N_resamples
+                    );
+                    observable_mean_vector[k] = observable_mean;
+                    observable_std_vector[k] = observable_std;
+                    binder_mean_vector[k] = binder_mean;
+                    binder_std_vector[k] = binder_std;
+                    observable_autocorrelation_time_vector[k] 
+                    = paratoric::statistics::get_autocorrelation_time(paratoric::statistics::get_autocorrelation_function(obs_real));
+                } else if (config.sim_spec.observables[k] == "sigma_x_static_susceptibility" && Basis == 'z') {
+                    const auto& [observable_mean, observable_std, binder_mean, binder_std] 
+                    = paratoric::statistics::bootstrap_offdiag_susceptibility(
+                        obs_real, config.lat_spec.beta, h_runtime, 
+                        lat.get_edge_count(), rng, config.sim_spec.N_resamples
+                    );
+                    observable_mean_vector[k] = observable_mean;
+                    observable_std_vector[k] = observable_std;
+                    binder_mean_vector[k] = binder_mean;
+                    binder_std_vector[k] = binder_std;
+                    observable_autocorrelation_time_vector[k] 
+                    = paratoric::statistics::get_autocorrelation_time(paratoric::statistics::get_autocorrelation_function(obs_real));
+                } else if ((config.sim_spec.observables[k] == "sigma_z_dynamical_susceptibility" && Basis == 'x')
+                            || (config.sim_spec.observables[k] == "sigma_x_dynamical_susceptibility" && Basis == 'z')) {
+                    const auto& [observable_mean, observable_std, binder_mean, binder_std] 
+                    = paratoric::statistics::bootstrap_offdiag_dynamical_susceptibility(
+                        obs_real, obs_imag, lat.get_edge_count(), rng, config.sim_spec.N_resamples
+                    );
+                    observable_mean_vector[k] = observable_mean;
+                    observable_std_vector[k] = observable_std;
+                    binder_mean_vector[k] = binder_mean;
+                    binder_std_vector[k] = binder_std;
+                    observable_autocorrelation_time_vector[k] 
+                    = paratoric::statistics::get_autocorrelation_time(paratoric::statistics::get_autocorrelation_function(obs_real));
+                } else {
+                    const auto& [observable_mean, observable_std, binder_mean, binder_std] 
+                    = paratoric::statistics::get_bootstrap_statistics_susceptibility(
+                        obs_real, obs_imag, rng, config.sim_spec.N_resamples
+                    );
+                    observable_mean_vector[k] = observable_mean;
+                    observable_std_vector[k] = observable_std;
+                    binder_mean_vector[k] = binder_mean;
+                    binder_std_vector[k] = binder_std;
+                    observable_autocorrelation_time_vector[k] 
+                    = paratoric::statistics::get_autocorrelation_time(paratoric::statistics::get_autocorrelation_function(obs_real));
+                }
             }
         }
     }
