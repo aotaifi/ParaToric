@@ -57,7 +57,7 @@ void IO::etc_sample(
         auto mc = std::make_unique<ExtendedToricCodeQMC<'x'>>();
         result_spec = mc->get_sample(
             Config{config.sim_spec, config.param_spec, config.lat_spec, 
-                OutSpec{.path_out=path_out, .save_snapshots=config.out_spec.save_snapshots},
+                OutSpec{.path_out=path_out, .save_snapshots=config.out_spec.save_snapshots, .full_time_series=config.out_spec.full_time_series},
                 config.pt_spec}
         ); 
         obs_types = mc->get_obs_type_vec(config.sim_spec.observables);
@@ -65,7 +65,7 @@ void IO::etc_sample(
         auto mc = std::make_unique<ExtendedToricCodeQMC<'z'>>();
         result_spec = mc->get_sample(
             Config{config.sim_spec, config.param_spec, config.lat_spec, 
-                OutSpec{.path_out=path_out, .save_snapshots=config.out_spec.save_snapshots},
+                OutSpec{.path_out=path_out, .save_snapshots=config.out_spec.save_snapshots, .full_time_series=config.out_spec.full_time_series},
                 config.pt_spec}
         ); 
         obs_types = mc->get_obs_type_vec(config.sim_spec.observables);
@@ -141,13 +141,13 @@ void IO::etc_hysteresis(
     if (config.lat_spec.basis == 'x') {
         auto mc = std::make_unique<ExtendedToricCodeQMC<'x'>>();
         result_spec = mc->get_hysteresis(
-            Config{config.sim_spec, config.param_spec, config.lat_spec, OutSpec{.paths_out=paths_out, .save_snapshots=config.out_spec.save_snapshots}, config.pt_spec}
+            Config{config.sim_spec, config.param_spec, config.lat_spec, OutSpec{.paths_out=paths_out, .save_snapshots=config.out_spec.save_snapshots, .full_time_series=config.out_spec.full_time_series}, config.pt_spec}
         ); 
         obs_types = mc->get_obs_type_vec(config.sim_spec.observables);
     } else if (config.lat_spec.basis == 'z') {
         auto mc = std::make_unique<ExtendedToricCodeQMC<'z'>>();
         result_spec = mc->get_hysteresis(
-            Config{config.sim_spec, config.param_spec, config.lat_spec, OutSpec{.paths_out=paths_out, .save_snapshots=config.out_spec.save_snapshots}, config.pt_spec}
+            Config{config.sim_spec, config.param_spec, config.lat_spec, OutSpec{.paths_out=paths_out, .save_snapshots=config.out_spec.save_snapshots, .full_time_series=config.out_spec.full_time_series}, config.pt_spec}
         ); 
         obs_types = mc->get_obs_type_vec(config.sim_spec.observables);
     }
@@ -235,13 +235,13 @@ void IO::etc_thermalization(
     if (config.lat_spec.basis == 'x') {
         auto mc = std::make_unique<ExtendedToricCodeQMC<'x'>>();
         result_spec = result_spec = mc->get_thermalization(
-            Config{config.sim_spec, config.param_spec, config.lat_spec, OutSpec{.path_out=path_out, .save_snapshots=config.out_spec.save_snapshots}, config.pt_spec}
+            Config{config.sim_spec, config.param_spec, config.lat_spec, OutSpec{.path_out=path_out, .save_snapshots=config.out_spec.save_snapshots, .full_time_series=config.out_spec.full_time_series}, config.pt_spec}
         );
         obs_types = mc->get_obs_type_vec(config.sim_spec.observables);
     } else if (config.lat_spec.basis == 'z') {
         auto mc = std::make_unique<ExtendedToricCodeQMC<'z'>>();
         result_spec = result_spec = mc->get_thermalization(
-            Config{config.sim_spec, config.param_spec, config.lat_spec, OutSpec{.path_out=path_out, .save_snapshots=config.out_spec.save_snapshots}, config.pt_spec}
+            Config{config.sim_spec, config.param_spec, config.lat_spec, OutSpec{.path_out=path_out, .save_snapshots=config.out_spec.save_snapshots, .full_time_series=config.out_spec.full_time_series}, config.pt_spec}
         );
         obs_types = mc->get_obs_type_vec(config.sim_spec.observables);
     }

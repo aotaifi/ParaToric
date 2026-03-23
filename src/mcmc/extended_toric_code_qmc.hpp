@@ -334,10 +334,10 @@ class ExtendedToricCodeQMC {
             }
         };
 
+        // Susceptibility estimators assume the caller rotates imaginary time at most once per measurement step.
         std::function<std::complex<double>(Lattice&, double, double, double, double)> 
         sigma_x_static_susceptibility_obs 
         = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
-            lat.rotate_imag_time();
             if constexpr (Basis == 'x') return lat.get_diag_M_M(); 
             else return lat.get_non_diag_M_M();
         };
@@ -345,7 +345,6 @@ class ExtendedToricCodeQMC {
         std::function<std::complex<double>(Lattice&, double, double, double, double)> 
         sigma_x_dynamical_susceptibility_obs 
         = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
-            lat.rotate_imag_time();
             if constexpr (Basis == 'x') return lat.get_diag_dynamical_M_M();
             else return lat.get_kL_kR_single() / static_cast<double>(std::sqrt(2) * h);
         };
@@ -362,7 +361,6 @@ class ExtendedToricCodeQMC {
         std::function<std::complex<double>(Lattice&, double, double, double, double)> 
         sigma_z_static_susceptibility_obs 
         = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
-            lat.rotate_imag_time();
             if constexpr (Basis == 'x') return lat.get_non_diag_M_M(); 
             else return lat.get_diag_M_M();
         };
@@ -370,7 +368,6 @@ class ExtendedToricCodeQMC {
         std::function<std::complex<double>(Lattice&, double, double, double, double)> 
         sigma_z_dynamical_susceptibility_obs 
         = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
-            lat.rotate_imag_time();
             if constexpr (Basis == 'x') 
                 return lat.get_kL_kR_single() / static_cast<double>(std::sqrt(2) * lmbda);
             else 
@@ -473,6 +470,7 @@ class ExtendedToricCodeQMC {
 
         std::shared_ptr<RNG> rng;
         std::uniform_real_distribution<double> uniform_dist{0., 1.};
+        std::uniform_int_distribution<int> mc_update_dist{0, 6};
         static constexpr double PRECISION = std::numeric_limits<double>::epsilon();
 
         /**
@@ -2849,8 +2847,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step(
     Lattice& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
     double h, double mu, double J, double lmbda
 ) {
-    std::uniform_int_distribution<int> random_mc_update_dist(0, 6);
-    const int rnd = random_mc_update_dist(*rng);
+    const int rnd = mc_update_dist(*rng);
     if (rnd < 1) {
         metropolis_step_double_single_spin_flip(lat, integrated_pot_energy, acc_ratio, beta, h, mu, J, lmbda);
     } else if (rnd < 2) {
@@ -2916,6 +2913,7 @@ Result ExtendedToricCodeQMC<Basis>::get_thermalization(
     } 
 
     auto obs_func_vec = get_obs_func_vec(config.sim_spec.observables);
+    auto obs_type_vec = get_obs_type_vec(config.sim_spec.observables);
 
     // Initialize Lattice
     auto lat = Lattice(config.lat_spec, rng);
@@ -2945,8 +2943,12 @@ Result ExtendedToricCodeQMC<Basis>::get_thermalization(
                 config.param_spec.J, config.param_spec.lmbda
             );
         }
-
+        bool rotated_for_susceptibility = false;
         for (size_t k = 0; k < config.sim_spec.observables.size(); k++) {
+            if (!rotated_for_susceptibility && obs_type_vec[k] == "susceptibility") {
+                lat.rotate_imag_time();
+                rotated_for_susceptibility = true;
+            }
             observable_vector[k].emplace_back(
                 obs_func_vec[k](lat, config.param_spec.h, config.param_spec.lmbda, config.param_spec.mu, config.param_spec.J)
             );
@@ -3031,9 +3033,35 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
     auto obs_type_vec = get_obs_type_vec(config.sim_spec.observables);
 
     const int pt_ladder_size = pt_ctx.enabled ? pt_ctx.world_size : 1;
-    
-    // Vector to store observable results for all snapshots
-    std::vector<std::vector< std::variant< std::complex<double>, double> >> observable_vector;
+    const size_t observable_count = config.sim_spec.observables.size();
+    const bool keep_full_series = config.out_spec.full_time_series;
+    const bool keep_acc_ratio_series = config.out_spec.full_time_series;
+
+    // Vector to store observable results for all snapshots (kept only when requested).
+    std::vector<std::vector< std::variant< std::complex<double>, double> >> observable_vector(observable_count);
+    // Always keep typed samples for statistics to avoid variant unpack pass at the end.
+    std::vector<std::vector<double>> stats_real_samples(observable_count);
+    std::vector<std::vector<double>> stats_imag_samples(observable_count);
+    std::vector<int> obs_kind(observable_count, 0); // 0=real, 1=fredenhagen_marcu, 2=susceptibility
+    bool has_susceptibility_obs = false;
+
+    const size_t sample_reserve = static_cast<size_t>(std::max(0, config.sim_spec.N_samples));
+    for (size_t k = 0; k < observable_count; ++k) {
+        if (obs_type_vec[k] == "fredenhagen_marcu") {
+            obs_kind[k] = 1;
+        } else if (obs_type_vec[k] == "susceptibility") {
+            obs_kind[k] = 2;
+            has_susceptibility_obs = true;
+        }
+        stats_real_samples[k].reserve(sample_reserve);
+        if (obs_kind[k] != 0) {
+            stats_imag_samples[k].reserve(sample_reserve);
+        }
+        if (keep_full_series) {
+            observable_vector[k].reserve(sample_reserve);
+        }
+    }
+
     // PT-binned local real-observable samples: [observable_index][ladder_index].
     std::vector<std::vector<std::vector<double>>> pt_binned_local_real_samples;
     // PT-binned local FM observable components: [observable_index][ladder_index].
@@ -3041,31 +3069,30 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
     std::vector<std::vector<std::vector<double>>> pt_binned_local_fm_imag_samples;
     std::vector<std::vector<std::vector<double>>> pt_binned_local_fm_abs_samples;
     std::vector<double> acc_ratio_vector;
+    if (keep_acc_ratio_series) {
+        const size_t between = static_cast<size_t>(std::max(1, config.sim_spec.N_between_samples));
+        acc_ratio_vector.reserve(sample_reserve * between);
+    }
     std::vector<double> observable_mean_vector(config.sim_spec.observables.size(), 0.), 
                         observable_std_vector(config.sim_spec.observables.size(), 0.), 
                         binder_mean_vector(config.sim_spec.observables.size(), 0.), 
                         binder_std_vector(config.sim_spec.observables.size(), 0.), 
                         observable_autocorrelation_time_vector(config.sim_spec.observables.size(), 0.);
-    std::vector<std::variant< std::complex<double>, double>> obs_temp;
-    for (const auto& obs_func : config.sim_spec.observables) {
-        UNUSED(obs_func);
-        observable_vector.emplace_back( obs_temp );
-    } 
     if (pt_ctx.enabled) {
         pt_binned_local_real_samples.resize(
-            config.sim_spec.observables.size(),
+            observable_count,
             std::vector<std::vector<double>>(static_cast<size_t>(pt_ladder_size))
         );
         pt_binned_local_fm_real_samples.resize(
-            config.sim_spec.observables.size(),
+            observable_count,
             std::vector<std::vector<double>>(static_cast<size_t>(pt_ladder_size))
         );
         pt_binned_local_fm_imag_samples.resize(
-            config.sim_spec.observables.size(),
+            observable_count,
             std::vector<std::vector<double>>(static_cast<size_t>(pt_ladder_size))
         );
         pt_binned_local_fm_abs_samples.resize(
-            config.sim_spec.observables.size(),
+            observable_count,
             std::vector<std::vector<double>>(static_cast<size_t>(pt_ladder_size))
         );
     }
@@ -3190,7 +3217,7 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
                 pt_swap_accepted_local,
                 pt_swap_rejected_local
             );
-            acc_ratio_vector.emplace_back(acc_ratio);
+            if (keep_acc_ratio_series) acc_ratio_vector.emplace_back(acc_ratio);
             if (total_metropolis_step_count % reset_potential_energy_count == 0) {
                 // avoid accumulation of small numerical errors leading to bias
                 lat.init_potential_energy();
@@ -3238,22 +3265,38 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
             }
         }
 
+        bool rotated_for_susceptibility = false;
         for (size_t k = 0; k < config.sim_spec.observables.size(); k++) {
-            auto obs_value = obs_func_vec[k](lat, h_runtime, lmbda_runtime, mu_runtime, J_runtime);
-            observable_vector[k].emplace_back(obs_value);
+            if (has_susceptibility_obs && !rotated_for_susceptibility && obs_kind[k] == 2) {
+                lat.rotate_imag_time();
+                rotated_for_susceptibility = true;
+            }
 
-            if (pt_ctx.enabled && obs_type_vec[k] == "real") {
-                pt_binned_local_real_samples[k][static_cast<size_t>(current_ladder_index)]
-                    .emplace_back(std::get<double>(obs_value));
-            } else if (pt_ctx.enabled && obs_type_vec[k] == "fredenhagen_marcu") {
-                double re = 0.0;
-                double im = 0.0;
-                if (const auto* c = std::get_if<std::complex<double>>(&obs_value)) {
-                    re = c->real();
-                    im = c->imag();
-                } else {
-                    re = std::get<double>(obs_value);
+            auto obs_value = obs_func_vec[k](lat, h_runtime, lmbda_runtime, mu_runtime, J_runtime);
+            if (keep_full_series) {
+                observable_vector[k].emplace_back(obs_value);
+            }
+
+            double re = 0.0;
+            double im = 0.0;
+            if (const auto* c = std::get_if<std::complex<double>>(&obs_value)) {
+                re = c->real();
+                im = c->imag();
+            } else {
+                re = std::get<double>(obs_value);
+                if (obs_kind[k] != 0) {
+                    im = 0.0;
                 }
+            }
+            stats_real_samples[k].emplace_back(re);
+            if (obs_kind[k] != 0) {
+                stats_imag_samples[k].emplace_back(im);
+            }
+
+            if (pt_ctx.enabled && obs_kind[k] == 0) {
+                pt_binned_local_real_samples[k][static_cast<size_t>(current_ladder_index)]
+                    .emplace_back(re);
+            } else if (pt_ctx.enabled && obs_kind[k] == 1) {
                 const double absv = std::hypot(re, im);
                 const size_t ladder_idx = static_cast<size_t>(current_ladder_index);
                 pt_binned_local_fm_real_samples[k][ladder_idx].emplace_back(re);
@@ -3849,14 +3892,10 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
     }
 
     for (size_t k = 0; k < config.sim_spec.observables.size(); k++) {
-        if (obs_type_vec[k] == "real") {
-            std::vector<double> obs_real;
-            const auto& series = observable_vector[k];
-            obs_real.reserve(series.size());
-            for (auto const& x : series) {
-                obs_real.emplace_back(std::get<double>(x));
-            }
+        const auto& obs_real = stats_real_samples[k];
+        const auto& obs_imag = stats_imag_samples[k];
 
+        if (obs_type_vec[k] == "real") {
             const auto& [observable_mean, observable_std, binder_mean, binder_std] 
             = paratoric::statistics::get_bootstrap_statistics(obs_real, rng, config.sim_spec.N_resamples);
 
@@ -3867,26 +3906,6 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
             observable_autocorrelation_time_vector[k] 
             = paratoric::statistics::get_autocorrelation_time(paratoric::statistics::get_autocorrelation_function(obs_real));
         } else if (obs_type_vec[k] == "fredenhagen_marcu") {
-            const auto& series = observable_vector[k];
-            const size_t N = series.size();
-            std::vector<double> obs_real, obs_imag;
-            obs_real.reserve(N);
-            obs_imag.reserve(N);
-
-            for (auto const& v : series) {
-                if (auto p = std::get_if<std::complex<double>>(&v)) {
-                    // v holds a complex<double>
-                    obs_real.push_back(p->real());
-                    obs_imag.push_back(p->imag());
-                }
-                else {
-                    // v must hold a double
-                    double d = std::get<double>(v);
-                    obs_real.push_back(d);
-                    obs_imag.push_back(0.0);
-                }
-            }
-
             const auto& [observable_mean, observable_std, binder_mean, binder_std] 
             = paratoric::statistics::get_bootstrap_statistics_fm(obs_real, obs_imag, rng, config.sim_spec.N_resamples);
 
@@ -3897,25 +3916,6 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
             observable_autocorrelation_time_vector[k] 
             = paratoric::statistics::get_autocorrelation_time(paratoric::statistics::get_autocorrelation_function(obs_real));
         } else if (obs_type_vec[k] == "susceptibility") {
-            const auto& series = observable_vector[k];
-            const size_t N = series.size();
-            std::vector<double> obs_real, obs_imag;
-            obs_real.reserve(N);
-            obs_imag.reserve(N);
-
-            for (auto const& v : series) {
-                if (auto p = std::get_if<std::complex<double>>(&v)) {
-                    // v holds a complex<double>
-                    obs_real.push_back(p->real());
-                    obs_imag.push_back(p->imag());
-                }
-                else {
-                    // v must hold a double
-                    double d = std::get<double>(v);
-                    obs_real.push_back(d);
-                    obs_imag.push_back(0.0);
-                }
-            }
             //TODO fix this, every observable should just define their susceptibility function
             if ((config.sim_spec.observables[k] == "sigma_z_static_susceptibility" && Basis == 'x')) {
                 const auto& [observable_mean, observable_std, binder_mean, binder_std] 
@@ -4145,8 +4145,14 @@ Result ExtendedToricCodeQMC<Basis>::get_hysteresis(
                 }
             }
 
-            for (size_t k = 0; k < config.sim_spec.observables.size(); k++)
+            bool rotated_for_susceptibility = false;
+            for (size_t k = 0; k < config.sim_spec.observables.size(); k++) {
+                if (!rotated_for_susceptibility && obs_type_vec[k] == "susceptibility") {
+                    lat.rotate_imag_time();
+                    rotated_for_susceptibility = true;
+                }
                 observable_vector[k].emplace_back(obs_func_vec[k](lat, h, lmbda, config.param_spec.mu, config.param_spec.J));
+            }
 
             if (config.out_spec.save_snapshots)
                 lat.update_spin_string();
