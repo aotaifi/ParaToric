@@ -126,6 +126,7 @@ public:
             );
 
         build_caches_();
+        init_observable_caches_();
         init_potential_energy();
 
         // Useful for debugging
@@ -1200,6 +1201,13 @@ private:
     std::vector<std::vector<int>> star_plaquettes_cache_;
     // Edge descriptors
     std::vector<Edge> egde_cache_;
+    int diag_single_energy_cache_ = 0;
+    int diag_tuple_energy_x_cache_ = 0;
+    int diag_tuple_energy_z_cache_ = 0;
+    int anyon_count_cache_ = 0;
+    std::size_t total_single_spin_flip_count_ = 0;
+    std::size_t total_plaquette_flip_count_ = 0;
+    std::size_t total_star_flip_count_ = 0;
 
     struct SnapshotSpoolState {
         std::filesystem::path path{};
@@ -1236,6 +1244,7 @@ private:
      */
     void check_input_validity() const;
     void build_caches_();
+    void init_observable_caches_();
     void ensure_snapshot_spool_();
     void write_snapshot_graphml_from_spool_(const std::string& file_name, const std::filesystem::path& output_directory);
 

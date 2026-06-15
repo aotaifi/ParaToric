@@ -2023,25 +2023,41 @@ void Lattice::build_caches_() {
     }
 }
 
-int Lattice::get_anyon_count() {
-    int anyon_count = 0;
-    if (BASIS == 'x') {
-        for (const auto& v : boost::make_iterator_range(boost::vertices(g))) {
-            if (get_vertex_nn_spins_prod(v) == -1) {
-                anyon_count += 1;
-            } 
-        } 
-    } else {
-        int sum = 0;
-        const int P = get_plaquette_count();
-        for (int p = 0; p < P; ++p) {
-            const auto& pedges = get_plaquette_edges(p);
-            const int prod = get_tuple_prod(pedges);  
-            sum += (prod == -1);                   
-        }
-        anyon_count = sum;
+void Lattice::init_observable_caches_() {
+    diag_single_energy_cache_ = 0;
+    diag_tuple_energy_x_cache_ = 0;
+    diag_tuple_energy_z_cache_ = 0;
+    anyon_count_cache_ = 0;
+    total_single_spin_flip_count_ = 0;
+    total_plaquette_flip_count_ = 0;
+    total_star_flip_count_ = 0;
+
+    for (const auto& edg : egde_cache_) {
+        diag_single_energy_cache_ += get_spin(edg);
+        total_single_spin_flip_count_ += g[edg].single_spin_flips.size();
     }
-    return anyon_count;
+
+    for (size_t star_center = 0; star_center < static_cast<size_t>(get_vertex_count()); ++star_center) {
+        const int prod = get_tuple_prod(get_star_edges(static_cast<int>(star_center)));
+        diag_tuple_energy_x_cache_ += prod;
+        if (BASIS == 'x' && prod == -1) {
+            ++anyon_count_cache_;
+        }
+        total_star_flip_count_ += g[star_center].star_flips.size();
+    }
+
+    for (size_t plaquette_index = 0; plaquette_index < plaquette_vector.size(); ++plaquette_index) {
+        const int prod = get_tuple_prod(get_plaquette_edges(static_cast<int>(plaquette_index)));
+        diag_tuple_energy_z_cache_ += prod;
+        if (BASIS == 'z' && prod == -1) {
+            ++anyon_count_cache_;
+        }
+        total_plaquette_flip_count_ += plaquette_flip_vector[plaquette_index].size();
+    }
+}
+
+int Lattice::get_anyon_count() {
+    return anyon_count_cache_;
 }
 
 int Lattice::get_spin_flip_index(const Edge& edg, double tau) {
@@ -2125,6 +2141,7 @@ void Lattice::delete_double_single_spin_flip(const Edge& edg,
     }
     auto it_s_1 = std::prev(r_s_it.base());
     single_spin_flips.erase(it_s_1);
+    total_single_spin_flip_count_ -= 2;
 }
 
 void Lattice::delete_single_spin_flip(const Edge& edg, int spin_flip_index) {
@@ -2140,6 +2157,7 @@ void Lattice::delete_single_spin_flip(const Edge& edg, int spin_flip_index) {
     } else [[unlikely]] {
         throw std::runtime_error(std::format("delete_single_spin_flip: There is no single spin flip at {}.", imag_time));
     }
+    --total_single_spin_flip_count_;
 }
 
 void Lattice::delete_double_tuple_flip(
@@ -2185,6 +2203,7 @@ void Lattice::delete_double_tuple_flip(
         }
         auto it_1 = std::prev(r_it.base());
         tuple_spin_flips.erase(it_1);
+        total_plaquette_flip_count_ -= 2;
     } else {
         auto& tuple_spin_flips = g[tuple_index].star_flips;
         auto it_2 = std::lower_bound(tuple_spin_flips.begin(), tuple_spin_flips.end(), imag_time_next_tuple_flip);
@@ -2201,6 +2220,7 @@ void Lattice::delete_double_tuple_flip(
         }
         auto it_1 = std::prev(r_it.base());
         tuple_spin_flips.erase(it_1);
+        total_star_flip_count_ -= 2;
     }
 }
 
@@ -2222,6 +2242,7 @@ void Lattice::delete_tuple_flip(int tuple_index, std::span<const Edge> tuple_edg
 
         if (it != tuple_spin_flips.end() && *it == imag_time_tuple_flip) [[likely]] {
             tuple_spin_flips.erase(it);
+            --total_plaquette_flip_count_;
         } else [[unlikely]] {
             throw std::runtime_error(std::format("delete_tuple_flip: There is no spin flip at {}.", imag_time_tuple_flip));
         }
@@ -2231,6 +2252,7 @@ void Lattice::delete_tuple_flip(int tuple_index, std::span<const Edge> tuple_edg
 
         if (it != tuple_spin_flips.end() && *it == imag_time_tuple_flip) [[likely]] {
             tuple_spin_flips.erase(it);
+            --total_star_flip_count_;
         } else [[unlikely]] {
             throw std::runtime_error(std::format("delete_tuple_flip: There is no spin flip at {}.", imag_time_tuple_flip));
         }
@@ -2397,6 +2419,7 @@ void Lattice::insert_double_single_spin_flip(const Edge& edg, double tau_left, d
         auto it_left = std::lower_bound(single_spin_flips.begin(), it_right, tau_left);
         single_spin_flips.insert(it_left, tau_left);
     }
+    total_single_spin_flip_count_ += 2;
 }
 
 void Lattice::insert_single_spin_flip(const Edge& edg, double tau) {
@@ -2415,6 +2438,7 @@ void Lattice::insert_single_spin_flip(const Edge& edg, double tau) {
         auto right = std::upper_bound(single_spin_flips.begin(), single_spin_flips.end(), tau);
         single_spin_flips.insert(right, tau);
     }
+    ++total_single_spin_flip_count_;
 }
 
 void Lattice::insert_double_tuple_flip(
@@ -2453,6 +2477,7 @@ void Lattice::insert_double_tuple_flip(
             auto it_left = std::lower_bound(tuple_spin_flips.begin(), it_right, tau_left);
             tuple_spin_flips.insert(it_left, tau_left);
         }
+        total_plaquette_flip_count_ += 2;
     } else {
         auto& tuple_spin_flips = g[tuple_index].star_flips;
         if (tuple_spin_flips.empty()) [[unlikely]] {
@@ -2465,6 +2490,7 @@ void Lattice::insert_double_tuple_flip(
             auto it_left = std::lower_bound(tuple_spin_flips.begin(), it_right, tau_left);
             tuple_spin_flips.insert(it_left, tau_left);
         }
+        total_star_flip_count_ += 2;
     }
 }
 
@@ -2487,6 +2513,7 @@ void Lattice::insert_tuple_flip(int tuple_index, std::span<const Edge> tuple_edg
             auto right = std::upper_bound(tuple_spin_flips.begin(), tuple_spin_flips.end(), tau);
             tuple_spin_flips.insert(right, tau);
         }
+        ++total_plaquette_flip_count_;
     } else {
         auto& tuple_spin_flips = g[tuple_index].star_flips;
         if (tuple_spin_flips.empty()) [[unlikely]] {
@@ -2495,6 +2522,7 @@ void Lattice::insert_tuple_flip(int tuple_index, std::span<const Edge> tuple_edg
             auto right = std::upper_bound(tuple_spin_flips.begin(), tuple_spin_flips.end(), tau);
             tuple_spin_flips.insert(right, tau);
         }
+        ++total_star_flip_count_;
     }
 }
 
@@ -2624,7 +2652,28 @@ void Lattice::print_tuple_flip_imag_times(std::span<const Edge> tuple_edges) {
 }
 
 void Lattice::flip_spin(const Edge& edg) {
-    g[edg].spin *= -1;
+    const int old_spin = g[edg].spin;
+    diag_single_energy_cache_ += -2 * old_spin;
+
+    const std::array<int, 2> star_centers = {g[edg].source_vertex, g[edg].target_vertex};
+    for (int center : star_centers) {
+        if (center < 0) continue;
+        const int old_prod = get_tuple_prod(get_star_edges(center));
+        diag_tuple_energy_x_cache_ += -2 * old_prod;
+        if (BASIS == 'x') {
+            anyon_count_cache_ += old_prod;
+        }
+    }
+
+    for (int plaquette_index : g[edg].part_of_plaquette_lookup) {
+        const int old_prod = get_tuple_prod(get_plaquette_edges(plaquette_index));
+        diag_tuple_energy_z_cache_ += -2 * old_prod;
+        if (BASIS == 'z') {
+            anyon_count_cache_ += old_prod;
+        }
+    }
+
+    g[edg].spin = -old_spin;
 }
 
 void Lattice::flip_star(int v) {
@@ -2960,47 +3009,24 @@ void Lattice::init_potential_energy() {
 }
 
 double Lattice::get_diag_single_energy() {
-    const int energy = std::accumulate(
-        egde_cache_.begin(), 
-        egde_cache_.end(), 
-        0, 
-        [&](int lhs, const Edge& rhs) {return lhs + get_spin(rhs);}
-    );
-    return static_cast<double>(energy); 
+    return static_cast<double>(diag_single_energy_cache_); 
 }
 
 std::complex<double> Lattice::get_diag_M_M() {
-    const int magnetization = std::accumulate(
-        egde_cache_.begin(), 
-        egde_cache_.end(), 
-        0, 
-        [&](int lhs, const Edge& rhs) {return lhs + get_spin(rhs);}
-    );
-
     double integrated_magnetization = total_integrated_edge_energy();
-    return {static_cast<double>(integrated_magnetization / (double)(get_edge_count()) ), static_cast<double>(magnetization / (double)(get_edge_count()))}; 
+    return {static_cast<double>(integrated_magnetization / (double)(get_edge_count()) ), static_cast<double>(diag_single_energy_cache_ / (double)(get_edge_count()))}; 
 }
 
 std::complex<double> Lattice::get_diag_dynamical_M_M() {
-    const int magnetization = std::accumulate(
-        egde_cache_.begin(), 
-        egde_cache_.end(), 
-        0, 
-        [&](int lhs, const Edge& rhs) {return lhs + get_spin(rhs);}
-    );
-
     double integrated_magnetization = total_integrated_edge_energy_weighted();
     // Eq. (9) style estimators correspond to 1/2 * \int_0^\beta min(tau, beta-tau) C(tau) dtau.
     // integrated_edge_energy_weighted() returns the full triangular-kernel integral, so we apply 1/2 here.
     integrated_magnetization *= 0.5;
-    return {static_cast<double>(integrated_magnetization / (double)(get_edge_count()) ), static_cast<double>(magnetization) / (double)(get_edge_count())}; 
+    return {static_cast<double>(integrated_magnetization / (double)(get_edge_count()) ), static_cast<double>(diag_single_energy_cache_) / (double)(get_edge_count())}; 
 }
 
 std::complex<double> Lattice::get_non_diag_M_M() {
-    double k_total = 0.0;
-    for (const auto& edg : egde_cache_) {
-        k_total += g[edg].single_spin_flips.size();
-    }
+    const double k_total = static_cast<double>(total_single_spin_flip_count_);
     // Return raw count in .real(); imag unused (set =0 or copy for compatibility)
     return {k_total, k_total};
 }
@@ -3085,60 +3111,35 @@ std::complex<double> Lattice::get_kL_kR_single() {
 }
 
 double Lattice::get_non_diag_single_energy_x() {
-    double energy_beta_lmbda = 0.;
-    for (const auto& edg : egde_cache_) {
-        energy_beta_lmbda += g[edg].single_spin_flips.size(); 
-    }
+    const double energy_beta_lmbda = static_cast<double>(total_single_spin_flip_count_);
     // energy_beta_lmbda is the gauge field energy multiplied by lmbda and beta. The returned value is the gauge field energy multiplied by lmbda
     return energy_beta_lmbda / BETA;
 }
 
 double Lattice::get_non_diag_single_energy_z() {
-    double energy_beta_h = 0.;
-    for (const auto& edg : egde_cache_) {
-        energy_beta_h += g[edg].single_spin_flips.size();
-    }
+    const double energy_beta_h = static_cast<double>(total_single_spin_flip_count_);
     // energy_beta_h is the electric field energy multiplied by h and beta. The returned value is the electric field energy multiplied by h
     return energy_beta_h / BETA;
 }
 
 double Lattice::get_non_diag_tuple_energy_x() {
-    double energy_beta_J = 0.;
-    for (size_t plaquette_index = 0; plaquette_index < plaquette_vector.size(); ++plaquette_index) {
-        energy_beta_J += plaquette_flip_vector[plaquette_index].size();
-    }
+    const double energy_beta_J = static_cast<double>(total_plaquette_flip_count_);
     // energy_beta_J is the plaquette energy term multiplied by J and beta. The returned value is the plaquette energy multiplied by J
     return energy_beta_J / BETA;
 }
 
 double Lattice::get_non_diag_tuple_energy_z() {
-    double energy_beta_mu = 0.;
-    for (size_t star_center = 0; star_center < (size_t)get_vertex_count(); ++star_center) {
-        energy_beta_mu += g[star_center].star_flips.size();
-    }
+    const double energy_beta_mu = static_cast<double>(total_star_flip_count_);
     // energy_beta_mu is the star energy term multiplied by mu and beta. The returned value is the star energy multiplied by mu
     return energy_beta_mu / BETA;
 }
 
 double Lattice::get_diag_tuple_energy_x() {
-    const auto vertices_it = boost::make_iterator_range(boost::vertices(g));
-    const int energy = std::accumulate(
-        vertices_it.begin(), 
-        vertices_it.end(), 
-        0, 
-        [&](int lhs, int rhs) {return lhs + get_vertex_nn_spins_prod(rhs);}
-    );
-    return static_cast<double>(energy);
+    return static_cast<double>(diag_tuple_energy_x_cache_);
 }
 
 double Lattice::get_diag_tuple_energy_z() {
-    int sum = 0;
-    const int P = get_plaquette_count();
-    for (int p = 0; p < P; ++p) {
-        const auto& pedges = get_plaquette_edges(p);       
-        sum += get_tuple_prod(pedges);                  
-    }
-    return static_cast<double>(sum);
+    return static_cast<double>(diag_tuple_energy_z_cache_);
 }
 
 std::complex<double> Lattice::fredenhagen_marcu() {
@@ -3822,7 +3823,7 @@ void Lattice::rotate_imag_time() {
         size_t pivot_index = std::distance(spin_flips.begin(), it);
         // flips crossing the cut = pivot_index
         if (pivot_index % 2 == 1) {
-            g[edg].spin *= -1;
+            flip_spin(edg);
         }
         // rotate so that pivot becomes first element
         std::rotate(single_spin_flips.begin(), it_single, single_spin_flips.end());
