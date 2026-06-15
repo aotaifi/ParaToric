@@ -4,6 +4,7 @@ find_package(Boost COMPONENTS unit_test_framework REQUIRED NO_MODULE)
 
 set(test_sources
     lattice/test_lattice.cpp
+    lattice/test_flat_square_lattice.cpp
     mcmc/test_extended_toric_code_qmc.cpp
 )
 
