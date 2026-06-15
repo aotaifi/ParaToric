@@ -339,6 +339,16 @@ class ExtendedToricCodeQMC {
             }
         };
 
+        std::function<double(Lattice&, double, double, double, double)> 
+        sigma_x_tau_avg_obs 
+        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+            if constexpr (Basis == 'x') {
+                return lat.total_integrated_edge_energy()/static_cast<double>(lat.get_beta() * lat.get_edge_count()); 
+            } else {
+                return lat.get_non_diag_single_energy_z()/static_cast<double>(lat.get_edge_count() * h);
+            }
+        };
+
         std::function<std::complex<double>(Lattice&, double, double, double, double)> 
         sigma_x_static_susceptibility_obs 
         = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
@@ -450,6 +460,7 @@ class ExtendedToricCodeQMC {
             {"plaquette_percolation_strength", "real", plaquette_percolation_strength_obs},
             {"plaquette_z", "real", plaquette_z_obs},
             {"sigma_x", "real", sigma_x_obs},
+            {"sigma_x_tau_avg", "real", sigma_x_tau_avg_obs},
             {"sigma_x_static_susceptibility", "susceptibility", sigma_x_static_susceptibility_obs},
             // TODO fix
             {"sigma_x_dynamical_susceptibility", "susceptibility", sigma_x_dynamical_susceptibility_obs},

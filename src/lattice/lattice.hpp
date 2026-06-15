@@ -169,6 +169,7 @@ public:
      * 
      */
     inline int get_edge_count();
+    inline double get_beta() const { return BETA; }
 
     /**
      * @brief Returns the total number of plaquettes in the graph.

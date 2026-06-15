@@ -2598,23 +2598,27 @@ void Lattice::print_spins() {
     for (const auto& vertex : boost::make_iterator_range(boost::vertices(g))) {
         for (const auto& neighbor : boost::make_iterator_range(boost::adjacent_vertices(vertex, g))) { 
             if (get_spin(edge_in_between(vertex, neighbor)) == -1) {
-                std::println("Edge between {0} and {1} has spin {2}", vertex, neighbor, get_spin(edge_in_between(vertex, neighbor)));
+                std::println(std::cout, "Edge between {0} and {1} has spin {2}", vertex, neighbor, get_spin(edge_in_between(vertex, neighbor)));
             }
         }
     }
 }
 
 void Lattice::print_spin_flip_imag_times(const Edge& edg) {
-    std::println("Total number of spin flips: {}", get_spin_flip_count(edg));
-    std::println("Spin at imaginary time 0/beta: {}", get_spin(edg));
-    std::println("Spin flip imaginary times: {}", g[edg].spin_flips);
+    std::println(std::cout, "Total number of spin flips: {}", get_spin_flip_count(edg));
+    std::println(std::cout, "Spin at imaginary time 0/beta: {}", get_spin(edg));
+    std::cout << "Spin flip imaginary times:";
+    for (const auto tau : g[edg].spin_flips) {
+        std::cout << ' ' << tau;
+    }
+    std::cout << '\n';
 }
 
 void Lattice::print_tuple_flip_imag_times(std::span<const Edge> tuple_edges) {
-    std::println("Printing spin flips of tuple\n");
+    std::println(std::cout, "Printing spin flips of tuple\n");
     for (const Edge& edg : tuple_edges) {
         const auto [source_v, target_v] = vertices_of_edge(edg);
-        std::println("Edge between {0} and {1}:", source_v, target_v);
+        std::println(std::cout, "Edge between {0} and {1}:", source_v, target_v);
         print_spin_flip_imag_times(edg);
     }
 }
