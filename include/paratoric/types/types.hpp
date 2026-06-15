@@ -4,6 +4,7 @@
 #pragma once
 
 #include <complex>
+#include <cstdint>
 #include <filesystem>
 #include <limits>
 #include <string>
@@ -117,6 +118,18 @@ struct Config{
     OutSpec out_spec{};
 };
 
+struct AcceptanceDiagnostics {
+    std::uint64_t attempted = 0;
+    std::uint64_t accepted = 0;
+    double acceptance_ratio_sum = 0.;
+    std::vector<std::uint64_t> attempted_by_update = std::vector<std::uint64_t>(7, 0);
+    std::vector<std::uint64_t> accepted_by_update = std::vector<std::uint64_t>(7, 0);
+    std::vector<double> acceptance_ratio_sum_by_update = std::vector<double>(7, 0.);
+    std::vector<std::uint64_t> block_attempted{};
+    std::vector<std::uint64_t> block_accepted{};
+    std::vector<double> block_acceptance_ratio_sum{};
+};
+
 /**
  * @brief Result of a simulation
  * 
@@ -153,6 +166,7 @@ struct Config{
 struct Result {
     std::vector<std::vector<std::variant<std::complex<double>, double>>> series{};
     std::vector<double> acc_ratio{};
+    AcceptanceDiagnostics production_acceptance{};
     std::vector<double> mean{}, mean_std{}, binder{}, binder_std{}, tau_int{};
     std::vector<std::vector<std::vector<std::variant<std::complex<double>, double>>>> series_hys{};
     std::vector<std::vector<double>> mean_hys{}, mean_std_hys{}, binder_hys{}, binder_std_hys{}, tau_int_hys{};

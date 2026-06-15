@@ -19,6 +19,7 @@
 #include <cmath>
 #include <concepts>
 #include <complex>
+#include <cstdint>
 #include <filesystem>
 #include <format>
 #include <iostream>
@@ -491,6 +492,12 @@ class ExtendedToricCodeQMC {
         std::uniform_real_distribution<double> uniform_dist{0., 1.};
         static constexpr double PRECISION = std::numeric_limits<double>::epsilon();
         static constexpr double AUTOCORRELATION_WARNING_SAMPLE_FRACTION = 0.1;
+        static constexpr int UPDATE_TYPE_COUNT = 7;
+        AcceptanceDiagnostics* active_acceptance_diagnostics_ = nullptr;
+        int active_update_type_ = -1;
+        std::uint64_t active_block_attempted_ = 0;
+        std::uint64_t active_block_accepted_ = 0;
+        double active_block_acceptance_ratio_sum_ = 0.;
 
         int random_index(int bound) {
             return static_cast<int>(
@@ -505,6 +512,13 @@ class ExtendedToricCodeQMC {
         bool accept(double ratio) {
             return ratio >= 1.0 || uniform_dist(*rng) < ratio;
         }
+
+        void start_acceptance_diagnostics(AcceptanceDiagnostics& diagnostics);
+        void stop_acceptance_diagnostics();
+        void start_acceptance_block();
+        void finish_acceptance_block();
+        void record_update_attempt(int update_type, double acc_ratio);
+        void record_update_acceptance();
 
         static double calculate_autocorrelation_time_with_warning(
             const std::vector<double>& obs_real,
@@ -1028,6 +1042,70 @@ ExtendedToricCodeQMC<Basis>::get_obs_type_vec(const std::vector<std::string>& ob
 
 template<char Basis>
 requires ValidBasis<Basis>
+void ExtendedToricCodeQMC<Basis>::start_acceptance_diagnostics(AcceptanceDiagnostics& diagnostics) {
+    diagnostics = AcceptanceDiagnostics{};
+    active_acceptance_diagnostics_ = &diagnostics;
+    active_update_type_ = -1;
+    active_block_attempted_ = 0;
+    active_block_accepted_ = 0;
+    active_block_acceptance_ratio_sum_ = 0.;
+}
+
+template<char Basis>
+requires ValidBasis<Basis>
+void ExtendedToricCodeQMC<Basis>::stop_acceptance_diagnostics() {
+    active_acceptance_diagnostics_ = nullptr;
+    active_update_type_ = -1;
+    active_block_attempted_ = 0;
+    active_block_accepted_ = 0;
+    active_block_acceptance_ratio_sum_ = 0.;
+}
+
+template<char Basis>
+requires ValidBasis<Basis>
+void ExtendedToricCodeQMC<Basis>::start_acceptance_block() {
+    active_block_attempted_ = 0;
+    active_block_accepted_ = 0;
+    active_block_acceptance_ratio_sum_ = 0.;
+}
+
+template<char Basis>
+requires ValidBasis<Basis>
+void ExtendedToricCodeQMC<Basis>::finish_acceptance_block() {
+    if (!active_acceptance_diagnostics_) return;
+    active_acceptance_diagnostics_->block_attempted.emplace_back(active_block_attempted_);
+    active_acceptance_diagnostics_->block_accepted.emplace_back(active_block_accepted_);
+    active_acceptance_diagnostics_->block_acceptance_ratio_sum.emplace_back(active_block_acceptance_ratio_sum_);
+}
+
+template<char Basis>
+requires ValidBasis<Basis>
+void ExtendedToricCodeQMC<Basis>::record_update_attempt(int update_type, double acc_ratio) {
+    if (!active_acceptance_diagnostics_) return;
+    active_acceptance_diagnostics_->attempted += 1;
+    active_acceptance_diagnostics_->acceptance_ratio_sum += acc_ratio;
+    active_block_attempted_ += 1;
+    active_block_acceptance_ratio_sum_ += acc_ratio;
+    if (update_type >= 0 && update_type < UPDATE_TYPE_COUNT) {
+        const auto index = static_cast<size_t>(update_type);
+        active_acceptance_diagnostics_->attempted_by_update[index] += 1;
+        active_acceptance_diagnostics_->acceptance_ratio_sum_by_update[index] += acc_ratio;
+    }
+}
+
+template<char Basis>
+requires ValidBasis<Basis>
+void ExtendedToricCodeQMC<Basis>::record_update_acceptance() {
+    if (!active_acceptance_diagnostics_) return;
+    active_acceptance_diagnostics_->accepted += 1;
+    active_block_accepted_ += 1;
+    if (active_update_type_ >= 0 && active_update_type_ < UPDATE_TYPE_COUNT) {
+        active_acceptance_diagnostics_->accepted_by_update[static_cast<size_t>(active_update_type_)] += 1;
+    }
+}
+
+template<char Basis>
+requires ValidBasis<Basis>
 double ExtendedToricCodeQMC<Basis>::total_integrated_pot_energy(
     Lattice& lat, double h, double mu, double J, double lmbda
 ) {
@@ -1320,6 +1398,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_double_single_spin_flip(
 #endif   
             
             if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
                 BOOST_LOG_TRIVIAL(debug) << "metropolis_step_double_single_spin_flip --- ACCEPTED.";
 #endif   
@@ -1411,6 +1490,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_double_single_spin_flip(
 #endif   
 
             if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
                 BOOST_LOG_TRIVIAL(debug) << "metropolis_step_double_single_spin_flip --- ACCEPTED.";
 #endif  
@@ -1537,6 +1617,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_single_spin_flip_move(
 #endif  
 
                 if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
                     BOOST_LOG_TRIVIAL(debug) << "metropolis_step_single_spin_flip_move --- ACCEPTED.";
 #endif              
@@ -1595,6 +1676,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_single_spin_flip_move(
 #endif  
 
                     if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
                         BOOST_LOG_TRIVIAL(debug) << "metropolis_step_single_spin_flip_move --- ACCEPTED.";
 #endif 
@@ -1629,6 +1711,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_single_spin_flip_move(
 #endif  
 
                     if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
                         BOOST_LOG_TRIVIAL(debug) << "metropolis_step_single_spin_flip_move --- ACCEPTED.";
 #endif 
@@ -1663,6 +1746,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_single_spin_flip_move(
 #endif  
 
                     if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
                         BOOST_LOG_TRIVIAL(debug) << "metropolis_step_single_spin_flip_move --- ACCEPTED.";
 #endif 
@@ -1699,6 +1783,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_single_spin_flip_move(
 #endif  
 
                     if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
                         BOOST_LOG_TRIVIAL(debug) << "metropolis_step_single_spin_flip_move --- ACCEPTED.";
 #endif 
@@ -1750,6 +1835,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_single_spin_flip_move(
 #endif  
 
                     if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
                         BOOST_LOG_TRIVIAL(debug) << "metropolis_step_single_spin_flip_move --- ACCEPTED. Flipping spin.";
 #endif 
@@ -1802,6 +1888,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_single_spin_flip_move(
 #endif  
 
                     if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
                         BOOST_LOG_TRIVIAL(debug) << "metropolis_step_single_spin_flip_move --- ACCEPTED. Flipping spin.";
 #endif 
@@ -1861,6 +1948,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_global_single_spin_flip(
 #endif  
 
     if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
         BOOST_LOG_TRIVIAL(debug) << "metropolis_step_global_single_spin_flip --- ACCEPTED.";
 #endif 
@@ -1922,6 +2010,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_global_tuple_flip(
 #endif  
 
     if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
         BOOST_LOG_TRIVIAL(debug) << "metropolis_step_global_tuple_flip --- ACCEPTED.";
 #endif 
@@ -2037,6 +2126,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_double_tuple_flip(
 #endif  
             
             if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
                 BOOST_LOG_TRIVIAL(debug) << "metropolis_step_double_tuple_flip --- ACCEPTED.";
 #endif  
@@ -2122,6 +2212,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_double_tuple_flip(
 #endif 
 
             if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
                 BOOST_LOG_TRIVIAL(debug) << "metropolis_step_double_tuple_flip --- ACCEPTED.";
 #endif  
@@ -2242,6 +2333,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_single_tuple_flip_move(
 #endif  
 
                 if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
                     BOOST_LOG_TRIVIAL(debug) << "metropolis_step_single_tuple_flip_move --- ACCEPTED.";
 #endif  
@@ -2286,6 +2378,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_single_tuple_flip_move(
 #endif  
 
                     if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
                         BOOST_LOG_TRIVIAL(debug) << "metropolis_step_single_tuple_flip_move --- ACCEPTED.";
 #endif  
@@ -2308,6 +2401,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_single_tuple_flip_move(
 #endif  
 
                     if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
                         BOOST_LOG_TRIVIAL(debug) << "metropolis_step_single_tuple_flip_move --- ACCEPTED.";
 #endif  
@@ -2342,6 +2436,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_single_tuple_flip_move(
 #endif  
 
                     if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
                         BOOST_LOG_TRIVIAL(debug) << "metropolis_step_single_tuple_flip_move --- ACCEPTED. Flipping spins.";
 #endif  
@@ -2370,6 +2465,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_single_tuple_flip_move(
 #endif  
 
                     if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
                         BOOST_LOG_TRIVIAL(debug) << "metropolis_step_single_tuple_flip_move --- ACCEPTED.";
 #endif  
@@ -2393,6 +2489,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_single_tuple_flip_move(
 #endif  
 
                     if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
                         BOOST_LOG_TRIVIAL(debug) << "metropolis_step_single_tuple_flip_move --- ACCEPTED.";
 #endif  
@@ -2427,6 +2524,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_single_tuple_flip_move(
 #endif  
 
                     if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
                         BOOST_LOG_TRIVIAL(debug) << "metropolis_step_single_tuple_flip_move --- ACCEPTED. Flipping spins.";
 #endif 
@@ -2833,6 +2931,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_spin_tuple_combination(
 #endif  
 
     if (accept(acc_ratio)) {
+        record_update_acceptance();
 #ifndef NDEBUG
         BOOST_LOG_TRIVIAL(debug) << "metropolis_step_spin_tuple_combination --- ACCEPTED.";
 #endif 
@@ -2860,6 +2959,8 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step(
     double h, double mu, double J, double lmbda
 ) {
     const int rnd = random_index(7);
+    active_update_type_ = rnd;
+    acc_ratio = 0.;
     if (rnd < 1) {
         metropolis_step_double_single_spin_flip(lat, integrated_pot_energy, acc_ratio, beta, h, mu, J, lmbda);
     } else if (rnd < 2) {
@@ -2875,6 +2976,8 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step(
     } else {
         metropolis_step_spin_tuple_combination(lat, integrated_pot_energy, acc_ratio, beta, h, mu, J, lmbda);
     }  
+    record_update_attempt(rnd, acc_ratio);
+    active_update_type_ = -1;
 
 #ifndef NDEBUG
     double integrated_pot_energy_check = total_integrated_pot_energy(
@@ -3146,8 +3249,11 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
 
     int total_metropolis_step_count = 0;
     int reset_potential_energy_count = static_cast<int>(lat.get_edge_count()*100000);
+    AcceptanceDiagnostics production_acceptance;
+    start_acceptance_diagnostics(production_acceptance);
 
     for (int i = 0; i < config.sim_spec.N_samples; ++i) {
+        start_acceptance_block();
         for (int j = 0; j < config.sim_spec.N_between_samples; ++j) {
             ++total_metropolis_step_count;
             metropolis_step(
@@ -3164,6 +3270,7 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
                 );
             }
         }
+        finish_acceptance_block();
 
         for (size_t k = 0; k < config.sim_spec.observables.size(); k++) {
             observable_vector[k].emplace_back(
@@ -3175,6 +3282,7 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
             lat.update_spin_string();
         }
     }
+    stop_acceptance_diagnostics();
 
     if (config.out_spec.save_snapshots) {
         lat.write_graph("snapshots", config.out_spec.path_out);
@@ -3310,6 +3418,7 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
 
     return Result{
         .series=std::move(observable_vector), 
+        .production_acceptance=std::move(production_acceptance),
         .mean=std::move(observable_mean_vector), 
         .mean_std=std::move(observable_std_vector), 
         .binder=std::move(binder_mean_vector), 

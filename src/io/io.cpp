@@ -101,6 +101,68 @@ void IO::etc_sample(
         auto ds_autocorrelation = obs_grp.createDataSet("autocorrelation_time", H5::PredType::NATIVE_DOUBLE, scalar_space);
         ds_autocorrelation.write(&(autocorrelation_time[i]), H5::PredType::NATIVE_DOUBLE);
     }
+
+    const auto& diagnostics = result_spec.production_acceptance;
+    H5::Group diagnostics_grp = getOrCreateGroup(sim_grp, "diagnostics");
+    H5::Group acceptance_grp = getOrCreateGroup(diagnostics_grp, "production_acceptance");
+    H5::DataSpace scalar_space(H5S_SCALAR);
+    auto ds_attempted = acceptance_grp.createDataSet("attempted", H5::PredType::NATIVE_UINT64, scalar_space);
+    ds_attempted.write(&(diagnostics.attempted), H5::PredType::NATIVE_UINT64);
+    auto ds_accepted = acceptance_grp.createDataSet("accepted", H5::PredType::NATIVE_UINT64, scalar_space);
+    ds_accepted.write(&(diagnostics.accepted), H5::PredType::NATIVE_UINT64);
+    const double acceptance_fraction = diagnostics.attempted > 0
+        ? static_cast<double>(diagnostics.accepted) / static_cast<double>(diagnostics.attempted)
+        : 0.;
+    const double mean_acceptance_ratio = diagnostics.attempted > 0
+        ? diagnostics.acceptance_ratio_sum / static_cast<double>(diagnostics.attempted)
+        : 0.;
+    auto ds_acceptance_fraction = acceptance_grp.createDataSet("acceptance_fraction", H5::PredType::NATIVE_DOUBLE, scalar_space);
+    ds_acceptance_fraction.write(&acceptance_fraction, H5::PredType::NATIVE_DOUBLE);
+    auto ds_mean_acceptance_ratio = acceptance_grp.createDataSet("mean_acceptance_ratio", H5::PredType::NATIVE_DOUBLE, scalar_space);
+    ds_mean_acceptance_ratio.write(&mean_acceptance_ratio, H5::PredType::NATIVE_DOUBLE);
+
+    if (!diagnostics.attempted_by_update.empty()) {
+        hsize_t dims[1] = { diagnostics.attempted_by_update.size() };
+        H5::DataSpace dataspace{ 1, dims };
+        acceptance_grp.createDataSet("attempted_by_update", H5::PredType::NATIVE_UINT64, dataspace)
+            .write(diagnostics.attempted_by_update.data(), H5::PredType::NATIVE_UINT64);
+        acceptance_grp.createDataSet("accepted_by_update", H5::PredType::NATIVE_UINT64, dataspace)
+            .write(diagnostics.accepted_by_update.data(), H5::PredType::NATIVE_UINT64);
+
+        std::vector<double> mean_ratio_by_update(diagnostics.attempted_by_update.size(), 0.);
+        for (size_t i = 0; i < diagnostics.attempted_by_update.size(); ++i) {
+            if (diagnostics.attempted_by_update[i] > 0) {
+                mean_ratio_by_update[i] = diagnostics.acceptance_ratio_sum_by_update[i]
+                    / static_cast<double>(diagnostics.attempted_by_update[i]);
+            }
+        }
+        acceptance_grp.createDataSet("mean_acceptance_ratio_by_update", H5::PredType::NATIVE_DOUBLE, dataspace)
+            .write(mean_ratio_by_update.data(), H5::PredType::NATIVE_DOUBLE);
+    }
+
+    if (!diagnostics.block_attempted.empty()) {
+        hsize_t dims[1] = { diagnostics.block_attempted.size() };
+        H5::DataSpace dataspace{ 1, dims };
+        acceptance_grp.createDataSet("block_attempted", H5::PredType::NATIVE_UINT64, dataspace)
+            .write(diagnostics.block_attempted.data(), H5::PredType::NATIVE_UINT64);
+        acceptance_grp.createDataSet("block_accepted", H5::PredType::NATIVE_UINT64, dataspace)
+            .write(diagnostics.block_accepted.data(), H5::PredType::NATIVE_UINT64);
+
+        std::vector<double> block_acceptance_fraction(diagnostics.block_attempted.size(), 0.);
+        std::vector<double> block_mean_acceptance_ratio(diagnostics.block_attempted.size(), 0.);
+        for (size_t i = 0; i < diagnostics.block_attempted.size(); ++i) {
+            if (diagnostics.block_attempted[i] > 0) {
+                block_acceptance_fraction[i] = static_cast<double>(diagnostics.block_accepted[i])
+                    / static_cast<double>(diagnostics.block_attempted[i]);
+                block_mean_acceptance_ratio[i] = diagnostics.block_acceptance_ratio_sum[i]
+                    / static_cast<double>(diagnostics.block_attempted[i]);
+            }
+        }
+        acceptance_grp.createDataSet("block_acceptance_fraction", H5::PredType::NATIVE_DOUBLE, dataspace)
+            .write(block_acceptance_fraction.data(), H5::PredType::NATIVE_DOUBLE);
+        acceptance_grp.createDataSet("block_mean_acceptance_ratio", H5::PredType::NATIVE_DOUBLE, dataspace)
+            .write(block_mean_acceptance_ratio.data(), H5::PredType::NATIVE_DOUBLE);
+    }
 }
 
 void IO::etc_hysteresis(
