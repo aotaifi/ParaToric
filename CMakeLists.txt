@@ -27,6 +27,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ${PARATORIC_EXPORT_COMPILE_COMMANDS})
 option(PARATORIC_BUILD_PYBIND "Build Python bindings (_paratoric)" OFF)
 option(PARATORIC_BUILD_CLI    "Build the paratoric CLI" ${PROJECT_IS_TOP_LEVEL})
 option(PARATORIC_BUILD_TESTS  "Build tests" ${PROJECT_IS_TOP_LEVEL})
+option(PARATORIC_BUILD_BENCHMARKS "Build local benchmark executables" OFF)
 option(PARATORIC_ENABLE_NATIVE_OPT "Enable CPU-specific optimizations" OFF)
 option(PARATORIC_ENABLE_AVX2 "Enable AVX2 flag" OFF)
 option(PARATORIC_ENABLE_FAST_MATH "Enable fast-math flag" ON)
@@ -237,6 +238,18 @@ endif()
 if(PARATORIC_BUILD_TESTS)
   include(CTest)
   add_subdirectory(tests)
+endif()
+
+# ---- Benchmarks (opt-in) --------------------------------------------------
+
+if(PARATORIC_BUILD_BENCHMARKS)
+  add_executable(flat_lattice_backend_bench benchmarks/flat_lattice_backend_bench.cpp)
+  target_link_libraries(flat_lattice_backend_bench PRIVATE paratoric::core)
+  target_include_directories(flat_lattice_backend_bench
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/include
+      ${CMAKE_CURRENT_SOURCE_DIR}/src
+  )
 endif()
 
 # ---- Python bindings (opt-in; subproject-friendly) -----------------------
