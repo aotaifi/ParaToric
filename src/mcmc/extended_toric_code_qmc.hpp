@@ -23,6 +23,7 @@
 #include <filesystem>
 #include <format>
 #include <iostream>
+#include <iterator>
 #include <limits>
 #include <numeric>
 #include <random>
@@ -2744,36 +2745,15 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_spin_tuple_combination(
                 return;
             }
 
-            int imag_time_prev_flip_index = -1;
-            double imag_time_prev_flip = 0.;
-            for (int j = 0; j < single_spin_flip_count; ++j) {
-                const double tau = single_spin_flips[j];
-                if (tau > tau_new) {
-                    break;
-                } 
-                imag_time_prev_flip = tau;
-                imag_time_prev_flip_index = j;
-                if (j == single_spin_flip_count - 1) [[unlikely]] {
-                    imag_time_prev_flip_index = single_spin_flip_count-1;
-                    break;
-                }
-            }
-
-            int imag_time_next_flip_index = 0;
-            double imag_time_next_flip = 0.;
-            for (int j = 0; j < single_spin_flip_count; ++j) {
-                const double tau = single_spin_flips[j];
-                imag_time_next_flip_index = j;
-                if (tau > tau_new) {
-                    imag_time_next_flip = tau;
-                    break;
-                } 
-                if (j == single_spin_flip_count - 1) [[unlikely]] {
-                    imag_time_next_flip_index = single_spin_flip_count;
-                    imag_time_next_flip = beta;
-                    break;
-                }
-            }
+            const auto next_it = std::upper_bound(single_spin_flips.begin(), single_spin_flips.end(), tau_new);
+            const int imag_time_next_flip_index = static_cast<int>(next_it - single_spin_flips.begin());
+            const double imag_time_next_flip = next_it != single_spin_flips.end() ? *next_it : beta;
+            const int imag_time_prev_flip_index = next_it != single_spin_flips.begin()
+                ? static_cast<int>((next_it - single_spin_flips.begin()) - 1)
+                : -1;
+            const double imag_time_prev_flip = imag_time_prev_flip_index >= 0
+                ? single_spin_flips[static_cast<size_t>(imag_time_prev_flip_index)]
+                : 0.;
 
             create_vector.emplace_back(false);
             rnd_create_destroy = uniform_dist(*rng);
@@ -2827,38 +2807,11 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_spin_tuple_combination(
             BOOST_LOG_TRIVIAL(debug) << std::format("metropolis_step_spin_tuple_combination --- edge between vertices {} and {} - Trying to CREATE single spin flip.", source_v, target_v);
 #endif  
             
-            double imag_time_prev_flip = 0.;
-
-            if (single_spin_flip_count > 0) {
-                for (int j = 0; j < single_spin_flip_count; ++j) {
-                    const double tau = single_spin_flips[j];
-                    if (tau > tau_new) {
-                        break;
-                    } 
-                    imag_time_prev_flip = tau;
-                    if (j == single_spin_flip_count - 1) [[unlikely]] {
-                        break;
-                    }
-                }
-            }
-
-            double imag_time_next_flip = 0.;
-
-            if (single_spin_flip_count > 0) {
-                for (int j = 0; j < single_spin_flip_count; ++j) {
-                    const double tau = single_spin_flips[j];
-                    if (tau > tau_new) {
-                        imag_time_next_flip = tau;
-                        break;
-                    } 
-                    if (j == single_spin_flip_count - 1) [[unlikely]] {
-                        imag_time_next_flip = beta;
-                        break;
-                    }
-                }
-            } else {
-                imag_time_next_flip = beta;
-            }
+            const auto next_it = std::upper_bound(single_spin_flips.begin(), single_spin_flips.end(), tau_new);
+            const double imag_time_prev_flip = next_it != single_spin_flips.begin()
+                ? *std::prev(next_it)
+                : 0.;
+            const double imag_time_next_flip = next_it != single_spin_flips.end() ? *next_it : beta;
 
             create_vector.emplace_back(true);
 
