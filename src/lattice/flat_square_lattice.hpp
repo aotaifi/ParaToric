@@ -416,6 +416,120 @@ public:
         return {energy, std::move(plaquette_indices), std::move(diffs)};
     }
 
+    double total_integrated_edge_energy() const {
+        double energy = 0.0;
+        for (Edge edge = 0; edge < E; ++edge) {
+            energy += integrated_edge_energy(edge, 0.0, BETA);
+        }
+        return energy;
+    }
+
+    double total_integrated_star_energy() const {
+        double energy = 0.0;
+        for (int star = 0; star < V; ++star) {
+            energy += (BASIS == 'x')
+                ? integrated_tuple_energy_single_flips(get_star_edges(star), 0.0, BETA)
+                : integrated_tuple_energy(get_star_edges(star), 0.0, BETA);
+        }
+        return energy;
+    }
+
+    double total_integrated_plaquette_energy() const {
+        double energy = 0.0;
+        for (int plaquette = 0; plaquette < P; ++plaquette) {
+            energy += (BASIS == 'z')
+                ? integrated_tuple_energy_single_flips(get_plaquette_edges(plaquette), 0.0, BETA)
+                : integrated_tuple_energy(get_plaquette_edges(plaquette), 0.0, BETA);
+        }
+        return energy;
+    }
+
+    std::tuple<double, SmallIndexVector, SmallEnergyVector> integrated_star_energy_diff_combination(
+        int plaquette_index,
+        double tau_1,
+        double tau_2,
+        std::span<const double> spin_flip_lookup,
+        double tuple_tau
+    ) const {
+        if (tau_1 == tau_2) throw std::invalid_argument("integrated_star_energy_diff_combination: zero interval");
+
+        const auto plaquette_edges = get_plaquette_edges(plaquette_index);
+        SmallIndexVector star_centers;
+        star_centers.reserve(4);
+        for (const Edge edge : plaquette_edges) {
+            const auto [source, target] = vertices_of_edge(edge);
+            star_centers.emplace_back(source);
+            star_centers.emplace_back(target);
+        }
+        std::sort(star_centers.begin(), star_centers.end());
+        star_centers.erase(std::unique(star_centers.begin(), star_centers.end()), star_centers.end());
+
+        SmallEnergyVector diffs;
+        diffs.reserve(star_centers.size());
+        double energy = 0.0;
+        std::vector<std::pair<double, int>> local_flips;
+        local_flips.reserve(1 + plaquette_edges.size());
+        for (const int star : star_centers) {
+            local_flips.clear();
+            insert_sorted_event_(local_flips, tuple_tau, 1);
+            for (std::size_t i = 0; i < plaquette_edges.size(); ++i) {
+                const auto [source, target] = vertices_of_edge(plaquette_edges[i]);
+                if (source == star || target == star) {
+                    insert_sorted_event_(local_flips, spin_flip_lookup[i], 0);
+                }
+            }
+            const double diff = integrated_tuple_energy_diff_combination_from_flips_(
+                get_star_edges(star), tau_1, tau_2, local_flips, BASIS == 'x'
+            );
+            diffs.emplace_back(diff);
+            energy += diff;
+        }
+        return {energy, std::move(star_centers), std::move(diffs)};
+    }
+
+    std::tuple<double, SmallIndexVector, SmallEnergyVector> integrated_plaquette_energy_diff_combination(
+        int star_index,
+        double tau_1,
+        double tau_2,
+        std::span<const double> spin_flip_lookup,
+        double tuple_tau
+    ) const {
+        if (tau_1 == tau_2) throw std::invalid_argument("integrated_plaquette_energy_diff_combination: zero interval");
+
+        const auto star_edges = get_star_edges(star_index);
+        SmallIndexVector plaquettes;
+        plaquettes.reserve(4);
+        for (const Edge edge : star_edges) {
+            for (const int plaquette : edge_data_(edge).plaquette_indices) {
+                plaquettes.emplace_back(plaquette);
+            }
+        }
+        std::sort(plaquettes.begin(), plaquettes.end());
+        plaquettes.erase(std::unique(plaquettes.begin(), plaquettes.end()), plaquettes.end());
+
+        SmallEnergyVector diffs;
+        diffs.reserve(plaquettes.size());
+        double energy = 0.0;
+        std::vector<std::pair<double, int>> local_flips;
+        local_flips.reserve(1 + star_edges.size());
+        for (const int plaquette : plaquettes) {
+            local_flips.clear();
+            insert_sorted_event_(local_flips, tuple_tau, 1);
+            for (std::size_t i = 0; i < star_edges.size(); ++i) {
+                const auto& edge_plaquettes = edge_data_(star_edges[i]).plaquette_indices;
+                if (edge_plaquettes[0] == plaquette || edge_plaquettes[1] == plaquette) {
+                    insert_sorted_event_(local_flips, spin_flip_lookup[i], 0);
+                }
+            }
+            const double diff = integrated_tuple_energy_diff_combination_from_flips_(
+                get_plaquette_edges(plaquette), tau_1, tau_2, local_flips, BASIS == 'z'
+            );
+            diffs.emplace_back(diff);
+            energy += diff;
+        }
+        return {energy, std::move(plaquettes), std::move(diffs)};
+    }
+
     void init_potential_energy() {
         for (Edge edge = 0; edge < E; ++edge) {
             set_potential_edge_energy(edge, integrated_edge_energy(edge, 0.0, BETA));
@@ -474,6 +588,18 @@ private:
 
     static void insert_sorted_(std::vector<double>& values, double tau) {
         values.insert(std::upper_bound(values.begin(), values.end(), tau), tau);
+    }
+
+    static void insert_sorted_event_(std::vector<std::pair<double, int>>& values, double tau, int type) {
+        values.insert(
+            std::upper_bound(
+                values.begin(),
+                values.end(),
+                std::pair<double, int>{tau, type},
+                [](const auto& lhs, const auto& rhs) { return lhs.first < rhs.first; }
+            ),
+            {tau, type}
+        );
     }
 
     static void erase_time_(std::vector<double>& values, double tau, const char* context) {
@@ -664,6 +790,64 @@ private:
         }
         energy += (tau_2 - previous) * product;
         return energy;
+    }
+
+    double integrated_tuple_energy_diff_combination_from_flips_(
+        std::span<const Edge> tuple_edges,
+        double tau_1,
+        double tau_2,
+        const std::vector<std::pair<double, int>>& spin_flip_lookup,
+        bool single_only
+    ) const {
+        if (spin_flip_lookup.empty()) {
+            return 0.0;
+        }
+        if (tau_2 < tau_1) {
+            return integrated_tuple_energy_diff_combination_from_flips_(tuple_edges, tau_1, BETA, spin_flip_lookup, single_only)
+                 + integrated_tuple_energy_diff_combination_from_flips_(tuple_edges, 0.0, tau_2, spin_flip_lookup, single_only);
+        }
+
+        const bool tuple_flip_toggles = ((spin_flip_lookup.size() & 1) == 0);
+        auto event_toggles = [&](const std::pair<double, int>& event) {
+            return (event.second != 1) || tuple_flip_toggles;
+        };
+
+        bool odd = false;
+        std::size_t index = 0;
+        while (index < spin_flip_lookup.size() && spin_flip_lookup[index].first < tau_1) {
+            const double tau = spin_flip_lookup[index].first;
+            bool toggles = false;
+            do {
+                if (event_toggles(spin_flip_lookup[index])) toggles = !toggles;
+                ++index;
+            } while (index < spin_flip_lookup.size() && spin_flip_lookup[index].first == tau);
+            if (toggles) odd = !odd;
+        }
+
+        double odd_integral = 0.0;
+        double previous = tau_1;
+        while (index < spin_flip_lookup.size()) {
+            const double tau = spin_flip_lookup[index].first;
+            if (tau >= tau_2) {
+                break;
+            }
+            if (odd && previous < tau) {
+                odd_integral += integrated_tuple_energy_from_flips_(tuple_edges, previous, tau, single_only);
+            }
+
+            bool toggles = false;
+            do {
+                if (event_toggles(spin_flip_lookup[index])) toggles = !toggles;
+                ++index;
+            } while (index < spin_flip_lookup.size() && spin_flip_lookup[index].first == tau);
+            if (toggles) odd = !odd;
+            previous = tau;
+        }
+        if (odd && previous < tau_2) {
+            odd_integral += integrated_tuple_energy_from_flips_(tuple_edges, previous, tau_2, single_only);
+        }
+
+        return -2.0 * odd_integral;
     }
 };
 
