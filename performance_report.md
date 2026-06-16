@@ -79,4 +79,38 @@ QMC smoke parameters:
 
 The current production improvements reduce memory and measurement overhead, while the flat-layout evidence shows that Boost graph storage is a serious bottleneck for very large regular square lattices.
 
-The next step is to wire the square-periodic `FlatSquareLattice` into the core QMC update path behind an explicit backend selector, validate small systems against the Boost backend, and only then attempt large production sizes such as `L=400` or `L=1000`.
+## Real core-update backend benchmark
+
+After `809806c`, the QMC engine can run a core Metropolis-update benchmark with either the default Boost-backed lattice or the square-periodic flat backend. This benchmark uses the production Metropolis update dispatcher and energy-difference path, but intentionally skips observable/bootstrap/HDF5 overhead.
+
+Job array: `14705323`
+
+Parameters:
+
+- `simulation=etc_core_update_benchmark`
+- `basis=x`
+- `lattice_type=square`
+- `boundaries=periodic`
+- `beta=4.0`
+- `h=0.3`, `mu=1.0`, `J=1.0`, `lambda=0.2`
+- `sweeps=10`, where updates are `10 * 2 * L * L`
+
+| L | backend | updates | app_time_s | attempted | accepted | acceptance_fraction |
+|---:|:---|---:|---:|---:|---:|---:|
+| 400 | Boost | 3,200,000 | 3.265169 | 3,200,000 | 231,852 | 0.07245375 |
+| 400 | flat_square | 3,200,000 | 1.737895 | 3,200,000 | 243,427 | 0.0760709375 |
+| 1000 | Boost | 20,000,000 | 23.523580 | 20,000,000 | 1,453,529 | 0.07267645 |
+| 1000 | flat_square | 20,000,000 | 11.235196 | 20,000,000 | 1,527,356 | 0.0763678 |
+
+Interpretation:
+
+- `L=400`: flat-square core updates are about `1.9x` faster than Boost.
+- `L=1000`: flat-square core updates are about `2.1x` faster than Boost.
+- Acceptance statistics are similar but not bit-identical because edge/tuple ordering differs between backends.
+- The real QMC-core speedup is smaller than the layout microbenchmark speedup, which means core-update costs are now dominated by flip-list and energy-difference work rather than graph lookup alone.
+
+## Updated practical conclusion
+
+The current production improvements reduce memory and measurement overhead. The flat square backend is now wired into a real core-update benchmark and shows about a `2x` speedup at `L=400` and `L=1000` for this smoke setup.
+
+The next step is to validate flat-square physics against Boost at small sizes, then wire flat-square into full `etc_sample` with a restricted observable set. Only after that should large production runs such as `L=400` or `L=1000` be treated as scientific runs rather than performance smoke tests.
