@@ -2,6 +2,7 @@
 // Copyright (C) 2022-2026  Simon Mathias Linsel, Lode Pollet
 
 #include "io/io.hpp"
+#include "mcmc/extended_toric_code_qmc.hpp"
 #include "paratoric/types/types.hpp"
 
 #include <boost/log/core.hpp> 
@@ -40,6 +41,7 @@ int main(int argc, char **argv) {
         int seed;
         char basis;
         std::string lattice_type;
+        std::string lattice_backend;
         int system_size;
         std::string boundaries;
         int default_spin;
@@ -77,6 +79,7 @@ int main(int argc, char **argv) {
         ("full_time_series,fts", po::value(&full_time_series), "Whether full time series should be saved.")
         ("process_index,procid", po::value(&process_index), "Identifier of process (for debugging).")
         ("lattice_type,lat", po::value(&lattice_type), "Type of lattice used.")
+        ("lattice_backend,latbe", po::value(&lattice_backend)->default_value("boost"), "Lattice backend used by benchmark modes (boost or flat_square).")
         ("system_size,L", po::value(&system_size), "System size of lattice (one coordinate).")
         ("boundaries,bound", po::value(&boundaries), "Boundary condition of the lattice (periodic or open).")
         ("default_spin,dsp", po::value(&default_spin), "Default spin (electric field) for lattice initialization.");
@@ -150,6 +153,53 @@ int main(int argc, char **argv) {
             io.etc_thermalization(
                 paratoric::Config{sim_spec, param_spec, lat_spec, out_spec}
                 );
+        } else if (simulation == "etc_core_update_benchmark") {
+            auto run_benchmark = [&](auto& mc) {
+                return mc.get_core_update_benchmark(
+                    paratoric::Config{sim_spec, param_spec, lat_spec, out_spec}
+                );
+            };
+
+            paratoric::Result result;
+            if (basis == 'x') {
+                if (lattice_backend == "boost") {
+                    auto mc = paratoric::ExtendedToricCodeQMC<'x'>();
+                    result = run_benchmark(mc);
+                } else if (lattice_backend == "flat_square") {
+                    auto mc = paratoric::ExtendedToricCodeQMC<'x', paratoric::FlatSquareLattice>();
+                    result = run_benchmark(mc);
+                } else {
+                    throw std::invalid_argument("lattice_backend must be boost or flat_square.");
+                }
+            } else if (basis == 'z') {
+                if (lattice_backend == "boost") {
+                    auto mc = paratoric::ExtendedToricCodeQMC<'z'>();
+                    result = run_benchmark(mc);
+                } else if (lattice_backend == "flat_square") {
+                    auto mc = paratoric::ExtendedToricCodeQMC<'z', paratoric::FlatSquareLattice>();
+                    result = run_benchmark(mc);
+                } else {
+                    throw std::invalid_argument("lattice_backend must be boost or flat_square.");
+                }
+            } else {
+                throw std::invalid_argument("basis must be x or z.");
+            }
+
+            const auto& diagnostics = result.production_acceptance;
+            const double acceptance_fraction = diagnostics.attempted == 0
+                ? 0.0
+                : static_cast<double>(diagnostics.accepted) / static_cast<double>(diagnostics.attempted);
+            const double mean_acceptance_ratio = diagnostics.attempted == 0
+                ? 0.0
+                : diagnostics.acceptance_ratio_sum / static_cast<double>(diagnostics.attempted);
+            BOOST_LOG_TRIVIAL(info)
+                << std::format(
+                    "Core update benchmark backend={} attempted={} accepted={} acceptance_fraction={} mean_acceptance_ratio={}",
+                    lattice_backend,
+                    diagnostics.attempted,
+                    diagnostics.accepted,
+                    acceptance_fraction,
+                    mean_acceptance_ratio);
         }
 
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();

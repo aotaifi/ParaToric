@@ -4,6 +4,7 @@
 #pragma once
 
 #include "lattice/lattice.hpp"
+#include "lattice/flat_square_lattice.hpp"
 #include "paratoric/types/types.hpp"
 #include "rng/rng.hpp"
 #include "statistics/autocorrelation.hpp"
@@ -40,13 +41,13 @@ namespace paratoric {
 template<char B>
 concept ValidBasis = (B == 'x' || B == 'z');
 
-template<char Basis>
+template<char Basis, typename LatticeT = Lattice>
 requires ValidBasis<Basis>
 class ExtendedToricCodeQMC {
     public:
         using RNG = paratoric::rng::RNG;
-        using SmallIndexVector = Lattice::SmallIndexVector;
-        using SmallEnergyVector = Lattice::SmallEnergyVector;
+        using SmallIndexVector = LatticeT::SmallIndexVector;
+        using SmallEnergyVector = LatticeT::SmallEnergyVector;
         using SmallBoolVector = boost::container::small_vector<bool, 8>;
 
         ExtendedToricCodeQMC(std::shared_ptr<RNG> rng = nullptr) 
@@ -152,6 +153,17 @@ class ExtendedToricCodeQMC {
         );
 
         /**
+         * @brief Run only the core Metropolis update loop for backend timing.
+         *
+         * This is intended for comparing lattice backends without observable
+         * bootstrap/HDF5 overhead. The total number of updates is
+         * N_thermalization + N_samples * N_between_samples.
+         */
+        Result get_core_update_benchmark(
+            const Config& config
+        );
+
+        /**
          * @brief This method will run a QMC hysteresis simulation of the extended toric code with the specified parameters and return observables.
          * 
          * @tparam Basis eigenbasis of the spins, either 'x' or 'z'
@@ -223,76 +235,76 @@ class ExtendedToricCodeQMC {
         std::vector<std::string> get_obs_type_vec(const std::vector<std::string>& observables);
     
     private:
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         percolation_probability_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             return lat.percolation_probability(); 
         };
 
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         plaquette_percolation_probability_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             return lat.plaquette_percolation_probability(); 
         };
 
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         cube_percolation_probability 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             return lat.cube_percolation_probability(); 
         };
 
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         percolation_strength_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             return lat.percolation_strength(); 
         };
 
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         plaquette_percolation_strength_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             return lat.plaquette_percolation_strength(); 
         };
 
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         string_number_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             return lat.get_string_count(); 
         };
 
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         largest_cluster_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             return lat.largest_cluster(); 
         };
 
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         largest_plaquette_cluster_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             return lat.largest_plaquette_cluster(); 
         };
 
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         anyon_count_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             return lat.get_anyon_count(); 
         };
 
-        std::function<std::complex<double>(Lattice&, double, double, double, double)> 
+        std::function<std::complex<double>(LatticeT&, double, double, double, double)> 
         fredenhagen_marcu_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             return lat.fredenhagen_marcu(); 
         };
 
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         staggered_imaginary_times_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             if constexpr (Basis == 'x') return lat.get_staggered_imaginary_times_plaquette(); 
             else return lat.get_staggered_imaginary_times_star();
         };
 
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         energy_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             if constexpr (Basis == 'x') {
                 return - lat.get_diag_single_energy() * h - lat.get_diag_tuple_energy_x() * mu 
                 - lat.get_non_diag_single_energy_x() - lat.get_non_diag_tuple_energy_x();
@@ -303,37 +315,37 @@ class ExtendedToricCodeQMC {
             } 
         };
 
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         energy_h_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             if constexpr (Basis == 'x') return - lat.get_diag_single_energy() * h; 
             else return - lat.get_non_diag_single_energy_z();
         };
 
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         energy_mu_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             if constexpr (Basis == 'x') return - lat.get_diag_tuple_energy_x() * mu; 
             else return - lat.get_non_diag_tuple_energy_z();
         };
 
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         energy_lmbda_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             if constexpr (Basis == 'x') return - lat.get_non_diag_single_energy_x(); 
             else return - lat.get_diag_single_energy() * lmbda;
         };
 
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         energy_J_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             if constexpr (Basis == 'x') return - lat.get_non_diag_tuple_energy_x(); 
             else return - lat.get_diag_tuple_energy_z() * J;
         }; 
 
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         sigma_x_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             if constexpr (Basis == 'x') {
                 return lat.get_diag_single_energy()/static_cast<double>(lat.get_edge_count()); 
             } else {
@@ -341,9 +353,9 @@ class ExtendedToricCodeQMC {
             }
         };
 
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         sigma_x_tau_avg_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             if constexpr (Basis == 'x') {
                 return lat.total_integrated_edge_energy()/static_cast<double>(lat.get_beta() * lat.get_edge_count()); 
             } else {
@@ -351,42 +363,42 @@ class ExtendedToricCodeQMC {
             }
         };
 
-        std::function<std::complex<double>(Lattice&, double, double, double, double)> 
+        std::function<std::complex<double>(LatticeT&, double, double, double, double)> 
         sigma_x_static_susceptibility_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             lat.rotate_imag_time();
             if constexpr (Basis == 'x') return lat.get_diag_M_M(); 
             else return lat.get_non_diag_M_M();
         };
 
-        std::function<std::complex<double>(Lattice&, double, double, double, double)> 
+        std::function<std::complex<double>(LatticeT&, double, double, double, double)> 
         sigma_x_dynamical_susceptibility_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             lat.rotate_imag_time();
             if constexpr (Basis == 'x') return lat.get_diag_dynamical_M_M();
             else return lat.get_kL_kR_single() / static_cast<double>(std::sqrt(2) * h);
         };
 
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         sigma_z_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             if constexpr (Basis == 'x') 
                 return lat.get_non_diag_single_energy_x()/static_cast<double>(lat.get_edge_count() * lmbda); 
             else 
                 return (lat.get_diag_single_energy()/static_cast<double>(lat.get_edge_count()));
         };
 
-        std::function<std::complex<double>(Lattice&, double, double, double, double)> 
+        std::function<std::complex<double>(LatticeT&, double, double, double, double)> 
         sigma_z_static_susceptibility_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             lat.rotate_imag_time();
             if constexpr (Basis == 'x') return lat.get_non_diag_M_M(); 
             else return lat.get_diag_M_M();
         };
 
-        std::function<std::complex<double>(Lattice&, double, double, double, double)> 
+        std::function<std::complex<double>(LatticeT&, double, double, double, double)> 
         sigma_z_dynamical_susceptibility_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             lat.rotate_imag_time();
             if constexpr (Basis == 'x') 
                 return lat.get_kL_kR_single() / static_cast<double>(std::sqrt(2) * lmbda);
@@ -394,26 +406,26 @@ class ExtendedToricCodeQMC {
                 return lat.get_diag_dynamical_M_M();
         };
 
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         star_x_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             if constexpr (Basis == 'x') 
                 return lat.get_diag_tuple_energy_x()/static_cast<double>(lat.get_vertex_count()); 
             else 
                 return lat.get_non_diag_tuple_energy_z()/static_cast<double>(lat.get_vertex_count() * mu);
         };
 
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         plaquette_z_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             if constexpr (Basis == 'x') 
                 return lat.get_non_diag_tuple_energy_x()/static_cast<double>(lat.get_plaquette_count() * J); 
             else 
                 return lat.get_diag_tuple_energy_z()/static_cast<double>(lat.get_plaquette_count());
         };
 
-        std::function<double(Lattice&, double, double, double, double)> 
-        delta_obs = [](Lattice& lat, double h, double lmbda, double mu, double J) { 
+        std::function<double(LatticeT&, double, double, double, double)> 
+        delta_obs = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             if constexpr (Basis == 'x') {
                 return - lat.get_diag_tuple_energy_x()/static_cast<double>(lat.get_vertex_count()) 
                 + lat.get_non_diag_tuple_energy_x()/static_cast<double>(lat.get_plaquette_count() * J); 
@@ -423,9 +435,9 @@ class ExtendedToricCodeQMC {
             }
         };
 
-        std::function<double(Lattice&, double, double, double, double)> 
+        std::function<double(LatticeT&, double, double, double, double)> 
         anyon_density_obs 
-        = [](Lattice& lat, double h, double lmbda, double mu, double J) {
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) {
             if constexpr (Basis == 'x') 
                 return lat.get_anyon_count()/static_cast<double>(lat.get_vertex_count()); 
             else 
@@ -438,7 +450,7 @@ class ExtendedToricCodeQMC {
                 std::string obs_name;
                 std::string obs_type;
                 std::function<
-                    std::variant< std::complex<double>, double>(Lattice&, double, double, double, double)
+                    std::variant< std::complex<double>, double>(LatticeT&, double, double, double, double)
                 > obs_func;
         };
 
@@ -484,7 +496,7 @@ class ExtendedToricCodeQMC {
          * @return vector of lambda functions which can be applied to a lattice to extract the obervables.
          * 
          */
-        std::vector<std::function<std::variant< std::complex<double>, double>(Lattice&, double, double, double, double)>>
+        std::vector<std::function<std::variant< std::complex<double>, double>(LatticeT&, double, double, double, double)>>
         get_obs_func_vec(
             const std::vector<std::string>& observables
         );
@@ -543,7 +555,7 @@ class ExtendedToricCodeQMC {
          * @return the total integrated potential energy
          * 
          */
-        static double total_integrated_pot_energy(Lattice& lat, double h, double mu, double J, double lmbda);
+        static double total_integrated_pot_energy(LatticeT& lat, double h, double mu, double J, double lmbda);
 
         /**
          * @brief Return the potential EDGE energy DIFFERENCE (integrated over imaginary time) when flipping the spin between imag_time_spin_flip and imag_time_next_spin_flip 
@@ -570,8 +582,8 @@ class ExtendedToricCodeQMC {
          */
         static std::tuple<double, double> 
         integrated_pot_energy_diff_single_spin_flip_edge(
-            Lattice& lat, double h, double mu, double J, double lmbda, 
-            const Lattice::Edge& edg, double imag_time_spin_flip, double imag_time_next_spin_flip, 
+            LatticeT& lat, double h, double mu, double J, double lmbda, 
+            const typename LatticeT::Edge& edg, double imag_time_spin_flip, double imag_time_next_spin_flip, 
             bool total_cache
         );
 
@@ -620,8 +632,8 @@ class ExtendedToricCodeQMC {
          */
         static std::tuple<double, SmallIndexVector, SmallEnergyVector> 
         integrated_pot_energy_diff_single_spin_flip_tuple(
-            Lattice& lat, double h, double mu, double J, double lmbda, 
-            const Lattice::Edge& edg, double imag_time_spin_flip, double imag_time_next_spin_flip, 
+            LatticeT& lat, double h, double mu, double J, double lmbda, 
+            const typename LatticeT::Edge& edg, double imag_time_spin_flip, double imag_time_next_spin_flip, 
             bool total_cache
         );
 
@@ -654,7 +666,7 @@ class ExtendedToricCodeQMC {
          *
          * @return std::tuple<
          *           double,                         // coupled scalar delta (see above)
-         *           std::span<Lattice::Edge>,     // echo of @p tuple_edges (same order)
+         *           std::span<typename LatticeT::Edge>,     // echo of @p tuple_edges (same order)
          *           std::vector<double>             // per-edge **bare** energy differences on [t1,t2],
          *                                           // aligned with the returned edge vector
          *         >
@@ -664,10 +676,10 @@ class ExtendedToricCodeQMC {
          * @note The second return component mirrors the input edges by value; consider
          *       using a view/reference in hot paths to avoid copies.
          */
-        static std::tuple<double, std::span<const Lattice::Edge>, SmallEnergyVector> 
+        static std::tuple<double, std::span<const typename LatticeT::Edge>, SmallEnergyVector> 
         integrated_pot_energy_diff_tuple_flip_edge(
-            Lattice& lat, double h, double mu, double J, double lmbda, 
-            int tuple_index, std::span<const Lattice::Edge> tuple_edges, 
+            LatticeT& lat, double h, double mu, double J, double lmbda, 
+            int tuple_index, std::span<const typename LatticeT::Edge> tuple_edges, 
             double imag_time_spin_flip, double imag_time_next_spin_flip, 
             bool total_cache,
             bool interval_has_no_inner_flips = false
@@ -705,7 +717,7 @@ class ExtendedToricCodeQMC {
          *
          * @return std::tuple<
          *           double,                         // coupled scalar delta (see above)
-         *           std::span<Lattice::Edge>,     // echo of @p tuple_edges (same order)
+         *           std::span<typename LatticeT::Edge>,     // echo of @p tuple_edges (same order)
          *           std::vector<double>             // per–edge **bare** energy differences on [tau_left,tau_right],
          *                                           // aligned with the returned edge vector
          *         >
@@ -719,10 +731,10 @@ class ExtendedToricCodeQMC {
          * @note The parameters @p create_vector and @p tuple_destroy are accepted for interface
          *       symmetry but are not currently used in the computation.
          */
-        static std::tuple<double, std::span<const Lattice::Edge>, SmallEnergyVector> 
+        static std::tuple<double, std::span<const typename LatticeT::Edge>, SmallEnergyVector> 
         integrated_pot_energy_diff_combination_flip_edge(
-            Lattice& lat, double h, double mu, double J, double lmbda, 
-            int tuple_index, std::span<const Lattice::Edge> tuple_edges, 
+            LatticeT& lat, double h, double mu, double J, double lmbda, 
+            int tuple_index, std::span<const typename LatticeT::Edge> tuple_edges, 
             double imag_time_tuple_flip, const SmallEnergyVector& imag_time_spin_flips, 
             double tau_left, double tau_right, 
             const SmallBoolVector& create_vector, bool tuple_destroy
@@ -780,8 +792,8 @@ class ExtendedToricCodeQMC {
          */
         static std::tuple<double, SmallIndexVector, SmallEnergyVector> 
         integrated_pot_energy_diff_combination_flip_tuple(
-            Lattice& lat, double h, double mu, double J, double lmbda, 
-            int tuple_index, std::span<const Lattice::Edge> tuple_edges, 
+            LatticeT& lat, double h, double mu, double J, double lmbda, 
+            int tuple_index, std::span<const typename LatticeT::Edge> tuple_edges, 
             double imag_time_tuple_flip, const SmallEnergyVector& imag_time_spin_flips, 
             double tau_left, double tau_right, 
             const SmallBoolVector& create_vector, bool tuple_destroy
@@ -805,8 +817,8 @@ class ExtendedToricCodeQMC {
          * 
          */
         static void combination_flip(
-            Lattice& lat, double h, double mu, 
-            int tuple_index, std::span<const Lattice::Edge> tuple_edges, 
+            LatticeT& lat, double h, double mu, 
+            int tuple_index, std::span<const typename LatticeT::Edge> tuple_edges, 
             double imag_time_tuple_flip, const SmallEnergyVector& imag_time_spin_flips, 
             const SmallBoolVector& create_vector, bool tuple_destroy
         );
@@ -827,7 +839,7 @@ class ExtendedToricCodeQMC {
          * 
          */
         void metropolis_step_double_single_spin_flip(
-            Lattice& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
+            LatticeT& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
             double h, double mu, double J, double lmbda
         );
 
@@ -847,7 +859,7 @@ class ExtendedToricCodeQMC {
          * 
          */
         void metropolis_step_single_spin_flip_move(
-            Lattice& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
+            LatticeT& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
             double h, double mu, double J, double lmbda
         );
 
@@ -867,7 +879,7 @@ class ExtendedToricCodeQMC {
          * 
          */
         void metropolis_step_global_single_spin_flip(
-            Lattice& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
+            LatticeT& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
             double h, double mu, double J, double lmbda
         );
 
@@ -888,7 +900,7 @@ class ExtendedToricCodeQMC {
          * 
          */
         void metropolis_step_global_tuple_flip(
-            Lattice& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
+            LatticeT& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
             double h, double mu, double J, double lmbda
         );
 
@@ -908,7 +920,7 @@ class ExtendedToricCodeQMC {
          * 
          */
         void metropolis_step_double_tuple_flip(
-            Lattice& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
+            LatticeT& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
             double h, double mu, double J, double lmbda
         );
 
@@ -928,7 +940,7 @@ class ExtendedToricCodeQMC {
          * 
          */
         void metropolis_step_single_tuple_flip_move(
-            Lattice& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
+            LatticeT& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
             double h, double mu, double J, double lmbda
         );
 
@@ -948,7 +960,7 @@ class ExtendedToricCodeQMC {
          * 
          */
         void metropolis_step_spin_tuple_combination(
-            Lattice& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
+            LatticeT& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
             double h, double mu, double J, double lmbda
         );
 
@@ -968,7 +980,7 @@ class ExtendedToricCodeQMC {
          * 
          */
         void metropolis_step(
-            Lattice& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
+            LatticeT& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
             double h, double mu, double J, double lmbda
         );
 
@@ -999,11 +1011,11 @@ class ExtendedToricCodeQMC {
         }
 };
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-std::vector<std::function<std::variant< std::complex<double>, double>(Lattice&, double, double, double, double)>> 
-ExtendedToricCodeQMC<Basis>::get_obs_func_vec(const std::vector<std::string>& observables) {
-    std::vector<std::function<std::variant< std::complex<double>, double>(Lattice&, double, double, double, double)>> result;
+std::vector<std::function<std::variant< std::complex<double>, double>(LatticeT&, double, double, double, double)>> 
+ExtendedToricCodeQMC<Basis, LatticeT>::get_obs_func_vec(const std::vector<std::string>& observables) {
+    std::vector<std::function<std::variant< std::complex<double>, double>(LatticeT&, double, double, double, double)>> result;
     for (const auto& obs_name : observables) {
         bool obs_found = false;
         for (const auto& obs : obs_vec) {
@@ -1020,10 +1032,10 @@ ExtendedToricCodeQMC<Basis>::get_obs_func_vec(const std::vector<std::string>& ob
     return result;
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
 std::vector<std::string> 
-ExtendedToricCodeQMC<Basis>::get_obs_type_vec(const std::vector<std::string>& observables) {
+ExtendedToricCodeQMC<Basis, LatticeT>::get_obs_type_vec(const std::vector<std::string>& observables) {
     std::vector<std::string> result;
     for (const auto& obs_name : observables) {
         bool obs_found = false;
@@ -1041,9 +1053,9 @@ ExtendedToricCodeQMC<Basis>::get_obs_type_vec(const std::vector<std::string>& ob
     return result;
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-void ExtendedToricCodeQMC<Basis>::start_acceptance_diagnostics(AcceptanceDiagnostics& diagnostics) {
+void ExtendedToricCodeQMC<Basis, LatticeT>::start_acceptance_diagnostics(AcceptanceDiagnostics& diagnostics) {
     diagnostics = AcceptanceDiagnostics{};
     active_acceptance_diagnostics_ = &diagnostics;
     active_update_type_ = -1;
@@ -1052,9 +1064,9 @@ void ExtendedToricCodeQMC<Basis>::start_acceptance_diagnostics(AcceptanceDiagnos
     active_block_acceptance_ratio_sum_ = 0.;
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-void ExtendedToricCodeQMC<Basis>::stop_acceptance_diagnostics() {
+void ExtendedToricCodeQMC<Basis, LatticeT>::stop_acceptance_diagnostics() {
     active_acceptance_diagnostics_ = nullptr;
     active_update_type_ = -1;
     active_block_attempted_ = 0;
@@ -1062,26 +1074,26 @@ void ExtendedToricCodeQMC<Basis>::stop_acceptance_diagnostics() {
     active_block_acceptance_ratio_sum_ = 0.;
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-void ExtendedToricCodeQMC<Basis>::start_acceptance_block() {
+void ExtendedToricCodeQMC<Basis, LatticeT>::start_acceptance_block() {
     active_block_attempted_ = 0;
     active_block_accepted_ = 0;
     active_block_acceptance_ratio_sum_ = 0.;
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-void ExtendedToricCodeQMC<Basis>::finish_acceptance_block() {
+void ExtendedToricCodeQMC<Basis, LatticeT>::finish_acceptance_block() {
     if (!active_acceptance_diagnostics_) return;
     active_acceptance_diagnostics_->block_attempted.emplace_back(active_block_attempted_);
     active_acceptance_diagnostics_->block_accepted.emplace_back(active_block_accepted_);
     active_acceptance_diagnostics_->block_acceptance_ratio_sum.emplace_back(active_block_acceptance_ratio_sum_);
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-void ExtendedToricCodeQMC<Basis>::record_update_attempt(int update_type, double acc_ratio) {
+void ExtendedToricCodeQMC<Basis, LatticeT>::record_update_attempt(int update_type, double acc_ratio) {
     if (!active_acceptance_diagnostics_) return;
     active_acceptance_diagnostics_->attempted += 1;
     active_acceptance_diagnostics_->acceptance_ratio_sum += acc_ratio;
@@ -1094,9 +1106,9 @@ void ExtendedToricCodeQMC<Basis>::record_update_attempt(int update_type, double 
     }
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-void ExtendedToricCodeQMC<Basis>::record_update_acceptance() {
+void ExtendedToricCodeQMC<Basis, LatticeT>::record_update_acceptance() {
     if (!active_acceptance_diagnostics_) return;
     active_acceptance_diagnostics_->accepted += 1;
     active_block_accepted_ += 1;
@@ -1105,10 +1117,10 @@ void ExtendedToricCodeQMC<Basis>::record_update_acceptance() {
     }
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-double ExtendedToricCodeQMC<Basis>::total_integrated_pot_energy(
-    Lattice& lat, double h, double mu, double J, double lmbda
+double ExtendedToricCodeQMC<Basis, LatticeT>::total_integrated_pot_energy(
+    LatticeT& lat, double h, double mu, double J, double lmbda
 ) {
     double integrated_potential_energy = 0.;
     if constexpr (Basis == 'x') {
@@ -1119,12 +1131,12 @@ double ExtendedToricCodeQMC<Basis>::total_integrated_pot_energy(
     return integrated_potential_energy;
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
 std::tuple<double, double> 
-ExtendedToricCodeQMC<Basis>::integrated_pot_energy_diff_single_spin_flip_edge(
-    Lattice& lat, double h, double mu, double J, double lmbda, 
-    const Lattice::Edge& edg, double imag_time_spin_flip, double imag_time_next_spin_flip, 
+ExtendedToricCodeQMC<Basis, LatticeT>::integrated_pot_energy_diff_single_spin_flip_edge(
+    LatticeT& lat, double h, double mu, double J, double lmbda, 
+    const typename LatticeT::Edge& edg, double imag_time_spin_flip, double imag_time_next_spin_flip, 
     bool total_cache
 ) {
     double delta_energy_single = 0.;
@@ -1144,12 +1156,12 @@ ExtendedToricCodeQMC<Basis>::integrated_pot_energy_diff_single_spin_flip_edge(
     return {delta_energy_single, bare_energy_single};
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-std::tuple<double, typename ExtendedToricCodeQMC<Basis>::SmallIndexVector, typename ExtendedToricCodeQMC<Basis>::SmallEnergyVector> 
-ExtendedToricCodeQMC<Basis>::integrated_pot_energy_diff_single_spin_flip_tuple(
-    Lattice& lat, double h, double mu, double J, double lmbda, 
-    const Lattice::Edge& edg, double imag_time_spin_flip, double imag_time_next_spin_flip, 
+std::tuple<double, typename ExtendedToricCodeQMC<Basis, LatticeT>::SmallIndexVector, typename ExtendedToricCodeQMC<Basis, LatticeT>::SmallEnergyVector> 
+ExtendedToricCodeQMC<Basis, LatticeT>::integrated_pot_energy_diff_single_spin_flip_tuple(
+    LatticeT& lat, double h, double mu, double J, double lmbda, 
+    const typename LatticeT::Edge& edg, double imag_time_spin_flip, double imag_time_next_spin_flip, 
     bool total_cache
 ) {
     double delta_energy_tuple = 0.;
@@ -1169,12 +1181,12 @@ ExtendedToricCodeQMC<Basis>::integrated_pot_energy_diff_single_spin_flip_tuple(
     return {0., SmallIndexVector{}, SmallEnergyVector{}};
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-std::tuple<double, std::span<const Lattice::Edge>, typename ExtendedToricCodeQMC<Basis>::SmallEnergyVector> 
-ExtendedToricCodeQMC<Basis>::integrated_pot_energy_diff_tuple_flip_edge(
-    Lattice& lat, double h, double mu, double J, double lmbda, 
-    int tuple_index, std::span<const Lattice::Edge> tuple_edges, 
+std::tuple<double, std::span<const typename LatticeT::Edge>, typename ExtendedToricCodeQMC<Basis, LatticeT>::SmallEnergyVector> 
+ExtendedToricCodeQMC<Basis, LatticeT>::integrated_pot_energy_diff_tuple_flip_edge(
+    LatticeT& lat, double h, double mu, double J, double lmbda, 
+    int tuple_index, std::span<const typename LatticeT::Edge> tuple_edges, 
     double imag_time_spin_flip, double imag_time_next_spin_flip, 
     bool total_cache,
     bool interval_has_no_inner_flips
@@ -1186,7 +1198,7 @@ ExtendedToricCodeQMC<Basis>::integrated_pot_energy_diff_tuple_flip_edge(
     SmallEnergyVector bare_energy_single_vector;
     bare_energy_single_vector.reserve(tuple_edges.size());
     double bare_energy_edg = 0.;
-    for (const Lattice::Edge& edg : tuple_edges) {
+    for (const typename LatticeT::Edge& edg : tuple_edges) {
         if (total_cache) { 
             bare_energy_edg = -2*lat.get_potential_edge_energy(edg);
         } else if (interval_has_no_inner_flips) {
@@ -1207,12 +1219,12 @@ ExtendedToricCodeQMC<Basis>::integrated_pot_energy_diff_tuple_flip_edge(
     return {delta_energy_single, tuple_edges, std::move(bare_energy_single_vector)};
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-std::tuple<double, std::span<const Lattice::Edge>, typename ExtendedToricCodeQMC<Basis>::SmallEnergyVector> 
-ExtendedToricCodeQMC<Basis>::integrated_pot_energy_diff_combination_flip_edge(
-    Lattice& lat, double h, double mu, double J, double lmbda, 
-    int tuple_index, std::span<const Lattice::Edge> tuple_edges, 
+std::tuple<double, std::span<const typename LatticeT::Edge>, typename ExtendedToricCodeQMC<Basis, LatticeT>::SmallEnergyVector> 
+ExtendedToricCodeQMC<Basis, LatticeT>::integrated_pot_energy_diff_combination_flip_edge(
+    LatticeT& lat, double h, double mu, double J, double lmbda, 
+    int tuple_index, std::span<const typename LatticeT::Edge> tuple_edges, 
     double imag_time_tuple_flip, const SmallEnergyVector& imag_time_spin_flips, 
     double tau_left, double tau_right, 
     const SmallBoolVector& create_vector, bool tuple_destroy
@@ -1241,12 +1253,12 @@ ExtendedToricCodeQMC<Basis>::integrated_pot_energy_diff_combination_flip_edge(
     return {energy_single_diff, tuple_edges, std::move(bare_energy_single_vector)};
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-std::tuple<double, typename ExtendedToricCodeQMC<Basis>::SmallIndexVector, typename ExtendedToricCodeQMC<Basis>::SmallEnergyVector> 
-ExtendedToricCodeQMC<Basis>::integrated_pot_energy_diff_combination_flip_tuple(
-    Lattice& lat, double h, double mu, double J, double lmbda, 
-    int tuple_index, std::span<const Lattice::Edge> tuple_edges, 
+std::tuple<double, typename ExtendedToricCodeQMC<Basis, LatticeT>::SmallIndexVector, typename ExtendedToricCodeQMC<Basis, LatticeT>::SmallEnergyVector> 
+ExtendedToricCodeQMC<Basis, LatticeT>::integrated_pot_energy_diff_combination_flip_tuple(
+    LatticeT& lat, double h, double mu, double J, double lmbda, 
+    int tuple_index, std::span<const typename LatticeT::Edge> tuple_edges, 
     double imag_time_tuple_flip, const SmallEnergyVector& imag_time_spin_flips, 
     double tau_left, double tau_right, 
     const SmallBoolVector& create_vector, bool tuple_destroy
@@ -1274,11 +1286,11 @@ ExtendedToricCodeQMC<Basis>::integrated_pot_energy_diff_combination_flip_tuple(
     return {0., SmallIndexVector{}, SmallEnergyVector{}};
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-void ExtendedToricCodeQMC<Basis>::combination_flip(
-    Lattice& lat, double h, double mu, 
-    int tuple_index, std::span<const Lattice::Edge> tuple_edges, 
+void ExtendedToricCodeQMC<Basis, LatticeT>::combination_flip(
+    LatticeT& lat, double h, double mu, 
+    int tuple_index, std::span<const typename LatticeT::Edge> tuple_edges, 
     double imag_time_tuple_flip, const SmallEnergyVector& imag_time_spin_flips, 
     const SmallBoolVector& create_vector, bool tuple_destroy
 ) {
@@ -1309,10 +1321,10 @@ void ExtendedToricCodeQMC<Basis>::combination_flip(
     } 
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-void ExtendedToricCodeQMC<Basis>::metropolis_step_double_single_spin_flip(
-    Lattice& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
+void ExtendedToricCodeQMC<Basis, LatticeT>::metropolis_step_double_single_spin_flip(
+    LatticeT& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
     double h, double mu, double J, double lmbda
 ) {
 
@@ -1512,10 +1524,10 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_double_single_spin_flip(
     }
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-void ExtendedToricCodeQMC<Basis>::metropolis_step_single_spin_flip_move(
-    Lattice& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
+void ExtendedToricCodeQMC<Basis, LatticeT>::metropolis_step_single_spin_flip_move(
+    LatticeT& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
     double h, double mu, double J, double lmbda
 ) {
 
@@ -1913,10 +1925,10 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_single_spin_flip_move(
     }
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-void ExtendedToricCodeQMC<Basis>::metropolis_step_global_single_spin_flip(
-    Lattice& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
+void ExtendedToricCodeQMC<Basis, LatticeT>::metropolis_step_global_single_spin_flip(
+    LatticeT& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
     double h, double mu, double J, double lmbda
 ) {
 
@@ -1968,10 +1980,10 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_global_single_spin_flip(
     } 
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-void ExtendedToricCodeQMC<Basis>::metropolis_step_global_tuple_flip(
-    Lattice& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
+void ExtendedToricCodeQMC<Basis, LatticeT>::metropolis_step_global_tuple_flip(
+    LatticeT& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
     double h, double mu, double J, double lmbda
 ) {
 
@@ -1981,7 +1993,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_global_tuple_flip(
 #endif
 
     int random_tuple = -1;
-    std::span<const Lattice::Edge> tuple_edges;
+    std::span<const typename LatticeT::Edge> tuple_edges;
 
     if constexpr (Basis == 'x') {
         random_tuple = lat.get_random_plaquette_index();
@@ -2025,10 +2037,10 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_global_tuple_flip(
 
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-void ExtendedToricCodeQMC<Basis>::metropolis_step_double_tuple_flip(
-    Lattice& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
+void ExtendedToricCodeQMC<Basis, LatticeT>::metropolis_step_double_tuple_flip(
+    LatticeT& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
     double h, double mu, double J, double lmbda
 ) {
 
@@ -2052,7 +2064,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_double_tuple_flip(
     const double rnd_create_destroy = uniform_dist(*rng);
     
     int random_tuple = -1;
-    std::span<const Lattice::Edge> tuple_edges;
+    std::span<const typename LatticeT::Edge> tuple_edges;
 
     if constexpr (Basis == 'x') {
         random_tuple = lat.get_random_plaquette_index();
@@ -2227,10 +2239,10 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_double_tuple_flip(
     }
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-void ExtendedToricCodeQMC<Basis>::metropolis_step_single_tuple_flip_move(
-    Lattice& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
+void ExtendedToricCodeQMC<Basis, LatticeT>::metropolis_step_single_tuple_flip_move(
+    LatticeT& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
     double h, double mu, double J, double lmbda
 ) {
 
@@ -2252,7 +2264,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_single_tuple_flip_move(
     }
 
     int random_tuple = -1;
-    std::span<const Lattice::Edge> tuple_edges;
+    std::span<const typename LatticeT::Edge> tuple_edges;
 
     if constexpr (Basis == 'x') {
         random_tuple = lat.get_random_plaquette_index();
@@ -2306,7 +2318,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_single_tuple_flip_move(
                 return;
             } else {
                 double integrated_pot_energy_diff = 0.;
-                std::span<const Lattice::Edge> pot_energy_edges;
+                std::span<const typename LatticeT::Edge> pot_energy_edges;
                 SmallEnergyVector pot_energy_diffs;
                 if (new_imag_time > imag_time_tuple_flip) {
                     const auto& [integrated_pot_energy_diff_edge, pot_energy_edges_tmp, pot_energy_diffs_tmp] 
@@ -2544,10 +2556,10 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_single_tuple_flip_move(
     }
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-void ExtendedToricCodeQMC<Basis>::metropolis_step_spin_tuple_combination(
-    Lattice& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
+void ExtendedToricCodeQMC<Basis, LatticeT>::metropolis_step_spin_tuple_combination(
+    LatticeT& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
     double h, double mu, double J, double lmbda
 ) {
 
@@ -2571,7 +2583,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_spin_tuple_combination(
     double rnd_create_destroy = uniform_dist(*rng);
     
     int random_tuple = -1;
-    std::span<const Lattice::Edge> tuple_edges;
+    std::span<const typename LatticeT::Edge> tuple_edges;
 
     if constexpr (Basis == 'x') {
         random_tuple = lat.get_random_plaquette_index();
@@ -2723,7 +2735,7 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_spin_tuple_combination(
         int tau_spin_flip_index = -1;
         double tau_spin_flip = -1.;
         
-        const Lattice::Edge edg = tuple_edges[i];
+        const typename LatticeT::Edge edg = tuple_edges[i];
         
         std::span<const double> single_spin_flips = lat.get_single_spin_flips(edg);
         int single_spin_flip_count = single_spin_flips.size();
@@ -2905,10 +2917,10 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step_spin_tuple_combination(
     } 
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-void ExtendedToricCodeQMC<Basis>::metropolis_step(
-    Lattice& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
+void ExtendedToricCodeQMC<Basis, LatticeT>::metropolis_step(
+    LatticeT& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
     double h, double mu, double J, double lmbda
 ) {
     const int rnd = random_index(7);
@@ -2941,9 +2953,9 @@ void ExtendedToricCodeQMC<Basis>::metropolis_step(
 #endif  
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-double ExtendedToricCodeQMC<Basis>::calculate_autocorrelation_time_with_warning(
+double ExtendedToricCodeQMC<Basis, LatticeT>::calculate_autocorrelation_time_with_warning(
     const std::vector<double>& obs_real,
     const std::string& observable_name,
     bool has_hysteresis_context,
@@ -2975,9 +2987,9 @@ double ExtendedToricCodeQMC<Basis>::calculate_autocorrelation_time_with_warning(
     return autocorrelation_time;
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-Result ExtendedToricCodeQMC<Basis>::get_thermalization(
+Result ExtendedToricCodeQMC<Basis, LatticeT>::get_thermalization(
     const Config& config
 ) {
 
@@ -3020,7 +3032,7 @@ Result ExtendedToricCodeQMC<Basis>::get_thermalization(
     auto obs_func_vec = get_obs_func_vec(config.sim_spec.observables);
 
     // Initialize Lattice
-    auto lat = Lattice(config.lat_spec, rng);
+    auto lat = LatticeT(config.lat_spec, rng);
     
     double integrated_pot_energy = total_integrated_pot_energy(
         lat, config.param_spec.h, config.param_spec.mu, config.param_spec.J, config.param_spec.lmbda
@@ -3078,9 +3090,9 @@ Result ExtendedToricCodeQMC<Basis>::get_thermalization(
     };                                     
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-Result ExtendedToricCodeQMC<Basis>::get_sample(
+Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
     const Config& config
 ) { 
 
@@ -3127,7 +3139,7 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
     } 
 
     // Initialize Lattice
-    auto lat = Lattice(config.lat_spec, rng);
+    auto lat = LatticeT(config.lat_spec, rng);
     
     double integrated_pot_energy = total_integrated_pot_energy(
         lat, config.param_spec.h, config.param_spec.mu, config.param_spec.J, config.param_spec.lmbda
@@ -3380,9 +3392,75 @@ Result ExtendedToricCodeQMC<Basis>::get_sample(
     };                                       
 }
 
-template<char Basis>
+template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-Result ExtendedToricCodeQMC<Basis>::get_hysteresis(
+Result ExtendedToricCodeQMC<Basis, LatticeT>::get_core_update_benchmark(
+    const Config& config
+) {
+    if (Basis != config.lat_spec.basis) {
+        throw std::invalid_argument("Template parameter basis and config.lat_spec basis must match.");
+    }
+
+    if constexpr (Basis == 'x') {
+        if (config.param_spec.J < 0) {
+            throw std::invalid_argument("J must be non-negative in the x-basis.");
+        } else if (config.param_spec.lmbda < 0) {
+            throw std::invalid_argument("lmbda must be non-negative in the x-basis.");
+        }
+    } else {
+        if (config.param_spec.mu < 0) {
+            throw std::invalid_argument("mu must be non-negative in the z-basis.");
+        } else if (config.param_spec.h < 0) {
+            throw std::invalid_argument("h must be non-negative in the z-basis.");
+        }
+    }
+
+    if (config.sim_spec.seed != 0) rng->set_seed(config.sim_spec.seed);
+
+    auto lat = LatticeT(config.lat_spec, rng);
+    double integrated_pot_energy = total_integrated_pot_energy(
+        lat, config.param_spec.h, config.param_spec.mu, config.param_spec.J, config.param_spec.lmbda
+    );
+    double acc_ratio = 1.;
+
+    AcceptanceDiagnostics diagnostics;
+    start_acceptance_diagnostics(diagnostics);
+    start_acceptance_block();
+
+    const std::int64_t thermalization_updates = std::max(config.sim_spec.N_thermalization, 0);
+    const std::int64_t sample_updates =
+        static_cast<std::int64_t>(std::max(config.sim_spec.N_samples, 0))
+        * static_cast<std::int64_t>(std::max(config.sim_spec.N_between_samples, 0));
+    const std::int64_t total_updates = thermalization_updates + sample_updates;
+
+    for (std::int64_t i = 0; i < total_updates; ++i) {
+        metropolis_step(
+            lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta,
+            config.param_spec.h, config.param_spec.mu, config.param_spec.J, config.param_spec.lmbda
+        );
+    }
+
+    finish_acceptance_block();
+    stop_acceptance_diagnostics();
+
+    const double integrated_pot_energy_check = total_integrated_pot_energy(
+        lat, config.param_spec.h, config.param_spec.mu, config.param_spec.J, config.param_spec.lmbda
+    );
+    if (!almost_equal(integrated_pot_energy, integrated_pot_energy_check, 1e-5, 1e-13)) {
+        throw std::runtime_error(std::format(
+            "Integrated potential energy mismatch. {} does not match {}.",
+            integrated_pot_energy,
+            integrated_pot_energy_check));
+    }
+
+    return Result{
+        .production_acceptance=std::move(diagnostics)
+    };
+}
+
+template<char Basis, typename LatticeT>
+requires ValidBasis<Basis>
+Result ExtendedToricCodeQMC<Basis, LatticeT>::get_hysteresis(
     const Config& config
 ) {
 
@@ -3436,7 +3514,7 @@ Result ExtendedToricCodeQMC<Basis>::get_hysteresis(
                                      hys_autocorrelation_time;
 
     // Initialize Lattice
-    auto lat = Lattice(config.lat_spec, rng);
+    auto lat = LatticeT(config.lat_spec, rng);
     
     double integrated_pot_energy = total_integrated_pot_energy(
         lat, config.param_spec.h, config.param_spec.mu, config.param_spec.J, config.param_spec.lmbda

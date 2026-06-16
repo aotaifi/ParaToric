@@ -11,7 +11,9 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <complex>
 #include <cstdint>
+#include <filesystem>
 #include <format>
 #include <memory>
 #include <numeric>
@@ -89,6 +91,24 @@ public:
     double get_non_diag_single_energy_z() const { return static_cast<double>(total_single_spin_flip_count_) / BETA; }
     double get_non_diag_tuple_energy_x() const { return static_cast<double>(total_plaquette_flip_count_) / BETA; }
     double get_non_diag_tuple_energy_z() const { return static_cast<double>(total_star_flip_count_) / BETA; }
+
+    double percolation_probability() const { throw_unsupported_("percolation_probability"); }
+    double plaquette_percolation_probability() const { throw_unsupported_("plaquette_percolation_probability"); }
+    double cube_percolation_probability() const { throw_unsupported_("cube_percolation_probability"); }
+    double percolation_strength() const { throw_unsupported_("percolation_strength"); }
+    double plaquette_percolation_strength() const { throw_unsupported_("plaquette_percolation_strength"); }
+    double largest_cluster() const { throw_unsupported_("largest_cluster"); }
+    double largest_plaquette_cluster() const { throw_unsupported_("largest_plaquette_cluster"); }
+    std::complex<double> fredenhagen_marcu() const { throw_unsupported_("fredenhagen_marcu"); }
+    double get_staggered_imaginary_times_plaquette() const { throw_unsupported_("get_staggered_imaginary_times_plaquette"); }
+    double get_staggered_imaginary_times_star() const { throw_unsupported_("get_staggered_imaginary_times_star"); }
+    std::complex<double> get_diag_M_M() const { throw_unsupported_("get_diag_M_M"); }
+    std::complex<double> get_diag_dynamical_M_M() const { throw_unsupported_("get_diag_dynamical_M_M"); }
+    std::complex<double> get_non_diag_M_M() const { throw_unsupported_("get_non_diag_M_M"); }
+    double get_kL_kR_single() const { throw_unsupported_("get_kL_kR_single"); }
+    void rotate_imag_time() { throw_unsupported_("rotate_imag_time"); }
+    void update_spin_string() { throw_unsupported_("update_spin_string"); }
+    void write_graph(const std::string&, const std::filesystem::path&) const { throw_unsupported_("write_graph"); }
 
     std::tuple<Edge, int, int> get_random_edge() {
         const Edge edge = get_random_edge_descriptor();
@@ -575,6 +595,10 @@ private:
     std::int64_t total_single_spin_flip_count_ = 0;
     std::int64_t total_plaquette_flip_count_ = 0;
     std::int64_t total_star_flip_count_ = 0;
+
+    [[noreturn]] static void throw_unsupported_(const char* method) {
+        throw std::runtime_error(std::format("FlatSquareLattice does not support {} yet", method));
+    }
 
     int mod_(int value) const {
         value %= SYSTEM_SIZE;
