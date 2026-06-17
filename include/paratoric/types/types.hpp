@@ -24,6 +24,7 @@ namespace paratoric {
  * @param beta inverse temperature
  * @param boundaries the boundary condition of the lattice (periodic, open)
  * @param default_spin the default spin on the links (1 or -1)
+ * @param lattice_backend lattice storage/backend implementation (boost, flat_square)
  * 
  */
 struct LatSpec {
@@ -33,6 +34,7 @@ struct LatSpec {
     double      beta         = 16.;
     std::string boundaries   = "periodic";
     int         default_spin = +1;
+    std::string lattice_backend = "boost";
 };
 
 /**

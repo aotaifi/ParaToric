@@ -2,10 +2,10 @@
 
 ## Current verdict
 
-- Production QMC still uses the existing Boost-backed `Lattice`.
-- A square-periodic `FlatSquareLattice` scaffold now exists for the next backend-integration step.
-- The strongest confirmed performance signal is memory/layout: flat contiguous arrays are much cheaper than Boost graph storage for regular square lattices.
-- The flat backend benchmark is not yet full QMC, but it strongly motivates wiring the flat square backend into production QMC behind a controlled selector.
+- Production `etc_sample` can now use `--lattice_backend flat_square` for a restricted square-periodic path.
+- The flat sample path is gated to simple observables only: `energy`, `anyon_count`, `sigma_x`, `star_x`, and `plaquette_z`.
+- The strongest confirmed performance signal is now full `etc_sample` smoke speed: `3.4x`-`4.0x` faster at `L=400` for the tested minimal observable set.
+- The older layout benchmark still explains why the speedup exists: flat contiguous arrays are much cheaper than Boost graph storage for regular square lattices.
 
 ## Performance commits
 
@@ -15,6 +15,9 @@
 - `3603145` adds an opt-in flat lattice backend benchmark.
 - `64e823d` documents performance benchmark results.
 - `a63cbcc` adds the square-periodic `FlatSquareLattice` scaffold.
+- `77ea07b` completes the flat-square core-update surface.
+- `809806c` wires the flat-square backend into the real core-update benchmark.
+- This working tree adds gated `flat_square` support for full `etc_sample`.
 
 ## Layout benchmark evidence
 
@@ -111,6 +114,62 @@ Interpretation:
 
 ## Updated practical conclusion
 
-The current production improvements reduce memory and measurement overhead. The flat square backend is now wired into a real core-update benchmark and shows about a `2x` speedup at `L=400` and `L=1000` for this smoke setup.
+The current production improvements reduce memory and measurement overhead. The flat square backend is wired into both a real core-update benchmark and the restricted full `etc_sample` path.
 
-The next step is to validate flat-square physics against Boost at small sizes, then wire flat-square into full `etc_sample` with a restricted observable set. Only after that should large production runs such as `L=400` or `L=1000` be treated as scientific runs rather than performance smoke tests.
+The next step is longer production-style validation with enough samples to control autocorrelation at large `L`, plus optional expansion of the supported observable set. The current `L=400` runs are performance smokes, not production-quality physics runs.
+
+## Full `etc_sample` flat-square smoke
+
+The flat-square backend is now selectable from `etc_sample` with `--lattice_backend flat_square`, but only when the run is square, periodic, no snapshots, no custom thermalization, and all requested observables are in the supported simple set.
+
+### Small-system validation
+
+Local validation used the same seed for Boost and flat-square on `L=4`, `basis=x`, `h=0.3`, `mu=1.0`, `J=1.0`, `lambda=0.2`, with `N_thermalization=4000`, `N_samples=1000`, `N_between_samples=200`, `N_resamples=200`.
+
+| beta | observable | Boost mean | flat_square mean | combined-z |
+|---:|:---|---:|---:|---:|
+| 4 | energy | -32.824714 | -33.455989 | 2.06 |
+| 4 | anyon_count | 0.49288 | 0.08530 | 2.05 |
+| 4 | sigma_x | 0.25507094 | 0.30402313 | 1.54 |
+| 4 | star_x | 0.93590875 | 0.98924750 | 2.18 |
+| 4 | plaquette_z | 0.90600570 | 0.88310609 | 1.39 |
+| 10 | energy | -32.682699 | -33.755857 | 2.33 |
+| 10 | anyon_count | 0.19060 | 0.29798 | 0.88 |
+| 10 | sigma_x | 0.19634906 | 0.33959188 | 2.37 |
+| 10 | star_x | 0.97696 | 0.96450375 | 0.82 |
+| 10 | plaquette_z | 0.91386303 | 0.90474328 | 0.50 |
+
+All tested means agree within the loose `3σ` validation tolerance. They are not expected to be bit-identical because Boost and flat-square enumerate edges/tuples differently, so the same RNG seed does not generate the same trajectory.
+
+### L400 sample smoke
+
+Job array: `14720450`
+
+Parameters:
+
+- `simulation=etc_sample`
+- `basis=x`
+- `lattice_type=square`
+- `boundaries=periodic`
+- `L=400`
+- `beta=10` and `beta=L=400`
+- `h=0.3`, `mu=1.0`, `J=1.0`, `lambda=0.2`
+- `N_thermalization=200000`
+- `N_samples=50`
+- `N_between_samples=4000`
+- `N_resamples=100`
+- observables: `energy anyon_count sigma_x star_x plaquette_z`
+- outputs rooted at `/scratch/a/A.Otaifi/paratoric_flat_square_sample_smoke`
+
+| beta | backend | app_time_s | attempted | accepted | acceptance_fraction | output |
+|---:|:---|---:|---:|---:|---:|:---|
+| 10 | Boost | 1.436454 | 200,000 | 6,965 | 0.034825 | `/scratch/a/A.Otaifi/paratoric_flat_square_sample_smoke/sample_boost_L400_beta10_Nth200000_Ns50_Nbs4000/obs.h5` |
+| 10 | flat_square | 0.361819 | 200,000 | 7,205 | 0.036025 | `/scratch/a/A.Otaifi/paratoric_flat_square_sample_smoke/sample_flat_square_L400_beta10_Nth200000_Ns50_Nbs4000/obs.h5` |
+| 400 | Boost | 1.418260 | 200,000 | 504 | 0.002520 | `/scratch/a/A.Otaifi/paratoric_flat_square_sample_smoke/sample_boost_L400_beta400_Nth200000_Ns50_Nbs4000/obs.h5` |
+| 400 | flat_square | 0.416391 | 200,000 | 506 | 0.002530 | `/scratch/a/A.Otaifi/paratoric_flat_square_sample_smoke/sample_flat_square_L400_beta400_Nth200000_Ns50_Nbs4000/obs.h5` |
+
+Interpretation:
+
+- `beta=10`: full `etc_sample` smoke is about `4.0x` faster with flat-square.
+- `beta=400`: full `etc_sample` smoke is about `3.4x` faster with flat-square.
+- This is a short performance smoke with minimal observables, not a production-quality physics run.

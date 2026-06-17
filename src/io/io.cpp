@@ -12,22 +12,91 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <set>
 #include <vector>  
 
 #define UNUSED(expr) do { (void)(expr); } while (0)
 
 namespace paratoric {
 
+namespace {
+
+bool is_flat_square_sample_observable(const std::string& observable) {
+    static const std::set<std::string> allowed_observables{
+        "energy",
+        "anyon_count",
+        "sigma_x",
+        "star_x",
+        "plaquette_z"
+    };
+    return allowed_observables.contains(observable);
+}
+
+void validate_etc_sample_backend(const Config& config) {
+    if (config.lat_spec.lattice_backend == "boost") {
+        return;
+    }
+    if (config.lat_spec.lattice_backend != "flat_square") {
+        throw std::invalid_argument("lattice_backend must be boost or flat_square.");
+    }
+    if (config.lat_spec.lattice_type != "square") {
+        throw std::invalid_argument("flat_square etc_sample supports lattice_type=square only.");
+    }
+    if (config.lat_spec.boundaries != "periodic") {
+        throw std::invalid_argument("flat_square etc_sample supports boundaries=periodic only.");
+    }
+    if (config.out_spec.save_snapshots) {
+        throw std::invalid_argument("flat_square etc_sample does not support snapshots yet.");
+    }
+    if (config.sim_spec.custom_therm) {
+        throw std::invalid_argument("flat_square etc_sample does not support custom_therm yet.");
+    }
+    for (const auto& observable : config.sim_spec.observables) {
+        if (!is_flat_square_sample_observable(observable)) {
+            throw std::invalid_argument(
+                std::format("flat_square etc_sample does not support observable \"{}\".", observable)
+            );
+        }
+    }
+}
+
+std::string default_sample_folder_name(const Config& config) {
+    auto folder_name = config.lat_spec.lattice_type + "_" + std::to_string(config.lat_spec.system_size) + "_"
+        + config.lat_spec.boundaries + "_" + std::to_string(config.lat_spec.beta);
+    if (config.lat_spec.lattice_backend != "boost") {
+        folder_name += "_" + config.lat_spec.lattice_backend;
+    }
+    return folder_name;
+}
+
+template<char Basis, typename LatticeBackend>
+Result run_etc_sample_backend(const Config& config, const std::filesystem::path& path_out) {
+    auto mc = std::make_unique<ExtendedToricCodeQMC<Basis, LatticeBackend>>();
+    return mc->get_sample(
+        Config{config.sim_spec, config.param_spec, config.lat_spec,
+            OutSpec{.path_out=path_out, .save_snapshots=config.out_spec.save_snapshots, .full_time_series=config.out_spec.full_time_series}}
+    );
+}
+
+template<char Basis, typename LatticeBackend>
+std::vector<std::string> get_etc_sample_obs_types(const std::vector<std::string>& observables) {
+    auto mc = std::make_unique<ExtendedToricCodeQMC<Basis, LatticeBackend>>();
+    return mc->get_obs_type_vec(observables);
+}
+
+} // namespace
+
 void IO::etc_sample(
     const Config& config
     ) {
+
+    validate_etc_sample_backend(config);
 
     std::string folder_name_new;
     if (!config.out_spec.folder_name.empty()){
         folder_name_new = config.out_spec.folder_name;
     } else {
-        folder_name_new = config.lat_spec.lattice_type + "_" + std::to_string(config.lat_spec.system_size) + "_" + config.lat_spec.boundaries + "_"
-            + std::to_string(config.lat_spec.beta);
+        folder_name_new = default_sample_folder_name(config);
     }
     std::filesystem::path path_folder_name(folder_name_new);
     std::filesystem::path path_out = config.out_spec.path_out / path_folder_name;
@@ -36,19 +105,23 @@ void IO::etc_sample(
     Result result_spec;
     std::vector<std::string> obs_types;
     if (config.lat_spec.basis == 'x') {
-        auto mc = std::make_unique<ExtendedToricCodeQMC<'x'>>();
-        result_spec = mc->get_sample(
-            Config{config.sim_spec, config.param_spec, config.lat_spec, 
-                OutSpec{.path_out=path_out, .save_snapshots=config.out_spec.save_snapshots, .full_time_series=config.out_spec.full_time_series}}
-        ); 
-        obs_types = mc->get_obs_type_vec(config.sim_spec.observables);
+        if (config.lat_spec.lattice_backend == "flat_square") {
+            result_spec = run_etc_sample_backend<'x', FlatSquareLattice>(config, path_out);
+            obs_types = get_etc_sample_obs_types<'x', FlatSquareLattice>(config.sim_spec.observables);
+        } else {
+            result_spec = run_etc_sample_backend<'x', Lattice>(config, path_out);
+            obs_types = get_etc_sample_obs_types<'x', Lattice>(config.sim_spec.observables);
+        }
     } else if (config.lat_spec.basis == 'z') {
-        auto mc = std::make_unique<ExtendedToricCodeQMC<'z'>>();
-        result_spec = mc->get_sample(
-            Config{config.sim_spec, config.param_spec, config.lat_spec, 
-                OutSpec{.path_out=path_out, .save_snapshots=config.out_spec.save_snapshots, .full_time_series=config.out_spec.full_time_series}}
-        ); 
-        obs_types = mc->get_obs_type_vec(config.sim_spec.observables);
+        if (config.lat_spec.lattice_backend == "flat_square") {
+            result_spec = run_etc_sample_backend<'z', FlatSquareLattice>(config, path_out);
+            obs_types = get_etc_sample_obs_types<'z', FlatSquareLattice>(config.sim_spec.observables);
+        } else {
+            result_spec = run_etc_sample_backend<'z', Lattice>(config, path_out);
+            obs_types = get_etc_sample_obs_types<'z', Lattice>(config.sim_spec.observables);
+        }
+    } else {
+        throw std::invalid_argument("basis must be x or z.");
     }
     const auto& result = result_spec.series;
     const auto& obs_means = result_spec.mean;

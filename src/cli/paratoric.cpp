@@ -108,7 +108,8 @@ int main(int argc, char **argv) {
             system_size,
             beta,
             boundaries,
-            default_spin
+            default_spin,
+            lattice_backend
         };
         paratoric::ParamSpec param_spec = {
             .mu = mu_constant,
