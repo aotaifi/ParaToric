@@ -233,3 +233,29 @@ Follow-up implementation:
 - `FlatSquareLattice::rotate_imag_time()` is now implemented for the square-periodic flat backend.
 - The sample/thermalization/hysteresis reset counters now use `std::int64_t`, avoiding large-`L` reset-counter overflow.
 - Regression coverage includes a flat-square rotation invariant test and a forced-reset QMC sample test that hits the reset path quickly.
+
+### Reset-fixed hour-scale comparison
+
+After implementing flat-square imaginary-time rotation and rebuilding `build-current-clang-portable/paratoric` from commit `c8fffef`, the hour-scale runs were repeated.
+
+Job arrays:
+
+- `14723872`: `L=1000`, `beta=400`
+- `14723873`: `L=1000`, `beta=1000`
+- `14724427`: `L=40`, `beta=80`
+
+| L | beta | backend | wall_s | MaxRSS_K | production_attempts | accepted | acceptance_fraction | energy |
+|---:|---:|:---|---:|---:|---:|---:|---:|---:|
+| 40 | 80 | Boost | 1950.853 | 13,292 | 1,060,000,000 | 261,381,223 | 0.24658606 | `-3314.6337 ± 3.337` |
+| 40 | 80 | flat_square | 2491.673 | 11,772 | 1,060,000,000 | 261,314,824 | 0.24652342 | `-3495.4216 ± 92.72` |
+| 1000 | 400 | Boost | 5113.180 | 3,185,388 | 2,120,000,000 | 208,693,959 | 0.098440547 | `-1601503.2 ± 2059` |
+| 1000 | 400 | flat_square | 5566.783 | 2,242,340 | 2,120,000,000 | 210,196,340 | 0.099149217 | `-1652409.9 ± 2906` |
+| 1000 | 1000 | Boost | 4081.934 | 2,513,684 | 2,120,000,000 | 141,684,173 | 0.066832157 | `-1602951.8 ± 688.9` |
+| 1000 | 1000 | flat_square | 4349.375 | 1,570,332 | 2,120,000,000 | 143,009,965 | 0.067457531 | `-1613070.7 ± 941.9` |
+
+Pairwise interpretation:
+
+- `L=40`, `beta=80`: flat-square used `1.13x` less memory but was `1.28x` slower.
+- `L=1000`, `beta=400`: flat-square used `1.42x` less memory but was `1.09x` slower.
+- `L=1000`, `beta=1000`: flat-square used `1.60x` less memory but was `1.07x` slower.
+- The reset fix made flat-square stable for hour-scale runs, but the production runtime bottleneck is now dominated by event-list/worldline work rather than Boost topology access.
