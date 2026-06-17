@@ -5,8 +5,8 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32G
-#SBATCH --time=12:00:00
-#SBATCH --array=0-7
+#SBATCH --time=7-00:00:00
+#SBATCH --array=0-8
 #SBATCH --output=/scratch/a/A.Otaifi/paratoric_backend_production_grid/logs/%x_%A_%a.out
 #SBATCH --error=/scratch/a/A.Otaifi/paratoric_backend_production_grid/logs/%x_%A_%a.err
 
@@ -32,19 +32,21 @@ case "${SLURM_ARRAY_TASK_ID}" in
   5) BACKEND="flat_square"; L="600" ;;
   6) BACKEND="boost";       L="1000" ;;
   7) BACKEND="flat_square"; L="1000" ;;
+  8) BACKEND="boost";       L="200"; OBS_MODE="simple" ;;
   *) echo "Unknown SLURM_ARRAY_TASK_ID=${SLURM_ARRAY_TASK_ID}" >&2; exit 2 ;;
 esac
 
 BETA=$((2 * L))
 SEED=$((SEED_BASE + SLURM_ARRAY_TASK_ID))
+OBS_MODE="${OBS_MODE:-${BACKEND}}"
 
-if [[ "${BACKEND}" == "boost" ]]; then
+if [[ "${OBS_MODE}" == "boost" ]]; then
   OBSERVABLES=(energy percolation_probability percolation_strength star_x plaquette_z)
 else
   OBSERVABLES=(energy star_x plaquette_z)
 fi
 
-TAG="prod_${BACKEND}_L${L}_beta${BETA}_Nth${N_THERM}_Ns${N_SAMPLES}_Nbs${N_BETWEEN}"
+TAG="prod_${BACKEND}_${OBS_MODE}obs_L${L}_beta${BETA}_Nth${N_THERM}_Ns${N_SAMPLES}_Nbs${N_BETWEEN}"
 RESULT_FILE="${OUT_ROOT}/results/${TAG}_job-${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}.txt"
 
 if [[ ! -x "${PARATORIC_EXE}" ]]; then
@@ -66,6 +68,7 @@ fi
   echo "N_between_samples=${N_BETWEEN}"
   echo "N_resamples=${N_RESAMPLES}"
   echo "seed=${SEED}"
+  echo "obs_mode=${OBS_MODE}"
   echo "observables=${OBSERVABLES[*]}"
   echo "--- run ---"
   start_ms=$(date +%s%3N)
