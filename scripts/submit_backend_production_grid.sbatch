@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32G
-#SBATCH --time=7-00:00:00
+#SBATCH --time=14-00:00:00
 #SBATCH --array=0-8
 #SBATCH --output=/scratch/a/A.Otaifi/paratoric_backend_production_grid/logs/%x_%A_%a.out
 #SBATCH --error=/scratch/a/A.Otaifi/paratoric_backend_production_grid/logs/%x_%A_%a.err
