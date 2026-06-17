@@ -227,3 +227,9 @@ Interpretation:
 - The previous short-run speedup is not enough to certify flat-square for production-length runs.
 - Full flat-square production needs `rotate_imag_time()` support or a safe alternative for the periodic potential-energy reset path.
 - The long Boost jobs confirm the one-hour budget and give useful reference memory/timing baselines at `L=1000`.
+
+Follow-up implementation:
+
+- `FlatSquareLattice::rotate_imag_time()` is now implemented for the square-periodic flat backend.
+- The sample/thermalization/hysteresis reset counters now use `std::int64_t`, avoiding large-`L` reset-counter overflow.
+- Regression coverage includes a flat-square rotation invariant test and a forced-reset QMC sample test that hits the reset path quickly.

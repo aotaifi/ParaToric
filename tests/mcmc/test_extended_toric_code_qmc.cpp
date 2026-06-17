@@ -1054,4 +1054,43 @@ BOOST_AUTO_TEST_CASE(get_hysteresis_test_4) {
     );
 }
 
+BOOST_AUTO_TEST_CASE(flat_square_sample_hits_reset_path) {
+    auto mc = ExtendedToricCodeQMC<'x', FlatSquareLattice>();
+    LatSpec lat_spec = {
+        'x',
+        "square",
+        2,
+        4.,
+        "periodic",
+        1,
+        "flat_square"
+    };
+    ParamSpec param_spec = {
+        .mu = 1.0,
+        .h = 0.3,
+        .J = 1.0,
+        .lmbda = 0.2
+    };
+    SimSpec sim_spec = {
+        .N_samples = 2,
+        .N_thermalization = 1,
+        .N_between_samples = 400000,
+        .N_resamples = 10,
+        .custom_therm = false,
+        .seed = 1234,
+        .observables = std::vector<std::string>{
+            "energy", "anyon_count", "sigma_x", "star_x", "plaquette_z"
+        }
+    };
+    OutSpec out_spec = {
+        .path_out = std::filesystem::path{"./"},
+        .save_snapshots = false,
+        .full_time_series = false
+    };
+
+    auto result = mc.get_sample(Config{sim_spec, param_spec, lat_spec, out_spec});
+    BOOST_CHECK_EQUAL(result.production_acceptance.attempted, 800000);
+    BOOST_CHECK_EQUAL(result.mean.size(), sim_spec.observables.size());
+}
+
 } // namespace paratoric

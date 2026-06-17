@@ -17,6 +17,7 @@
 #include <format>
 #include <memory>
 #include <numeric>
+#include <random>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -106,7 +107,34 @@ public:
     std::complex<double> get_diag_dynamical_M_M() const { throw_unsupported_("get_diag_dynamical_M_M"); }
     std::complex<double> get_non_diag_M_M() const { throw_unsupported_("get_non_diag_M_M"); }
     double get_kL_kR_single() const { throw_unsupported_("get_kL_kR_single"); }
-    void rotate_imag_time() { throw_unsupported_("rotate_imag_time"); }
+    void rotate_imag_time() {
+        std::uniform_real_distribution<double> new_times_dist(0.0, BETA);
+        const double tau_0 = new_times_dist(*rng);
+
+        for (Edge edge = 0; edge < E; ++edge) {
+            auto& data = edge_data_(edge);
+            const auto spin_pivot = std::lower_bound(data.spin_flips.begin(), data.spin_flips.end(), tau_0);
+            const auto single_pivot = std::lower_bound(data.single_spin_flips.begin(), data.single_spin_flips.end(), tau_0);
+            const auto pivot_index = static_cast<std::size_t>(spin_pivot - data.spin_flips.begin());
+            if ((pivot_index & 1U) != 0U) {
+                flip_spin(edge);
+            }
+            rotate_times_(data.spin_flips, spin_pivot, tau_0, BETA);
+            rotate_times_(data.single_spin_flips, single_pivot, tau_0, BETA);
+        }
+
+        if (BASIS == 'x') {
+            for (auto& flips : plaquette_flips_) {
+                const auto pivot = std::lower_bound(flips.begin(), flips.end(), tau_0);
+                rotate_times_(flips, pivot, tau_0, BETA);
+            }
+        } else {
+            for (auto& flips : star_flips_) {
+                const auto pivot = std::lower_bound(flips.begin(), flips.end(), tau_0);
+                rotate_times_(flips, pivot, tau_0, BETA);
+            }
+        }
+    }
     void update_spin_string() { throw_unsupported_("update_spin_string"); }
     void write_graph(const std::string&, const std::filesystem::path&) const { throw_unsupported_("write_graph"); }
 
@@ -612,6 +640,24 @@ private:
 
     static void insert_sorted_(std::vector<double>& values, double tau) {
         values.insert(std::upper_bound(values.begin(), values.end(), tau), tau);
+    }
+
+    static double modulo_time_(double value, double period) {
+        value = std::fmod(value, period);
+        return value < 0.0 ? value + period : value;
+    }
+
+    static void rotate_times_(
+        std::vector<double>& values,
+        std::vector<double>::iterator pivot,
+        double tau_0,
+        double beta
+    ) {
+        std::rotate(values.begin(), pivot, values.end());
+        for (double& tau : values) {
+            tau = modulo_time_(tau - tau_0, beta);
+            if (tau == 0.0) tau += std::numeric_limits<double>::epsilon();
+        }
     }
 
     static void insert_sorted_event_(std::vector<std::pair<double, int>>& values, double tau, int type) {

@@ -3039,10 +3039,11 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_thermalization(
     );
     double acc_ratio = 1.;
 
-    int total_metropolis_step_count = 0;
-    int reset_potential_energy_count = static_cast<int>(lat.get_edge_count()*10000);
+    std::int64_t total_metropolis_step_count = 0;
+    const std::int64_t reset_potential_energy_count =
+        static_cast<std::int64_t>(lat.get_edge_count()) * 10000;
 
-    for (int i = 0; i < config.sim_spec.N_thermalization; ++i) {
+    for (std::int64_t i = 0; i < config.sim_spec.N_thermalization; ++i) {
         ++total_metropolis_step_count;
         metropolis_step(
             lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta, 
@@ -3050,7 +3051,7 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_thermalization(
             config.param_spec.J, config.param_spec.lmbda
         );
 
-        if (total_metropolis_step_count % reset_potential_energy_count == 0) [[unlikely]] {
+        if (reset_potential_energy_count > 0 && total_metropolis_step_count % reset_potential_energy_count == 0) [[unlikely]] {
             // avoid accumulation of small numerical errors leading to bias
             lat.init_potential_energy();
             lat.rotate_imag_time();
@@ -3148,7 +3149,7 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
 
     if (config.sim_spec.custom_therm) {
         // Pre-Thermalization 
-        for (int i = 0; i < config.sim_spec.N_thermalization; ++i) {
+        for (std::int64_t i = 0; i < config.sim_spec.N_thermalization; ++i) {
             metropolis_step(
                 lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta, 
                 config.param_spec.h_therm, config.param_spec.mu, config.param_spec.J, 
@@ -3167,7 +3168,7 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                     lat, h_end, config.param_spec.mu, 
                     config.param_spec.J, config.param_spec.lmbda_therm
                 );
-                for (int j = 0; j < config.sim_spec.N_thermalization / 10.; ++j) {
+                for (std::int64_t j = 0; j < config.sim_spec.N_thermalization / 10.; ++j) {
                     metropolis_step(
                         lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta, h_end, 
                         config.param_spec.mu, config.param_spec.J, config.param_spec.lmbda_therm
@@ -3185,7 +3186,7 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                     lat, h_end, config.param_spec.mu, 
                     config.param_spec.J, lmbda_end
                 );
-                for (int j = 0; j < config.sim_spec.N_thermalization / 10.; ++j) {
+                for (std::int64_t j = 0; j < config.sim_spec.N_thermalization / 10.; ++j) {
                     metropolis_step(
                         lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta, h_end, 
                         config.param_spec.mu, config.param_spec.J, lmbda_end
@@ -3195,7 +3196,7 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
         }
     } else {
         // Thermalization 
-        for (int i = 0; i < config.sim_spec.N_thermalization; ++i) {
+        for (std::int64_t i = 0; i < config.sim_spec.N_thermalization; ++i) {
             metropolis_step(
                 lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta, 
                 config.param_spec.h, config.param_spec.mu, config.param_spec.J, 
@@ -3212,20 +3213,21 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
         throw std::runtime_error(std::format("Integrated potential energy mismatch. {} does not match {}.", integrated_pot_energy, integrated_pot_energy_check));
     }
 
-    int total_metropolis_step_count = 0;
-    int reset_potential_energy_count = static_cast<int>(lat.get_edge_count()*100000);
+    std::int64_t total_metropolis_step_count = 0;
+    const std::int64_t reset_potential_energy_count =
+        static_cast<std::int64_t>(lat.get_edge_count()) * 100000;
     AcceptanceDiagnostics production_acceptance;
     start_acceptance_diagnostics(production_acceptance);
 
-    for (int i = 0; i < config.sim_spec.N_samples; ++i) {
+    for (std::int64_t i = 0; i < config.sim_spec.N_samples; ++i) {
         start_acceptance_block();
-        for (int j = 0; j < config.sim_spec.N_between_samples; ++j) {
+        for (std::int64_t j = 0; j < config.sim_spec.N_between_samples; ++j) {
             ++total_metropolis_step_count;
             metropolis_step(
                 lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta, config.param_spec.h, 
                 config.param_spec.mu, config.param_spec.J, config.param_spec.lmbda
             );
-            if (total_metropolis_step_count % reset_potential_energy_count == 0) [[unlikely]] {
+            if (reset_potential_energy_count > 0 && total_metropolis_step_count % reset_potential_energy_count == 0) [[unlikely]] {
                 // avoid accumulation of small numerical errors leading to bias
                 lat.init_potential_energy();
                 lat.rotate_imag_time();
@@ -3522,7 +3524,7 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_hysteresis(
     double acc_ratio = 1.;
 
     // Thermalization 
-    for (int i = 0; i < config.sim_spec.N_thermalization; ++i) {
+    for (std::int64_t i = 0; i < config.sim_spec.N_thermalization; ++i) {
         metropolis_step(
             lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta, 
             config.param_spec.h, config.param_spec.mu, config.param_spec.J, 
@@ -3538,8 +3540,9 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_hysteresis(
         throw std::runtime_error(std::format("Integrated potential energy mismatch. {} does not match {}.", integrated_pot_energy, integrated_pot_energy_check));
     }
 
-    int total_metropolis_step_count = 0;
-    int reset_potential_energy_count = static_cast<int>(lat.get_edge_count()*100000);
+    std::int64_t total_metropolis_step_count = 0;
+    const std::int64_t reset_potential_energy_count =
+        static_cast<std::int64_t>(lat.get_edge_count()) * 100000;
 
     for (size_t n = 0; n < std::min( config.param_spec.h_hys.size(), std::min(config.param_spec.lmbda_hys.size(), config.out_spec.paths_out.size()) ); n++) {
         // Vector to store observable results for all snapshots
@@ -3581,15 +3584,15 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_hysteresis(
             }
         }
         
-        int N_rethermalization = static_cast<int>(config.sim_spec.N_thermalization/4);
+        std::int64_t N_rethermalization = static_cast<std::int64_t>(config.sim_spec.N_thermalization/4);
 
-        for (int t = 0; t < N_rethermalization; ++t) {
+        for (std::int64_t t = 0; t < N_rethermalization; ++t) {
             ++total_metropolis_step_count;
             metropolis_step(
                 lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta, h, 
                 config.param_spec.mu, config.param_spec.J, lmbda
             );
-            if (total_metropolis_step_count % reset_potential_energy_count == 0) [[unlikely]] {
+            if (reset_potential_energy_count > 0 && total_metropolis_step_count % reset_potential_energy_count == 0) [[unlikely]] {
                 // avoid accumulation of small numerical errors leading to bias
                 lat.init_potential_energy();
                 lat.rotate_imag_time();
@@ -3600,14 +3603,14 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_hysteresis(
             }
         }
 
-        for (int i = 0; i < config.sim_spec.N_samples; ++i) {
-            for (int j = 0; j < config.sim_spec.N_between_samples; ++j) {
+        for (std::int64_t i = 0; i < config.sim_spec.N_samples; ++i) {
+            for (std::int64_t j = 0; j < config.sim_spec.N_between_samples; ++j) {
                 ++total_metropolis_step_count;
                 metropolis_step(
                     lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta, 
                     h, config.param_spec.mu, config.param_spec.J, lmbda
                 );
-                if (total_metropolis_step_count % reset_potential_energy_count == 0) [[unlikely]] {
+                if (reset_potential_energy_count > 0 && total_metropolis_step_count % reset_potential_energy_count == 0) [[unlikely]] {
                     // avoid accumulation of small numerical errors leading to bias
                     lat.init_potential_energy();
                     lat.rotate_imag_time();

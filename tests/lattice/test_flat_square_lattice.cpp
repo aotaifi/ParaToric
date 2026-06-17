@@ -88,4 +88,44 @@ BOOST_AUTO_TEST_CASE(flat_square_periodic_core_energy_helpers) {
     BOOST_CHECK_EQUAL(star_edges.size(), 4);
 }
 
+BOOST_AUTO_TEST_CASE(flat_square_rotate_imag_time_preserves_period_integrals) {
+    const LatSpec spec{'x', "square", 4, 10.0, "periodic", 1};
+    auto rng = std::make_shared<rng::RNG>(1234);
+    FlatSquareLattice lat(spec, rng);
+
+    const auto edge = lat.edge_in_between(0, 1);
+    lat.insert_double_single_spin_flip(edge, 1.0, 7.0);
+    const auto plaquette_edges = lat.get_plaquette_edges(0);
+    lat.insert_double_tuple_flip(0, plaquette_edges, 3.0, 8.0);
+
+    const double edge_energy = lat.total_integrated_edge_energy();
+    const double star_energy = lat.total_integrated_star_energy();
+    const double plaquette_energy = lat.total_integrated_plaquette_energy();
+    const double non_diag_single = lat.get_non_diag_single_energy_x();
+    const double non_diag_tuple = lat.get_non_diag_tuple_energy_x();
+
+    lat.rotate_imag_time();
+    lat.init_potential_energy();
+
+    BOOST_CHECK_CLOSE(lat.total_integrated_edge_energy(), edge_energy, 1e-10);
+    BOOST_CHECK_CLOSE(lat.total_integrated_star_energy(), star_energy, 1e-10);
+    BOOST_CHECK_CLOSE(lat.total_integrated_plaquette_energy(), plaquette_energy, 1e-10);
+    BOOST_CHECK_CLOSE(lat.get_non_diag_single_energy_x(), non_diag_single, 1e-12);
+    BOOST_CHECK_CLOSE(lat.get_non_diag_tuple_energy_x(), non_diag_tuple, 1e-12);
+
+    const auto single_flips = lat.get_single_spin_flips(edge);
+    BOOST_CHECK(std::is_sorted(single_flips.begin(), single_flips.end()));
+    for (const double tau : single_flips) {
+        BOOST_CHECK_GT(tau, 0.0);
+        BOOST_CHECK_LT(tau, spec.beta);
+    }
+
+    const auto tuple_flips = lat.get_tuple_spin_flips(0);
+    BOOST_CHECK(std::is_sorted(tuple_flips.begin(), tuple_flips.end()));
+    for (const double tau : tuple_flips) {
+        BOOST_CHECK_GT(tau, 0.0);
+        BOOST_CHECK_LT(tau, spec.beta);
+    }
+}
+
 } // namespace paratoric
