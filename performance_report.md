@@ -201,3 +201,29 @@ Interpretation:
 | 400 | 400 | 1.418260 | 0.416391 | 3.41x |
 | 1000 | 400 | 9.810086 | 1.426690 | 6.88x |
 | 1000 | 1000 | 7.844626 | 1.066780 | 7.35x |
+
+### L1000 hour-scale safe-max smoke
+
+Job arrays: `14721293` for `beta=400`, `14721294` for `beta=1000`.
+
+These runs used `N_thermalization=2,000,000,000`, `N_samples=53`, and `N_between_samples=40,000,000`. The Boost jobs completed; both flat-square jobs failed before writing `obs.h5` because the long run reached the production reset path and `FlatSquareLattice::rotate_imag_time()` is still unsupported.
+
+| L | beta | backend | state | wall_s | production_attempts | accepted | acceptance_fraction | MaxRSS |
+|---:|---:|:---|:---|---:|---:|---:|---:|---:|
+| 1000 | 400 | Boost | completed | 4626.283 | 2,120,000,000 | 208,387,212 | 0.098295855 | 3,186,852K |
+| 1000 | 400 | flat_square | failed: `rotate_imag_time` unsupported | 4856.332 | n/a | n/a | n/a | 2,118,336K |
+| 1000 | 1000 | Boost | completed | 3967.718 | 2,120,000,000 | 141,497,184 | 0.066743955 | 2,512,248K |
+| 1000 | 1000 | flat_square | failed: `rotate_imag_time` unsupported | 3294.568 | n/a | n/a | n/a | 1,488,344K |
+
+Completed Boost observable summaries:
+
+| beta | energy | anyon_count | sigma_x | star_x | plaquette_z |
+|---:|---:|---:|---:|---:|---:|
+| 400 | `-1608493 ± 4215` | `853.68264 ± 149.3` | `0.92842275 ± 0.009366` | `0.99832526 ± 0.0003233` | `0.048386939 ± 0.002858` |
+| 1000 | `-1604467.9 ± 927.9` | `162.92981 ± 56.04` | `0.98612154 ± 0.002041` | `0.99968801 ± 0.0001128` | `0.011486928 ± 0.0008663` |
+
+Interpretation:
+
+- The previous short-run speedup is not enough to certify flat-square for production-length runs.
+- Full flat-square production needs `rotate_imag_time()` support or a safe alternative for the periodic potential-energy reset path.
+- The long Boost jobs confirm the one-hour budget and give useful reference memory/timing baselines at `L=1000`.
