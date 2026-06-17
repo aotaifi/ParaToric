@@ -17,6 +17,8 @@ PARATORIC_EXE="${PARATORIC_EXE:-${REPO_ROOT}/build-current-clang-portable/parato
 OUT_ROOT="${OUT_ROOT:-/scratch/a/A.Otaifi/paratoric_flat_square_sample_smoke}"
 SEED="${SEED:-24601}"
 L="${L:-400}"
+BETA_LOW="${BETA_LOW:-10}"
+BETA_HIGH="${BETA_HIGH:-${L}}"
 N_THERM="${N_THERM:-200000}"
 N_SAMPLES="${N_SAMPLES:-50}"
 N_BETWEEN="${N_BETWEEN:-4000}"
@@ -25,10 +27,10 @@ N_RESAMPLES="${N_RESAMPLES:-100}"
 mkdir -p "${OUT_ROOT}/logs" "${OUT_ROOT}/results"
 
 case "${SLURM_ARRAY_TASK_ID}" in
-  0) BACKEND="boost";       BETA="10" ;;
-  1) BACKEND="flat_square"; BETA="10" ;;
-  2) BACKEND="boost";       BETA="${L}" ;;
-  3) BACKEND="flat_square"; BETA="${L}" ;;
+  0) BACKEND="boost";       BETA="${BETA_LOW}" ;;
+  1) BACKEND="flat_square"; BETA="${BETA_LOW}" ;;
+  2) BACKEND="boost";       BETA="${BETA_HIGH}" ;;
+  3) BACKEND="flat_square"; BETA="${BETA_HIGH}" ;;
   *) echo "Unknown SLURM_ARRAY_TASK_ID=${SLURM_ARRAY_TASK_ID}" >&2; exit 2 ;;
 esac
 

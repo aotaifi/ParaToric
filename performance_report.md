@@ -173,3 +173,31 @@ Interpretation:
 - `beta=10`: full `etc_sample` smoke is about `4.0x` faster with flat-square.
 - `beta=400`: full `etc_sample` smoke is about `3.4x` faster with flat-square.
 - This is a short performance smoke with minimal observables, not a production-quality physics run.
+
+### L1000 sample smoke
+
+Job array: `14720489`
+
+Parameters were the same as the L400 smoke except `L=1000`, with `beta=400` and `beta=L=1000`.
+
+| L | beta | backend | app_time_s | wall_s | attempted | accepted | acceptance_fraction | output |
+|---:|---:|:---|---:|---:|---:|---:|---:|:---|
+| 1000 | 400 | Boost | 9.810086 | 9.945 | 200,000 | 486 | 0.002430 | `/scratch/a/A.Otaifi/paratoric_flat_square_sample_smoke_L1000_b400_b1000/sample_boost_L1000_beta400_Nth200000_Ns50_Nbs4000/obs.h5` |
+| 1000 | 400 | flat_square | 1.426690 | 1.506 | 200,000 | 487 | 0.002435 | `/scratch/a/A.Otaifi/paratoric_flat_square_sample_smoke_L1000_b400_b1000/sample_flat_square_L1000_beta400_Nth200000_Ns50_Nbs4000/obs.h5` |
+| 1000 | 1000 | Boost | 7.844626 | 8.289 | 200,000 | 221 | 0.001105 | `/scratch/a/A.Otaifi/paratoric_flat_square_sample_smoke_L1000_b400_b1000/sample_boost_L1000_beta1000_Nth200000_Ns50_Nbs4000/obs.h5` |
+| 1000 | 1000 | flat_square | 1.066780 | 1.087 | 200,000 | 221 | 0.001105 | `/scratch/a/A.Otaifi/paratoric_flat_square_sample_smoke_L1000_b400_b1000/sample_flat_square_L1000_beta1000_Nth200000_Ns50_Nbs4000/obs.h5` |
+
+Interpretation:
+
+- `L=1000`, `beta=400`: full `etc_sample` smoke is about `6.9x` faster with flat-square by app time.
+- `L=1000`, `beta=1000`: full `etc_sample` smoke is about `7.4x` faster with flat-square by app time.
+- Within `L=1000`, beta `1000` ran faster than beta `400` for both backends because the acceptance rate was lower, so fewer accepted-update data-structure changes were performed.
+
+### Current sample-speed matrix
+
+| L | beta | Boost app_time_s | flat_square app_time_s | flat speedup |
+|---:|---:|---:|---:|---:|
+| 400 | 10 | 1.436454 | 0.361819 | 3.97x |
+| 400 | 400 | 1.418260 | 0.416391 | 3.41x |
+| 1000 | 400 | 9.810086 | 1.426690 | 6.88x |
+| 1000 | 1000 | 7.844626 | 1.066780 | 7.35x |
