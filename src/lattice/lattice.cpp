@@ -2659,15 +2659,15 @@ void Lattice::print_spins() {
     for (const auto& vertex : boost::make_iterator_range(boost::vertices(g))) {
         for (const auto& neighbor : boost::make_iterator_range(boost::adjacent_vertices(vertex, g))) { 
             if (get_spin(edge_in_between(vertex, neighbor)) == -1) {
-                std::println(std::cout, "Edge between {0} and {1} has spin {2}", vertex, neighbor, get_spin(edge_in_between(vertex, neighbor)));
+                std::cout << std::format("Edge between {0} and {1} has spin {2}\n", vertex, neighbor, get_spin(edge_in_between(vertex, neighbor)));
             }
         }
     }
 }
 
 void Lattice::print_spin_flip_imag_times(const Edge& edg) {
-    std::println(std::cout, "Total number of spin flips: {}", get_spin_flip_count(edg));
-    std::println(std::cout, "Spin at imaginary time 0/beta: {}", get_spin(edg));
+    std::cout << std::format("Total number of spin flips: {}\n", get_spin_flip_count(edg));
+    std::cout << std::format("Spin at imaginary time 0/beta: {}\n", get_spin(edg));
     std::cout << "Spin flip imaginary times:";
     for (const auto tau : g[edg].spin_flips) {
         std::cout << ' ' << tau;
@@ -2676,10 +2676,10 @@ void Lattice::print_spin_flip_imag_times(const Edge& edg) {
 }
 
 void Lattice::print_tuple_flip_imag_times(std::span<const Edge> tuple_edges) {
-    std::println(std::cout, "Printing spin flips of tuple\n");
+    std::cout << std::format("Printing spin flips of tuple\n");
     for (const Edge& edg : tuple_edges) {
         const auto [source_v, target_v] = vertices_of_edge(edg);
-        std::println(std::cout, "Edge between {0} and {1}:", source_v, target_v);
+        std::cout << std::format("Edge between {0} and {1}:\n", source_v, target_v);
         print_spin_flip_imag_times(edg);
     }
 }
@@ -2868,7 +2868,7 @@ Lattice::integrated_plaquette_energy_diff(
 }
 
 double Lattice::total_integrated_star_energy() {
-    return cached_total_integrated_star_energy();
+    return recompute_total_integrated_star_energy();
 }
 
 double Lattice::cached_total_integrated_star_energy() const {
@@ -2887,7 +2887,7 @@ double Lattice::recompute_total_integrated_star_energy() {
 }
 
 double Lattice::total_integrated_plaquette_energy() {
-    return cached_total_integrated_plaquette_energy();
+    return recompute_total_integrated_plaquette_energy();
 }
 
 double Lattice::cached_total_integrated_plaquette_energy() const {
@@ -3025,7 +3025,7 @@ double Lattice::integrated_edge_energy_diff(const Edge& edg, double imag_time_1,
 }
 
 double Lattice::total_integrated_edge_energy() {
-    return cached_total_integrated_edge_energy();
+    return recompute_total_integrated_edge_energy();
 }
 
 double Lattice::cached_total_integrated_edge_energy() const {
