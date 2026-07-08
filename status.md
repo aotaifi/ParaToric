@@ -69,11 +69,40 @@ apply to a plain conversation.
    (DNS resolution failure for the Slurm controller hostname) — flagged to the PI,
    not yet resolved, not blocking (monitoring done directly via squeue/sacct instead).
 
-## Next action (when Codex access resumes)
-Re-dispatch James with the plain-`mpirun` fix (already fully specified, ready to send
-verbatim) for the L=8 6-rank ladder job. On success: read back real swap acceptance/
-round-trip numbers (G1.2) and PT-on vs PT-off z-values (G1.3), have Martina review if
-anything looks off, log the gate result, then move to ensemble driver and G2 pilot (L=120)
-staging. On repeated failure: report to the PI rather than continuing to guess at cluster
-MPI configuration — 2 fallback attempts (plain mpirun, then vader-forced mpirun) is the
-agreed ceiling before escalating instead of continuing to iterate blindly.
+## Next action (when Codex access resumes) — UPDATED, better fix found
+PI pointed at `paratoric_tampered/AGENTS.md` for reference; the real fix was actually in
+`paratoric_tampered/README_parallel_tempering.md` + its `scripts/run_pt_j_h_scan_zbasis.sh`
++ `build-step2-mpi/CMakeCache.txt` (that project has WORKING production PT+MPI Slurm runs
+on this exact cluster). Root cause of both prior failures: James's builds used the system
+RPM OpenMPI 4.1.1 at /usr/lib64/openmpi, which has a PMIx build incompatible with this
+cluster's Slurm (`ompi_rte_init failed`). The working precedent uses a completely different,
+**spack-provided OpenMPI 5.0.0 built against GCC 13.2.0**, which DOES speak the right PMIx
+to this Slurm — with that toolchain, plain `srun --mpi=pmix -n <ranks>` (no special-casing
+needed) is what their production scripts actually use successfully.
+
+Exact paths to hand to the next dispatch verbatim (do not re-derive):
+- `MPICXX = /software/opt/el_9/x86_64/spack/2024.07/spack/opt/spack/linux-almalinux9-x86_64_v2/gcc-13.2.0/openmpi-5.0.0-7geqnxwp4tjl727meujgkje6m2pvk45y/bin/mpicxx`
+- `MPICC` = same dir, `bin/mpicc`
+- `BOOST_LIB = /software/opt/el_9/x86_64/spack/2024.07/spack/opt/spack/linux-almalinux9-x86_64_v2/gcc-13.2.0/boost-1.85.0-3zjda6mcvjj4h3x34qxh7lhtrksykzbc/lib`
+- `HDF5_LIB = /software/opt/el_9/x86_64/spack/2024.07/spack/opt/spack/linux-almalinux9-x86_64_v2/gcc-13.2.0/hdf5-1.14.3-ghn7qazcaoy6ajxy6cpcqv52cahwttj3/lib`
+- also export `HDF5_USE_FILE_LOCKING=FALSE` (their script sets this, likely for the cluster
+  filesystem)
+- launch: `srun --mpi=pmix -n <ranks>` from inside the sbatch job (no special partition/time
+  flags needed when `$SLURM_JOB_ID` is already set, per their script's own branching)
+
+Open question for the next dispatch to resolve (not yet known): whether to (a) set
+`CMAKE_CXX_COMPILER`/`CMAKE_C_COMPILER` directly to this spack mpicxx/mpicc (as
+paratoric_tampered does — proven to work, but switches the whole build off clang-20, so
+must re-verify `<format>` compiles under this GCC 13.2.0 — likely fine, GCC 13 has
+`<format>`, but confirm rather than assume, and check whether the boost_shim include is
+still needed or can be dropped), or (b) keep clang++-20 as the main compiler and only
+point `find_package(MPI)` at this spack OpenMPI's `bin/` via PATH (mixing Clang-compiled
+code with a GCC-13-built MPI lib — usually fine since MPI's C ABI is stable and OpenMPI 5
+dropped the C++ bindings, but verify by checking the resulting binary links cleanly and
+runs). Recommend trying (a) first since it's the proven, working combination — don't
+guess at (b) working just because it seems less invasive.
+
+On success: read back real swap acceptance/round-trip numbers (G1.2) and PT-on vs PT-off
+z-values (G1.3), Martina review if anything looks off, log the gate, then ensemble driver
+and G2 pilot (L=120) staging. On repeated failure: report to the PI rather than continuing
+to guess at cluster MPI configuration.
