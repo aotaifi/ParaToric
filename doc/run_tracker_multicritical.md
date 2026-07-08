@@ -1,14 +1,18 @@
 # Multicritical Campaign Tracker — current-state card
 
-Updated: 2026-07-07 (rewrite this card in place; durable results -> plan/report).
+Updated: 2026-07-08 (rewrite this card in place; durable results -> plan/report).
 
 ## Status
-- Phase: M0 authorized. Thesis T1 ratified, T1-P1 status GO — see
-  doc/feynman_thesis_tojarvis.md (2026-07-08). No campaign code changes, no
-  campaign runs yet.
-- Next action: M0 — checkpoint/restart, then PT along the self-dual line
-  (h=lmbda, mu=J=1), then ensembles, then G2 pilot (L=120 ladder). Winding-
-  loop move is OUT of M0 scope (R5).
+- Phase: M0 in progress. Thesis T1 ratified, T1-P1 status GO — see
+  doc/feynman_thesis_tojarvis.md (2026-07-08). G0 gates PASS. Checkpoint/restart
+  (G1.1) PASS (commit e461686). PT along self-dual line implemented (commit
+  b29ff1c); single-process swap-weight math validated, real multi-rank mpirun
+  validation BLOCKED in the Codex dev sandbox (network/socket restriction) —
+  needs a real Slurm srun job on the cluster to finish G1.2/G1.3.
+- Next action: submit a small Slurm srun job (L=8, few replicas, 1 node, short
+  walltime) to measure real swap acceptance/round-trips (G1.2) and PT-on vs
+  PT-off physics agreement (G1.3). Then ensemble driver, then G2 pilot (L=120
+  ladder). Winding-loop move is OUT of M0 scope (R5).
 
 ## Gate log (append one line per gate decision)
 | date | gate | evidence | result | decision |
@@ -18,6 +22,8 @@ Updated: 2026-07-07 (rewrite this card in place; durable results -> plan/report)
 | 2026-07-08 | G0.3 existing tests | James dispatch, `ctest --test-dir build-current-clang-portable` | PASS | 3/3 tests passed (test_lattice, test_flat_square_lattice, test_extended_toric_code_qmc) |
 | 2026-07-08 | G0.2 fast-math A/B | James dispatch + Martina verification, L=40 beta=40, seeds 24601-24604, ON vs OFF, `/scratch/a/A.Otaifi/paratoric_g0_20260708/g0_2_fastmath_ab/...` | PASS (confirmed) | combined z=0 for all observables (energy, anyon_count, sigma_x, star_x, plaquette_z) between ON/OFF. Verified NOT a build no-op: CMakeCache.txt/compile_commands.json confirm -ffast-math present only in ON build, binaries differ (md5 bcf205f.. vs 57f01ae.., cmp differs). Fast-math genuinely has no measurable effect on these observables at this scale -> production can keep FAST_MATH ON |
 | 2026-07-08 | cross-project scan | Jones dispatch on /project/theorie/a/A.Otaifi/paratoric_tampered (separate repo, gitlab A.Otaifi/paratoric_tampered) | informational | real MPI PT code exists there (src/mcmc/parallel_tempering.hpp, odd/even MPI_Sendrecv swaps, z-basis kink-count + integrated-energy swap weights) but: (a) does not meet current G1.1-G1.3 harness standards (partial validation only, some OOM/failures), (b) checkpoint/restart only exists in a separate dirty worktree with PT-resume explicitly blocked, (c) current ParaToric is 48 commits past the shared base with templated Boost/flat_square structure the tampered code doesn't have. Verdict: port PT DESIGN (swap formula, MPI pattern) as reference, do not merge files; implement fresh against current structures, checkpoint first per plan order |
+| 2026-07-08 | G1.1 checkpoint/restart | Clark implementation + Martina review, L=8 z-basis and x-basis self-dual check, checkpoint@sample10 resume-to-20, commit e461686 | PASS | bit-faithful restart, h5diff exact match on energy/string_number/anyon_count/production_acceptance in both bases. Martina-confirmed: RNG state is full-engine not seed-only, event-vector sort invariant enforced (throws, not silently repaired) on load, checkpoint writes only at sample boundaries (no mid-update tear risk), ctest 3/3 no regression. Known limitation (non-blocking): --snapshots spool state not checkpointed; campaign's planned production runs do not use live snapshots. Automated regression test is weaker (in-memory z-basis only) than the manual h5diff validation performed — acceptable for gate purposes, flagged for future hardening |
+| 2026-07-08 | G1.2 swap-weight math (partial) | Clark implementation + 2 rounds Martina review, L=8, two seed/ladder configs, commit b29ff1c | PASS (partial) | cached-vs-brute-force swap weight max abs deviation 1.8e-14 / 1.6e-14 (bar <1e-8), across two distinct configs. Ladder correctly restricted to self-dual line s=h=lmbda (mu=J=1 runtime-enforced), swap hot path confirmed O(1) from cache (no event-vector walk). Round 1 review found 2 real bugs (susceptibility normalization used static config h/lmbda instead of per-replica runtime value -> would have silently misnormalized susceptibility observables under PT; MPI_Init with no MPI_Finalize/return-code checks) + 2 minor (pt_ladder CLI had no validation; test coverage was 1 trajectory) — all 4 fixed and re-confirmed by a second Martina pass. REMAINING: real multi-rank mpirun validation (swap acceptance rate, ladder round-trips, PT-on vs PT-off G1.3 comparison) not yet done — mpirun fails to launch in the Codex dev sandbox (opal_ifinit socket() failure, confirmed a sandbox/network restriction not a code bug by 2 independent reviews); OpenMPI 4.1.1 is installed on the actual cluster at /usr/lib64/openmpi (not on default PATH) — needs a real Slurm srun job to complete |
 
 ## Baseline anchors (do not re-derive)
 - L200 b400 Boost production: 80k samples / 11.8 d; tau(percolation_strength)
