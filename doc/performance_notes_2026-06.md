@@ -53,12 +53,6 @@ cmake -S . -B build-current-clang-portable -DPARATORIC_BUILD_BENCHMARKS=ON
 cmake --build build-current-clang-portable --target flat_lattice_backend_bench
 ```
 
-The submitted Slurm wrapper is:
-
-```bash
-scripts/submit_flat_backend_bench.sbatch
-```
-
 ### One-sweep benchmark
 
 Job array: `14697380`
