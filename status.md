@@ -49,13 +49,31 @@ Updated: 2026-07-08.
   `srun` job, not a Codex dispatch.
 
 ## Active workers
-None currently running. Next: James, to stage/submit a small Slurm `srun` job (L=8, few
-replicas, 1 node, short walltime) to complete G1.2 (real acceptance/round-trips) and G1.3
-(PT-on vs PT-off).
+None currently running — **BLOCKED on Codex usage limit** ("Try again at 8:40 PM",
+observed 17:40 CEST 2026-07-08). Cannot dispatch further Codex workers until the limit
+resets; PI needs to resume this manually, ScheduleWakeup is a /loop-only tool and doesn't
+apply to a plain conversation.
 
-## Next action
-Dispatch James (workspace-write, run-staging role) to submit the small validation job via
-`srun` with OpenMPI on PATH, read back HDF5 diagnostics, and report numbers. On PASS: move
-to ensemble driver, then G2 pilot (L=120) staging. On FAIL/marginal: report to PI before
-retuning ladder spacing or investigating further — this is the actual go/no-go-adjacent
-gate, not something to silently retry past.
+## Slurm validation attempts so far (all diagnosed, none yet succeeded)
+1. Job `14981055`: FAILED in 16s — build used system default compiler, no working
+   `<format>` support. Root cause found (known-good build pins `clang++-20` + a Boost
+   shim include); fix given to James.
+2. Job `14981225`: build succeeded with the fix, but runtime FAILED in 4s —
+   `ompi_mpi_init: ompi_rte_init failed, Returned "Not found" (-13)` under
+   `srun --mpi=pmix`. Diagnosis: PMIx version mismatch between this cluster's Slurm and
+   system OpenMPI 4.1.1 — a cluster integration issue, not a code bug. Fix identified
+   (bypass Slurm PMI entirely, use plain `mpirun -np 6 --oversubscribe` since it's a
+   single-node job — OpenMPI can fork ranks locally without needing Slurm's PMI) but
+   NOT YET EXECUTED — the dispatch to apply it hit the Codex usage limit before running.
+3. Separately: `ai-workflow/bin/slurm_concise_alert.sh submit <jobid>` failed twice
+   (DNS resolution failure for the Slurm controller hostname) — flagged to the PI,
+   not yet resolved, not blocking (monitoring done directly via squeue/sacct instead).
+
+## Next action (when Codex access resumes)
+Re-dispatch James with the plain-`mpirun` fix (already fully specified, ready to send
+verbatim) for the L=8 6-rank ladder job. On success: read back real swap acceptance/
+round-trip numbers (G1.2) and PT-on vs PT-off z-values (G1.3), have Martina review if
+anything looks off, log the gate result, then move to ensemble driver and G2 pilot (L=120)
+staging. On repeated failure: report to the PI rather than continuing to guess at cluster
+MPI configuration — 2 fallback attempts (plain mpirun, then vader-forced mpirun) is the
+agreed ceiling before escalating instead of continuing to iterate blindly.
