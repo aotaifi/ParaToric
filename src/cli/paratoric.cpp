@@ -50,6 +50,10 @@ int main(int argc, char **argv) {
         std::vector<std::string> folder_names;
         bool save_snapshots;
         bool full_time_series;
+        std::filesystem::path checkpoint_path;
+        std::filesystem::path restart_from;
+        int checkpoint_every_samples;
+        int checkpoint_every_seconds;
         int process_index;
 
         po::options_description desc("Run extended toric code QMC simulation");
@@ -77,6 +81,10 @@ int main(int argc, char **argv) {
         ("folder_names,fns", po::value(&folder_names)->multitoken(), "Directories where hysteresis output is stored.")
         ("snapshots,snap", po::value(&save_snapshots), "Whether snapshots should be saved.")
         ("full_time_series,fts", po::value(&full_time_series), "Whether full time series should be saved.")
+        ("checkpoint_path", po::value(&checkpoint_path)->default_value({}), "Path for periodic etc_sample checkpoints.")
+        ("restart_from", po::value(&restart_from)->default_value({}), "Resume etc_sample from a checkpoint file.")
+        ("checkpoint_every_samples", po::value(&checkpoint_every_samples)->default_value(0), "Write an etc_sample checkpoint every N completed samples.")
+        ("checkpoint_every_seconds", po::value(&checkpoint_every_seconds)->default_value(0), "Write an etc_sample checkpoint every N seconds, checked at sample boundaries.")
         ("process_index,procid", po::value(&process_index), "Identifier of process (for debugging).")
         ("lattice_type,lat", po::value(&lattice_type), "Type of lattice used.")
         ("lattice_backend,latbe", po::value(&lattice_backend)->default_value("boost"), "Lattice backend used by benchmark modes (boost or flat_square).")
@@ -136,7 +144,11 @@ int main(int argc, char **argv) {
             .folder_name = folder_name,
             .folder_names = folder_names,
             .save_snapshots = save_snapshots,
-            .full_time_series = full_time_series
+            .full_time_series = full_time_series,
+            .checkpoint_path = checkpoint_path,
+            .restart_from = restart_from,
+            .checkpoint_every_samples = checkpoint_every_samples,
+            .checkpoint_every_seconds = checkpoint_every_seconds
         };
 
         if (simulation == "etc_sample") {

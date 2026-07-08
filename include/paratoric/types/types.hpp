@@ -93,6 +93,10 @@ struct SimSpec {
  * @param folder_names the folder names of the output folders (hysteresis simulation), additional possibility to make the output clearer
  * @param save_snapshots whether snapshots should be saved
  * @param full_time_series whether full time series should be saved
+ * @param checkpoint_path path for periodic etc_sample checkpoint writes
+ * @param restart_from path of an etc_sample checkpoint to resume
+ * @param checkpoint_every_samples checkpoint period in completed samples
+ * @param checkpoint_every_seconds checkpoint period in wall-clock seconds, checked at sample boundaries
  * 
  */
 struct OutSpec {
@@ -102,6 +106,10 @@ struct OutSpec {
     std::vector<std::string> folder_names{}; // hysteresis
     bool save_snapshots = false;
     bool full_time_series = 0;
+    std::filesystem::path checkpoint_path{};
+    std::filesystem::path restart_from{};
+    int checkpoint_every_samples = 0;
+    int checkpoint_every_seconds = 0;
 };
 
 /**

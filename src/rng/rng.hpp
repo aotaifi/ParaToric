@@ -5,6 +5,8 @@
 
 #include <random>
 #include <cstdint>
+#include <istream>
+#include <ostream>
 
 namespace paratoric::rng {
 
@@ -38,6 +40,14 @@ struct RNG {
         seed_ = s; rng.seed(seed_);
     }
     std::uint64_t get_seed() const { return seed_; }
+
+    void write_state(std::ostream& out) const {
+        out << rng;
+    }
+
+    void read_state(std::istream& in) {
+        in >> rng;
+    }
 };
 
 inline std::uint64_t uniform_index(RNG& rng, std::uint64_t bound) {

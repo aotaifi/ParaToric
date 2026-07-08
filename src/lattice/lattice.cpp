@@ -33,6 +33,39 @@
 
 namespace paratoric {
 
+namespace {
+
+template<typename T>
+void write_binary(std::ostream& out, const T& value) {
+    out.write(reinterpret_cast<const char*>(&value), sizeof(T));
+}
+
+template<typename T>
+void read_binary(std::istream& in, T& value) {
+    in.read(reinterpret_cast<char*>(&value), sizeof(T));
+}
+
+void write_double_vector(std::ostream& out, const std::vector<double>& values) {
+    const auto size = static_cast<std::uint64_t>(values.size());
+    write_binary(out, size);
+    if (!values.empty()) {
+        out.write(reinterpret_cast<const char*>(values.data()),
+                  static_cast<std::streamsize>(values.size() * sizeof(double)));
+    }
+}
+
+void read_double_vector(std::istream& in, std::vector<double>& values) {
+    std::uint64_t size = 0;
+    read_binary(in, size);
+    values.resize(static_cast<std::size_t>(size));
+    if (!values.empty()) {
+        in.read(reinterpret_cast<char*>(values.data()),
+                static_cast<std::streamsize>(values.size() * sizeof(double)));
+    }
+}
+
+} // namespace
+
 void Lattice::SnapshotSpoolState::reset() {
     if (stream.is_open()) {
         stream.close();
@@ -4090,6 +4123,110 @@ void Lattice::write_graph(const std::string& file_name, const std::filesystem::p
 
     // Write the output file
     boost::write_graphml(graphml_file, g, dp, true);
+}
+
+void Lattice::write_checkpoint_state(std::ostream& out) const {
+    const auto vertex_count = static_cast<std::uint64_t>(boost::num_vertices(g));
+    const auto edge_count = static_cast<std::uint64_t>(egde_cache_.size());
+    const auto plaquette_count = static_cast<std::uint64_t>(plaquette_flip_vector.size());
+    write_binary(out, vertex_count);
+    write_binary(out, edge_count);
+    write_binary(out, plaquette_count);
+
+    for (const auto& v : boost::make_iterator_range(boost::vertices(g))) {
+        write_double_vector(out, g[v].star_flips);
+        write_binary(out, g[v].integrated_star_energy);
+    }
+
+    for (const auto& edg : egde_cache_) {
+        write_binary(out, g[edg].spin);
+        write_binary(out, g[edg].integrated_edge_energy);
+        write_double_vector(out, g[edg].spin_flips);
+        write_double_vector(out, g[edg].single_spin_flips);
+    }
+
+    for (const auto& flips : plaquette_flip_vector) {
+        write_double_vector(out, flips);
+    }
+    for (const double energy : integrated_plaquette_energy_vector) {
+        write_binary(out, energy);
+    }
+
+    write_binary(out, diag_single_energy_cache_);
+    write_binary(out, diag_tuple_energy_x_cache_);
+    write_binary(out, diag_tuple_energy_z_cache_);
+    write_binary(out, anyon_count_cache_);
+    write_binary(out, total_single_spin_flip_count_);
+    write_binary(out, total_plaquette_flip_count_);
+    write_binary(out, total_star_flip_count_);
+}
+
+void Lattice::read_checkpoint_state(std::istream& in) {
+    std::uint64_t vertex_count = 0;
+    std::uint64_t edge_count = 0;
+    std::uint64_t plaquette_count = 0;
+    read_binary(in, vertex_count);
+    read_binary(in, edge_count);
+    read_binary(in, plaquette_count);
+
+    if (vertex_count != static_cast<std::uint64_t>(boost::num_vertices(g))
+        || edge_count != static_cast<std::uint64_t>(egde_cache_.size())
+        || plaquette_count != static_cast<std::uint64_t>(plaquette_flip_vector.size())) {
+        throw std::runtime_error("Checkpoint lattice dimensions do not match this run.");
+    }
+
+    for (const auto& v : boost::make_iterator_range(boost::vertices(g))) {
+        read_double_vector(in, g[v].star_flips);
+        read_binary(in, g[v].integrated_star_energy);
+    }
+
+    for (const auto& edg : egde_cache_) {
+        read_binary(in, g[edg].spin);
+        read_binary(in, g[edg].integrated_edge_energy);
+        read_double_vector(in, g[edg].spin_flips);
+        read_double_vector(in, g[edg].single_spin_flips);
+    }
+
+    for (auto& flips : plaquette_flip_vector) {
+        read_double_vector(in, flips);
+    }
+    for (double& energy : integrated_plaquette_energy_vector) {
+        read_binary(in, energy);
+    }
+
+    read_binary(in, diag_single_energy_cache_);
+    read_binary(in, diag_tuple_energy_x_cache_);
+    read_binary(in, diag_tuple_energy_z_cache_);
+    read_binary(in, anyon_count_cache_);
+    read_binary(in, total_single_spin_flip_count_);
+    read_binary(in, total_plaquette_flip_count_);
+    read_binary(in, total_star_flip_count_);
+
+    if (!event_vectors_are_sorted()) {
+        throw std::runtime_error("Checkpoint event vectors violate sorted-order invariant.");
+    }
+}
+
+bool Lattice::event_vectors_are_sorted() const {
+    for (const auto& v : boost::make_iterator_range(boost::vertices(g))) {
+        if (!std::is_sorted(g[v].star_flips.begin(), g[v].star_flips.end())) {
+            return false;
+        }
+    }
+    for (const auto& edg : egde_cache_) {
+        if (!std::is_sorted(g[edg].spin_flips.begin(), g[edg].spin_flips.end())) {
+            return false;
+        }
+        if (!std::is_sorted(g[edg].single_spin_flips.begin(), g[edg].single_spin_flips.end())) {
+            return false;
+        }
+    }
+    for (const auto& flips : plaquette_flip_vector) {
+        if (!std::is_sorted(flips.begin(), flips.end())) {
+            return false;
+        }
+    }
+    return true;
 }
 
 } // namespace paratoric

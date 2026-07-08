@@ -21,6 +21,39 @@ namespace paratoric {
 
 namespace {
 
+struct H5ComplexSample {
+    double r = 0.;
+    double i = 0.;
+};
+
+H5::CompType h5_complex_sample_type() {
+    H5::CompType type(sizeof(H5ComplexSample));
+    type.insertMember("r", HOFFSET(H5ComplexSample, r), H5::PredType::NATIVE_DOUBLE);
+    type.insertMember("i", HOFFSET(H5ComplexSample, i), H5::PredType::NATIVE_DOUBLE);
+    return type;
+}
+
+void write_observable_series(
+    H5::Group& obs_grp,
+    const std::vector<std::variant<std::complex<double>, double>>& obs_result_vector
+) {
+    hsize_t dims[1] = { obs_result_vector.size() };
+    H5::DataSpace dataspace{ 1, dims };
+    auto complex_data_type = h5_complex_sample_type();
+    H5::DataSet dataset = obs_grp.createDataSet("series", complex_data_type, dataspace);
+
+    std::vector<H5ComplexSample> samples;
+    samples.reserve(obs_result_vector.size());
+    for (const auto& value : obs_result_vector) {
+        if (const auto* complex_value = std::get_if<std::complex<double>>(&value)) {
+            samples.push_back({complex_value->real(), complex_value->imag()});
+        } else {
+            samples.push_back({std::get<double>(value), 0.});
+        }
+    }
+    dataset.write(samples.data(), complex_data_type);
+}
+
 bool is_flat_square_sample_observable(const std::string& observable) {
     static const std::set<std::string> allowed_observables{
         "energy",
@@ -51,6 +84,10 @@ void validate_etc_sample_backend(const Config& config) {
     if (config.sim_spec.custom_therm) {
         throw std::invalid_argument("flat_square etc_sample does not support custom_therm yet.");
     }
+    if (!config.out_spec.checkpoint_path.empty() || !config.out_spec.restart_from.empty()
+        || config.out_spec.checkpoint_every_samples > 0 || config.out_spec.checkpoint_every_seconds > 0) {
+        throw std::invalid_argument("flat_square etc_sample does not support checkpoint/restart.");
+    }
     for (const auto& observable : config.sim_spec.observables) {
         if (!is_flat_square_sample_observable(observable)) {
             throw std::invalid_argument(
@@ -74,7 +111,15 @@ Result run_etc_sample_backend(const Config& config, const std::filesystem::path&
     auto mc = std::make_unique<ExtendedToricCodeQMC<Basis, LatticeBackend>>();
     return mc->get_sample(
         Config{config.sim_spec, config.param_spec, config.lat_spec,
-            OutSpec{.path_out=path_out, .save_snapshots=config.out_spec.save_snapshots, .full_time_series=config.out_spec.full_time_series}}
+            OutSpec{
+                .path_out=path_out,
+                .save_snapshots=config.out_spec.save_snapshots,
+                .full_time_series=config.out_spec.full_time_series,
+                .checkpoint_path=config.out_spec.checkpoint_path,
+                .restart_from=config.out_spec.restart_from,
+                .checkpoint_every_samples=config.out_spec.checkpoint_every_samples,
+                .checkpoint_every_seconds=config.out_spec.checkpoint_every_seconds
+            }}
     );
 }
 
@@ -101,6 +146,15 @@ void IO::etc_sample(
     std::filesystem::path path_folder_name(folder_name_new);
     std::filesystem::path path_out = config.out_spec.path_out / path_folder_name;
     std::filesystem::create_directories(path_out);
+
+    Config run_config = config;
+    if (run_config.out_spec.checkpoint_path.empty()
+        && (run_config.out_spec.checkpoint_every_samples > 0 || run_config.out_spec.checkpoint_every_seconds > 0)) {
+        run_config.out_spec.checkpoint_path = path_out / "checkpoint.bin";
+    } else if (!run_config.out_spec.checkpoint_path.empty()
+        && run_config.out_spec.checkpoint_path.is_relative()) {
+        run_config.out_spec.checkpoint_path = path_out / run_config.out_spec.checkpoint_path;
+    }
     
     Result result_spec;
     std::vector<std::string> obs_types;
@@ -109,7 +163,7 @@ void IO::etc_sample(
             result_spec = run_etc_sample_backend<'x', FlatSquareLattice>(config, path_out);
             obs_types = get_etc_sample_obs_types<'x', FlatSquareLattice>(config.sim_spec.observables);
         } else {
-            result_spec = run_etc_sample_backend<'x', Lattice>(config, path_out);
+            result_spec = run_etc_sample_backend<'x', Lattice>(run_config, path_out);
             obs_types = get_etc_sample_obs_types<'x', Lattice>(config.sim_spec.observables);
         }
     } else if (config.lat_spec.basis == 'z') {
@@ -117,7 +171,7 @@ void IO::etc_sample(
             result_spec = run_etc_sample_backend<'z', FlatSquareLattice>(config, path_out);
             obs_types = get_etc_sample_obs_types<'z', FlatSquareLattice>(config.sim_spec.observables);
         } else {
-            result_spec = run_etc_sample_backend<'z', Lattice>(config, path_out);
+            result_spec = run_etc_sample_backend<'z', Lattice>(run_config, path_out);
             obs_types = get_etc_sample_obs_types<'z', Lattice>(config.sim_spec.observables);
         }
     } else {
@@ -147,16 +201,7 @@ void IO::etc_sample(
 
         if (obs_type == "real" || obs_type == "fredenhagen_marcu" || obs_type == "susceptibility") {
             if (config.out_spec.full_time_series) {
-                hsize_t dims[1] = { obs_result_vector.size() };
-                H5::DataSpace dataspace{ 1, dims };
-
-                H5::CompType complex_data_type(sizeof(obs_result_vector[0]));
-                complex_data_type.insertMember( "r", 0, H5::PredType::NATIVE_DOUBLE);
-                complex_data_type.insertMember( "i", sizeof(double), H5::PredType::NATIVE_DOUBLE);
-
-                H5::DataSet dataset = obs_grp.createDataSet("series", complex_data_type, dataspace);
-
-                dataset.write(obs_result_vector.data(), complex_data_type);
+                write_observable_series(obs_grp, obs_result_vector);
             }
         } else {
             throw std::runtime_error(std::format("Observable type \"{}\" is not supported.", obs_type));
@@ -300,16 +345,7 @@ void IO::etc_hysteresis(
 
             if (obs_type == "real" || obs_type == "fredenhagen_marcu" || obs_type == "susceptibility") {
                 if (config.out_spec.full_time_series) {
-                    hsize_t dims[1] = { obs_result_vector.size() };
-                    H5::DataSpace dataspace{ 1, dims };
-
-                    H5::CompType complex_data_type(sizeof(obs_result_vector[0]));
-                    complex_data_type.insertMember( "r", 0, H5::PredType::NATIVE_DOUBLE);
-                    complex_data_type.insertMember( "i", sizeof(double), H5::PredType::NATIVE_DOUBLE);
-
-                    H5::DataSet dataset = obs_grp.createDataSet("series", complex_data_type, dataspace);
-
-                    dataset.write(obs_result_vector.data(), complex_data_type);
+                    write_observable_series(obs_grp, obs_result_vector);
                 }
             } else {
                 throw std::runtime_error(std::format("Observable type \"{}\" is not supported.", obs_type));
@@ -380,16 +416,7 @@ void IO::etc_thermalization(
         H5::Group obs_grp = getOrCreateGroup(results_grp, obs_name);
 
         if (obs_type == "real" || obs_type == "fredenhagen_marcu" || obs_type == "susceptibility") {
-            hsize_t dims[1] = { obs_result_vector.size() };
-            H5::DataSpace dataspace{ 1, dims };
-
-            H5::CompType complex_data_type(sizeof(obs_result_vector[0]));
-            complex_data_type.insertMember( "r", 0, H5::PredType::NATIVE_DOUBLE);
-            complex_data_type.insertMember( "i", sizeof(double), H5::PredType::NATIVE_DOUBLE);
-
-            H5::DataSet dataset = obs_grp.createDataSet("series", complex_data_type, dataspace);
-
-            dataset.write(obs_result_vector.data(), complex_data_type);
+            write_observable_series(obs_grp, obs_result_vector);
         } else {
             throw std::runtime_error(std::format("Observable type \"{}\" is not supported.", obs_type));
         }

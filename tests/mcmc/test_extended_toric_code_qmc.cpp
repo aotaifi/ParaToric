@@ -1093,4 +1093,74 @@ BOOST_AUTO_TEST_CASE(flat_square_sample_hits_reset_path) {
     BOOST_CHECK_EQUAL(result.mean.size(), sim_spec.observables.size());
 }
 
+BOOST_AUTO_TEST_CASE(boost_sample_checkpoint_restart_is_bit_faithful) {
+    LatSpec lat_spec = {
+        'z',
+        "square",
+        4,
+        3.,
+        "periodic",
+        1,
+        "boost"
+    };
+    ParamSpec param_spec = {
+        .mu = 0.9,
+        .h = 0.7,
+        .J = 1.1,
+        .lmbda = 0.6
+    };
+    SimSpec full_sim_spec = {
+        .N_samples = 10,
+        .N_thermalization = 12,
+        .N_between_samples = 8,
+        .N_resamples = 8,
+        .custom_therm = false,
+        .seed = 424242,
+        .observables = std::vector<std::string>{"energy", "string_number", "anyon_count"}
+    };
+    OutSpec base_out_spec = {
+        .path_out = std::filesystem::temp_directory_path(),
+        .save_snapshots = false,
+        .full_time_series = true
+    };
+
+    auto full = ExtendedToricCodeQMC<'z'>().get_sample(
+        Config{full_sim_spec, param_spec, lat_spec, base_out_spec}
+    );
+
+    const auto checkpoint_path =
+        std::filesystem::temp_directory_path() / "paratoric_checkpoint_restart_test.bin";
+    std::filesystem::remove(checkpoint_path);
+
+    SimSpec prefix_sim_spec = full_sim_spec;
+    prefix_sim_spec.N_samples = 5;
+    OutSpec checkpoint_out_spec = base_out_spec;
+    checkpoint_out_spec.checkpoint_path = checkpoint_path;
+    checkpoint_out_spec.checkpoint_every_samples = 5;
+    auto prefix = ExtendedToricCodeQMC<'z'>().get_sample(
+        Config{prefix_sim_spec, param_spec, lat_spec, checkpoint_out_spec}
+    );
+    BOOST_CHECK(std::filesystem::exists(checkpoint_path));
+    BOOST_CHECK_EQUAL(prefix.series.front().size(), 5);
+
+    OutSpec restart_out_spec = base_out_spec;
+    restart_out_spec.restart_from = checkpoint_path;
+    auto resumed = ExtendedToricCodeQMC<'z'>().get_sample(
+        Config{full_sim_spec, param_spec, lat_spec, restart_out_spec}
+    );
+
+    BOOST_REQUIRE_EQUAL(resumed.series.size(), full.series.size());
+    for (size_t obs = 0; obs < full.series.size(); ++obs) {
+        BOOST_REQUIRE_EQUAL(resumed.series[obs].size(), full.series[obs].size());
+        for (size_t sample = 0; sample < full.series[obs].size(); ++sample) {
+            BOOST_CHECK(resumed.series[obs][sample] == full.series[obs][sample]);
+        }
+    }
+    BOOST_CHECK_EQUAL(resumed.production_acceptance.attempted, full.production_acceptance.attempted);
+    BOOST_CHECK_EQUAL(resumed.production_acceptance.accepted, full.production_acceptance.accepted);
+    BOOST_CHECK(resumed.production_acceptance.block_attempted == full.production_acceptance.block_attempted);
+
+    std::filesystem::remove(checkpoint_path);
+}
+
 } // namespace paratoric

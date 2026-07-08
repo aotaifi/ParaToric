@@ -1159,6 +1159,10 @@ public:
      */
     void write_graph(const std::string& file_name, const std::filesystem::path& output_directory);
 
+    void write_checkpoint_state(std::ostream& out) const;
+    void read_checkpoint_state(std::istream& in);
+    bool event_vectors_are_sorted() const;
+
 private:   
     char BASIS;
     int LATTICE_DIMENSIONALITY;

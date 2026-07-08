@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <format>
+#include <fstream>
 #include <iostream>
 #include <iterator>
 #include <limits>
@@ -37,6 +38,179 @@
 #define UNUSED(expr) do { (void)(expr); } while (0)
 
 namespace paratoric {
+
+namespace checkpoint_detail {
+
+inline constexpr char SAMPLE_CHECKPOINT_MAGIC[8] = {'P', 'T', 'C', 'K', 'P', 'T', '1', '\0'};
+inline constexpr std::uint32_t SAMPLE_CHECKPOINT_VERSION = 1;
+
+template<typename T>
+void write_binary(std::ostream& out, const T& value) {
+    out.write(reinterpret_cast<const char*>(&value), sizeof(T));
+}
+
+template<typename T>
+void read_binary(std::istream& in, T& value) {
+    in.read(reinterpret_cast<char*>(&value), sizeof(T));
+}
+
+inline void write_string(std::ostream& out, const std::string& value) {
+    const auto size = static_cast<std::uint64_t>(value.size());
+    write_binary(out, size);
+    if (!value.empty()) {
+        out.write(value.data(), static_cast<std::streamsize>(value.size()));
+    }
+}
+
+inline std::string read_string(std::istream& in) {
+    std::uint64_t size = 0;
+    read_binary(in, size);
+    std::string value(static_cast<std::size_t>(size), '\0');
+    if (!value.empty()) {
+        in.read(value.data(), static_cast<std::streamsize>(value.size()));
+    }
+    return value;
+}
+
+inline void write_string_vector(std::ostream& out, const std::vector<std::string>& values) {
+    const auto size = static_cast<std::uint64_t>(values.size());
+    write_binary(out, size);
+    for (const auto& value : values) {
+        write_string(out, value);
+    }
+}
+
+inline std::vector<std::string> read_string_vector(std::istream& in) {
+    std::uint64_t size = 0;
+    read_binary(in, size);
+    std::vector<std::string> values;
+    values.reserve(static_cast<std::size_t>(size));
+    for (std::uint64_t i = 0; i < size; ++i) {
+        values.emplace_back(read_string(in));
+    }
+    return values;
+}
+
+inline void write_diagnostics(std::ostream& out, const AcceptanceDiagnostics& diagnostics) {
+    write_binary(out, diagnostics.attempted);
+    write_binary(out, diagnostics.accepted);
+    write_binary(out, diagnostics.acceptance_ratio_sum);
+    auto write_u64_vector = [&out](const std::vector<std::uint64_t>& values) {
+        const auto size = static_cast<std::uint64_t>(values.size());
+        write_binary(out, size);
+        if (!values.empty()) {
+            out.write(reinterpret_cast<const char*>(values.data()),
+                      static_cast<std::streamsize>(values.size() * sizeof(std::uint64_t)));
+        }
+    };
+    auto write_double_vector = [&out](const std::vector<double>& values) {
+        const auto size = static_cast<std::uint64_t>(values.size());
+        write_binary(out, size);
+        if (!values.empty()) {
+            out.write(reinterpret_cast<const char*>(values.data()),
+                      static_cast<std::streamsize>(values.size() * sizeof(double)));
+        }
+    };
+    write_u64_vector(diagnostics.attempted_by_update);
+    write_u64_vector(diagnostics.accepted_by_update);
+    write_double_vector(diagnostics.acceptance_ratio_sum_by_update);
+    write_u64_vector(diagnostics.block_attempted);
+    write_u64_vector(diagnostics.block_accepted);
+    write_double_vector(diagnostics.block_acceptance_ratio_sum);
+}
+
+inline void read_diagnostics(std::istream& in, AcceptanceDiagnostics& diagnostics) {
+    auto read_u64_vector = [&in]() {
+        std::uint64_t size = 0;
+        read_binary(in, size);
+        std::vector<std::uint64_t> values(static_cast<std::size_t>(size));
+        if (!values.empty()) {
+            in.read(reinterpret_cast<char*>(values.data()),
+                    static_cast<std::streamsize>(values.size() * sizeof(std::uint64_t)));
+        }
+        return values;
+    };
+    auto read_double_vector = [&in]() {
+        std::uint64_t size = 0;
+        read_binary(in, size);
+        std::vector<double> values(static_cast<std::size_t>(size));
+        if (!values.empty()) {
+            in.read(reinterpret_cast<char*>(values.data()),
+                    static_cast<std::streamsize>(values.size() * sizeof(double)));
+        }
+        return values;
+    };
+    read_binary(in, diagnostics.attempted);
+    read_binary(in, diagnostics.accepted);
+    read_binary(in, diagnostics.acceptance_ratio_sum);
+    diagnostics.attempted_by_update = read_u64_vector();
+    diagnostics.accepted_by_update = read_u64_vector();
+    diagnostics.acceptance_ratio_sum_by_update = read_double_vector();
+    diagnostics.block_attempted = read_u64_vector();
+    diagnostics.block_accepted = read_u64_vector();
+    diagnostics.block_acceptance_ratio_sum = read_double_vector();
+}
+
+inline void write_observable_series(
+    std::ostream& out,
+    const std::vector<std::vector<std::variant<std::complex<double>, double>>>& series
+) {
+    const auto outer = static_cast<std::uint64_t>(series.size());
+    write_binary(out, outer);
+    for (const auto& obs_series : series) {
+        const auto inner = static_cast<std::uint64_t>(obs_series.size());
+        write_binary(out, inner);
+        for (const auto& value : obs_series) {
+            if (const auto* real_value = std::get_if<double>(&value)) {
+                const std::uint8_t tag = 0;
+                write_binary(out, tag);
+                write_binary(out, *real_value);
+            } else {
+                const auto complex = std::get<std::complex<double>>(value);
+                const std::uint8_t tag = 1;
+                const double complex_real = complex.real();
+                const double complex_imag = complex.imag();
+                write_binary(out, tag);
+                write_binary(out, complex_real);
+                write_binary(out, complex_imag);
+            }
+        }
+    }
+}
+
+inline std::vector<std::vector<std::variant<std::complex<double>, double>>> read_observable_series(
+    std::istream& in
+) {
+    std::uint64_t outer = 0;
+    read_binary(in, outer);
+    std::vector<std::vector<std::variant<std::complex<double>, double>>> series;
+    series.resize(static_cast<std::size_t>(outer));
+    for (auto& obs_series : series) {
+        std::uint64_t inner = 0;
+        read_binary(in, inner);
+        obs_series.reserve(static_cast<std::size_t>(inner));
+        for (std::uint64_t i = 0; i < inner; ++i) {
+            std::uint8_t tag = 0;
+            read_binary(in, tag);
+            if (tag == 0) {
+                double value = 0.;
+                read_binary(in, value);
+                obs_series.emplace_back(value);
+            } else if (tag == 1) {
+                double real = 0.;
+                double imag = 0.;
+                read_binary(in, real);
+                read_binary(in, imag);
+                obs_series.emplace_back(std::complex<double>{real, imag});
+            } else {
+                throw std::runtime_error("Unknown observable variant tag in checkpoint.");
+            }
+        }
+    }
+    return series;
+}
+
+} // namespace checkpoint_detail
 
 template<char B>
 concept ValidBasis = (B == 'x' || B == 'z');
@@ -512,6 +686,15 @@ class ExtendedToricCodeQMC {
         std::uint64_t active_block_accepted_ = 0;
         double active_block_acceptance_ratio_sum_ = 0.;
 
+        struct SampleCheckpointState {
+            std::int64_t completed_samples = 0;
+            std::int64_t production_metropolis_steps = 0;
+            double integrated_pot_energy = 0.;
+            double acc_ratio = 1.;
+            AcceptanceDiagnostics production_acceptance{};
+            std::vector<std::vector<std::variant<std::complex<double>, double>>> observable_vector{};
+        };
+
         int random_index(int bound) {
             return static_cast<int>(
                 paratoric::rng::uniform_index(*rng, static_cast<std::uint64_t>(bound))
@@ -526,12 +709,32 @@ class ExtendedToricCodeQMC {
             return ratio >= 1.0 || uniform_dist(*rng) < ratio;
         }
 
-        void start_acceptance_diagnostics(AcceptanceDiagnostics& diagnostics);
+        void start_acceptance_diagnostics(AcceptanceDiagnostics& diagnostics, bool reset = true);
         void stop_acceptance_diagnostics();
         void start_acceptance_block();
         void finish_acceptance_block();
         void record_update_attempt(int update_type, double acc_ratio);
         void record_update_acceptance();
+
+        void write_sample_checkpoint(
+            const std::filesystem::path& path,
+            const Config& config,
+            const LatticeT& lat,
+            const SampleCheckpointState& state
+        ) const;
+
+        SampleCheckpointState read_sample_checkpoint(
+            const std::filesystem::path& path,
+            const Config& config,
+            LatticeT& lat
+        );
+
+        static bool checkpoint_due(
+            const Config& config,
+            std::int64_t completed_samples,
+            std::chrono::steady_clock::time_point now,
+            std::chrono::steady_clock::time_point& last_checkpoint_time
+        );
 
         static double calculate_autocorrelation_time_with_warning(
             const std::vector<double>& obs_real,
@@ -1055,8 +1258,10 @@ ExtendedToricCodeQMC<Basis, LatticeT>::get_obs_type_vec(const std::vector<std::s
 
 template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-void ExtendedToricCodeQMC<Basis, LatticeT>::start_acceptance_diagnostics(AcceptanceDiagnostics& diagnostics) {
-    diagnostics = AcceptanceDiagnostics{};
+void ExtendedToricCodeQMC<Basis, LatticeT>::start_acceptance_diagnostics(AcceptanceDiagnostics& diagnostics, bool reset) {
+    if (reset) {
+        diagnostics = AcceptanceDiagnostics{};
+    }
     active_acceptance_diagnostics_ = &diagnostics;
     active_update_type_ = -1;
     active_block_attempted_ = 0;
@@ -1115,6 +1320,179 @@ void ExtendedToricCodeQMC<Basis, LatticeT>::record_update_acceptance() {
     if (active_update_type_ >= 0 && active_update_type_ < UPDATE_TYPE_COUNT) {
         active_acceptance_diagnostics_->accepted_by_update[static_cast<size_t>(active_update_type_)] += 1;
     }
+}
+
+template<char Basis, typename LatticeT>
+requires ValidBasis<Basis>
+void ExtendedToricCodeQMC<Basis, LatticeT>::write_sample_checkpoint(
+    const std::filesystem::path& path,
+    const Config& config,
+    const LatticeT& lat,
+    const SampleCheckpointState& state
+) const {
+    if (path.empty()) {
+        return;
+    }
+    if constexpr (!std::same_as<LatticeT, Lattice>) {
+        throw std::invalid_argument("Checkpointing is supported only for the Boost Lattice backend.");
+    } else {
+        const auto parent = path.parent_path();
+        if (!parent.empty()) {
+            std::filesystem::create_directories(parent);
+        }
+        const auto tmp_path = path.string() + ".tmp";
+        std::ofstream out(tmp_path, std::ios::binary | std::ios::trunc);
+        if (!out) {
+            throw std::runtime_error(std::format("Could not open checkpoint file \"{}\".", tmp_path));
+        }
+
+        out.write(checkpoint_detail::SAMPLE_CHECKPOINT_MAGIC, sizeof(checkpoint_detail::SAMPLE_CHECKPOINT_MAGIC));
+        checkpoint_detail::write_binary(out, checkpoint_detail::SAMPLE_CHECKPOINT_VERSION);
+        checkpoint_detail::write_binary(out, config.lat_spec.basis);
+        checkpoint_detail::write_string(out, config.lat_spec.lattice_type);
+        checkpoint_detail::write_binary(out, config.lat_spec.system_size);
+        checkpoint_detail::write_binary(out, config.lat_spec.beta);
+        checkpoint_detail::write_string(out, config.lat_spec.boundaries);
+        checkpoint_detail::write_binary(out, config.lat_spec.default_spin);
+        checkpoint_detail::write_string(out, config.lat_spec.lattice_backend);
+        checkpoint_detail::write_binary(out, config.param_spec.mu);
+        checkpoint_detail::write_binary(out, config.param_spec.h);
+        checkpoint_detail::write_binary(out, config.param_spec.J);
+        checkpoint_detail::write_binary(out, config.param_spec.lmbda);
+        checkpoint_detail::write_binary(out, config.sim_spec.N_between_samples);
+        checkpoint_detail::write_binary(out, config.sim_spec.custom_therm);
+        checkpoint_detail::write_string_vector(out, config.sim_spec.observables);
+        checkpoint_detail::write_binary(out, state.completed_samples);
+        checkpoint_detail::write_binary(out, state.production_metropolis_steps);
+        checkpoint_detail::write_binary(out, state.integrated_pot_energy);
+        checkpoint_detail::write_binary(out, state.acc_ratio);
+        checkpoint_detail::write_diagnostics(out, state.production_acceptance);
+        checkpoint_detail::write_observable_series(out, state.observable_vector);
+        rng->write_state(out);
+        out << '\n';
+        lat.write_checkpoint_state(out);
+
+        if (!out) {
+            throw std::runtime_error(std::format("Failed while writing checkpoint file \"{}\".", tmp_path));
+        }
+        out.close();
+        std::filesystem::rename(tmp_path, path);
+    }
+}
+
+template<char Basis, typename LatticeT>
+requires ValidBasis<Basis>
+typename ExtendedToricCodeQMC<Basis, LatticeT>::SampleCheckpointState
+ExtendedToricCodeQMC<Basis, LatticeT>::read_sample_checkpoint(
+    const std::filesystem::path& path,
+    const Config& config,
+    LatticeT& lat
+) {
+    if constexpr (!std::same_as<LatticeT, Lattice>) {
+        throw std::invalid_argument("Checkpoint restart is supported only for the Boost Lattice backend.");
+    } else {
+        std::ifstream in(path, std::ios::binary);
+        if (!in) {
+            throw std::runtime_error(std::format("Could not open checkpoint file \"{}\".", path.string()));
+        }
+
+        char magic[sizeof(checkpoint_detail::SAMPLE_CHECKPOINT_MAGIC)]{};
+        in.read(magic, sizeof(magic));
+        if (!std::equal(std::begin(magic), std::end(magic), std::begin(checkpoint_detail::SAMPLE_CHECKPOINT_MAGIC))) {
+            throw std::runtime_error("Checkpoint magic does not match ParaToric sample checkpoint format.");
+        }
+        std::uint32_t version = 0;
+        checkpoint_detail::read_binary(in, version);
+        if (version != checkpoint_detail::SAMPLE_CHECKPOINT_VERSION) {
+            throw std::runtime_error("Unsupported checkpoint version.");
+        }
+
+        char basis = '\0';
+        int system_size = 0;
+        double beta = 0.;
+        int default_spin = 0;
+        double mu = 0.;
+        double h = 0.;
+        double J = 0.;
+        double lmbda = 0.;
+        int n_between_samples = 0;
+        bool custom_therm = false;
+        checkpoint_detail::read_binary(in, basis);
+        const auto lattice_type = checkpoint_detail::read_string(in);
+        checkpoint_detail::read_binary(in, system_size);
+        checkpoint_detail::read_binary(in, beta);
+        const auto boundaries = checkpoint_detail::read_string(in);
+        checkpoint_detail::read_binary(in, default_spin);
+        const auto lattice_backend = checkpoint_detail::read_string(in);
+        checkpoint_detail::read_binary(in, mu);
+        checkpoint_detail::read_binary(in, h);
+        checkpoint_detail::read_binary(in, J);
+        checkpoint_detail::read_binary(in, lmbda);
+        checkpoint_detail::read_binary(in, n_between_samples);
+        checkpoint_detail::read_binary(in, custom_therm);
+        const auto observables = checkpoint_detail::read_string_vector(in);
+
+        if (basis != config.lat_spec.basis
+            || lattice_type != config.lat_spec.lattice_type
+            || system_size != config.lat_spec.system_size
+            || beta != config.lat_spec.beta
+            || boundaries != config.lat_spec.boundaries
+            || default_spin != config.lat_spec.default_spin
+            || lattice_backend != config.lat_spec.lattice_backend
+            || mu != config.param_spec.mu
+            || h != config.param_spec.h
+            || J != config.param_spec.J
+            || lmbda != config.param_spec.lmbda
+            || n_between_samples != config.sim_spec.N_between_samples
+            || custom_therm != config.sim_spec.custom_therm
+            || observables != config.sim_spec.observables) {
+            throw std::runtime_error("Checkpoint configuration does not match this run.");
+        }
+
+        SampleCheckpointState state;
+        checkpoint_detail::read_binary(in, state.completed_samples);
+        checkpoint_detail::read_binary(in, state.production_metropolis_steps);
+        checkpoint_detail::read_binary(in, state.integrated_pot_energy);
+        checkpoint_detail::read_binary(in, state.acc_ratio);
+        checkpoint_detail::read_diagnostics(in, state.production_acceptance);
+        state.observable_vector = checkpoint_detail::read_observable_series(in);
+        rng->read_state(in);
+        in.get();
+        lat.read_checkpoint_state(in);
+        if (!in) {
+            throw std::runtime_error("Checkpoint file ended unexpectedly.");
+        }
+        if (state.completed_samples < 0 || state.completed_samples > config.sim_spec.N_samples) {
+            throw std::runtime_error("Checkpoint completed sample count is outside requested N_samples.");
+        }
+        return state;
+    }
+}
+
+template<char Basis, typename LatticeT>
+requires ValidBasis<Basis>
+bool ExtendedToricCodeQMC<Basis, LatticeT>::checkpoint_due(
+    const Config& config,
+    std::int64_t completed_samples,
+    std::chrono::steady_clock::time_point now,
+    std::chrono::steady_clock::time_point& last_checkpoint_time
+) {
+    bool due = false;
+    if (config.out_spec.checkpoint_every_samples > 0
+        && completed_samples > 0
+        && completed_samples % config.out_spec.checkpoint_every_samples == 0) {
+        due = true;
+    }
+    if (config.out_spec.checkpoint_every_seconds > 0) {
+        const auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - last_checkpoint_time).count();
+        if (elapsed >= config.out_spec.checkpoint_every_seconds) {
+            due = true;
+        }
+    }
+    if (due) {
+        last_checkpoint_time = now;
+    }
+    return due;
 }
 
 template<char Basis, typename LatticeT>
@@ -3139,6 +3517,11 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
         observable_vector.back().reserve(sample_count);
     } 
 
+    if ((config.out_spec.checkpoint_every_samples > 0 || config.out_spec.checkpoint_every_seconds > 0)
+        && config.out_spec.checkpoint_path.empty()) {
+        throw std::invalid_argument("Checkpointing requires a non-empty checkpoint_path.");
+    }
+
     // Initialize Lattice
     auto lat = LatticeT(config.lat_spec, rng);
     
@@ -3146,62 +3529,78 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
         lat, config.param_spec.h, config.param_spec.mu, config.param_spec.J, config.param_spec.lmbda
     );
     double acc_ratio = 1.;
+    std::int64_t total_metropolis_step_count = 0;
+    AcceptanceDiagnostics production_acceptance;
+    std::int64_t completed_samples = 0;
 
-    if (config.sim_spec.custom_therm) {
-        // Pre-Thermalization 
-        for (std::int64_t i = 0; i < config.sim_spec.N_thermalization; ++i) {
-            metropolis_step(
-                lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta, 
-                config.param_spec.h_therm, config.param_spec.mu, config.param_spec.J, 
-                config.param_spec.lmbda_therm
-            );
-        }
-
-        // For sampling first order hysteresis
-        double h_end = config.param_spec.h_therm;
-        if (std::abs(config.param_spec.h - config.param_spec.h_therm) > PRECISION) {
-            for (int i = 9; i > -1; --i) {
-                h_end = config.param_spec.h + (config.param_spec.h_therm-config.param_spec.h) * i / 10.;
-                lat.init_potential_energy();
-                lat.rotate_imag_time();
-                integrated_pot_energy = total_integrated_pot_energy(
-                    lat, h_end, config.param_spec.mu, 
-                    config.param_spec.J, config.param_spec.lmbda_therm
-                );
-                for (std::int64_t j = 0; j < config.sim_spec.N_thermalization / 10.; ++j) {
-                    metropolis_step(
-                        lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta, h_end, 
-                        config.param_spec.mu, config.param_spec.J, config.param_spec.lmbda_therm
-                    );
-                }
-            }
-        }
-        double lmbda_end = config.param_spec.lmbda_therm;
-        if (std::abs(config.param_spec.lmbda - config.param_spec.lmbda_therm) > PRECISION) {
-            for (int i = 9; i > -1; --i) {
-                lmbda_end = config.param_spec.lmbda + (config.param_spec.lmbda_therm-config.param_spec.lmbda) * i / 10.;
-                lat.init_potential_energy();
-                lat.rotate_imag_time();
-                integrated_pot_energy = total_integrated_pot_energy(
-                    lat, h_end, config.param_spec.mu, 
-                    config.param_spec.J, lmbda_end
-                );
-                for (std::int64_t j = 0; j < config.sim_spec.N_thermalization / 10.; ++j) {
-                    metropolis_step(
-                        lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta, h_end, 
-                        config.param_spec.mu, config.param_spec.J, lmbda_end
-                    );
-                }
-            }
+    if (!config.out_spec.restart_from.empty()) {
+        auto checkpoint_state = read_sample_checkpoint(config.out_spec.restart_from, config, lat);
+        completed_samples = checkpoint_state.completed_samples;
+        total_metropolis_step_count = checkpoint_state.production_metropolis_steps;
+        integrated_pot_energy = checkpoint_state.integrated_pot_energy;
+        acc_ratio = checkpoint_state.acc_ratio;
+        production_acceptance = std::move(checkpoint_state.production_acceptance);
+        observable_vector = std::move(checkpoint_state.observable_vector);
+        if (observable_vector.size() != config.sim_spec.observables.size()) {
+            throw std::runtime_error("Checkpoint observable count does not match this run.");
         }
     } else {
-        // Thermalization 
-        for (std::int64_t i = 0; i < config.sim_spec.N_thermalization; ++i) {
-            metropolis_step(
-                lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta, 
-                config.param_spec.h, config.param_spec.mu, config.param_spec.J, 
-                config.param_spec.lmbda
-            );
+        if (config.sim_spec.custom_therm) {
+            // Pre-Thermalization 
+            for (std::int64_t i = 0; i < config.sim_spec.N_thermalization; ++i) {
+                metropolis_step(
+                    lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta, 
+                    config.param_spec.h_therm, config.param_spec.mu, config.param_spec.J, 
+                    config.param_spec.lmbda_therm
+                );
+            }
+
+            // For sampling first order hysteresis
+            double h_end = config.param_spec.h_therm;
+            if (std::abs(config.param_spec.h - config.param_spec.h_therm) > PRECISION) {
+                for (int i = 9; i > -1; --i) {
+                    h_end = config.param_spec.h + (config.param_spec.h_therm-config.param_spec.h) * i / 10.;
+                    lat.init_potential_energy();
+                    lat.rotate_imag_time();
+                    integrated_pot_energy = total_integrated_pot_energy(
+                        lat, h_end, config.param_spec.mu, 
+                        config.param_spec.J, config.param_spec.lmbda_therm
+                    );
+                    for (std::int64_t j = 0; j < config.sim_spec.N_thermalization / 10.; ++j) {
+                        metropolis_step(
+                            lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta, h_end, 
+                            config.param_spec.mu, config.param_spec.J, config.param_spec.lmbda_therm
+                        );
+                    }
+                }
+            }
+            double lmbda_end = config.param_spec.lmbda_therm;
+            if (std::abs(config.param_spec.lmbda - config.param_spec.lmbda_therm) > PRECISION) {
+                for (int i = 9; i > -1; --i) {
+                    lmbda_end = config.param_spec.lmbda + (config.param_spec.lmbda_therm-config.param_spec.lmbda) * i / 10.;
+                    lat.init_potential_energy();
+                    lat.rotate_imag_time();
+                    integrated_pot_energy = total_integrated_pot_energy(
+                        lat, h_end, config.param_spec.mu, 
+                        config.param_spec.J, lmbda_end
+                    );
+                    for (std::int64_t j = 0; j < config.sim_spec.N_thermalization / 10.; ++j) {
+                        metropolis_step(
+                            lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta, h_end, 
+                            config.param_spec.mu, config.param_spec.J, lmbda_end
+                        );
+                    }
+                }
+            }
+        } else {
+            // Thermalization 
+            for (std::int64_t i = 0; i < config.sim_spec.N_thermalization; ++i) {
+                metropolis_step(
+                    lat, integrated_pot_energy, acc_ratio, config.lat_spec.beta, 
+                    config.param_spec.h, config.param_spec.mu, config.param_spec.J, 
+                    config.param_spec.lmbda
+                );
+            }
         }
     }
 
@@ -3213,13 +3612,12 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
         throw std::runtime_error(std::format("Integrated potential energy mismatch. {} does not match {}.", integrated_pot_energy, integrated_pot_energy_check));
     }
 
-    std::int64_t total_metropolis_step_count = 0;
     const std::int64_t reset_potential_energy_count =
         static_cast<std::int64_t>(lat.get_edge_count()) * 100000;
-    AcceptanceDiagnostics production_acceptance;
-    start_acceptance_diagnostics(production_acceptance);
+    start_acceptance_diagnostics(production_acceptance, config.out_spec.restart_from.empty());
+    auto last_checkpoint_time = std::chrono::steady_clock::now();
 
-    for (std::int64_t i = 0; i < config.sim_spec.N_samples; ++i) {
+    for (std::int64_t i = completed_samples; i < config.sim_spec.N_samples; ++i) {
         start_acceptance_block();
         for (std::int64_t j = 0; j < config.sim_spec.N_between_samples; ++j) {
             ++total_metropolis_step_count;
@@ -3247,6 +3645,23 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
 
         if (config.out_spec.save_snapshots) {
             lat.update_spin_string();
+        }
+
+        completed_samples = i + 1;
+        if (checkpoint_due(config, completed_samples, std::chrono::steady_clock::now(), last_checkpoint_time)) {
+            write_sample_checkpoint(
+                config.out_spec.checkpoint_path,
+                config,
+                lat,
+                SampleCheckpointState{
+                    .completed_samples = completed_samples,
+                    .production_metropolis_steps = total_metropolis_step_count,
+                    .integrated_pot_energy = integrated_pot_energy,
+                    .acc_ratio = acc_ratio,
+                    .production_acceptance = production_acceptance,
+                    .observable_vector = observable_vector
+                }
+            );
         }
     }
     stop_acceptance_diagnostics();
