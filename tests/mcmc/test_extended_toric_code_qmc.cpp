@@ -1163,4 +1163,82 @@ BOOST_AUTO_TEST_CASE(boost_sample_checkpoint_restart_is_bit_faithful) {
     std::filesystem::remove(checkpoint_path);
 }
 
+BOOST_AUTO_TEST_CASE(boost_pt_swap_weight_matches_bruteforce_l8) {
+    paratoric::LatSpec lat_spec = {
+        .basis = 'z',
+        .lattice_type = "square",
+        .system_size = 8,
+        .beta = 8.0,
+        .boundaries = "periodic",
+        .default_spin = 1,
+        .lattice_backend = "boost"
+    };
+    paratoric::ParamSpec param_spec = {
+        .mu = 1.0,
+        .h = 0.25,
+        .J = 1.0,
+        .lmbda = 0.25
+    };
+    paratoric::SimSpec sim_spec = {
+        .N_samples = 8,
+        .N_thermalization = 16,
+        .N_between_samples = 8,
+        .N_resamples = 8,
+        .seed = 2468,
+        .observables = {"energy", "sigma_x", "star_x"}
+    };
+    paratoric::ParallelTemperingSpec pt_spec = {
+        .enabled = true,
+        .ladder_s = {0.22, 0.30},
+        .swap_period = 4,
+        .validate_swap_weight = true
+    };
+
+    auto mc = paratoric::ExtendedToricCodeQMC<'z'>();
+    const double max_deviation = mc.validate_parallel_tempering_swap_weight_debug(
+        paratoric::Config{sim_spec, param_spec, lat_spec, paratoric::OutSpec{}, pt_spec}
+    );
+    BOOST_TEST_MESSAGE("L=8 PT cached-vs-bruteforce max log-weight deviation: " << max_deviation);
+    BOOST_TEST(max_deviation < 1e-8);
+}
+
+BOOST_AUTO_TEST_CASE(boost_pt_swap_weight_matches_bruteforce_l8_alt_seed_ladder) {
+    paratoric::LatSpec lat_spec = {
+        .basis = 'z',
+        .lattice_type = "square",
+        .system_size = 8,
+        .beta = 8.0,
+        .boundaries = "periodic",
+        .default_spin = 1,
+        .lattice_backend = "boost"
+    };
+    paratoric::ParamSpec param_spec = {
+        .mu = 1.0,
+        .h = 0.24,
+        .J = 1.0,
+        .lmbda = 0.24
+    };
+    paratoric::SimSpec sim_spec = {
+        .N_samples = 8,
+        .N_thermalization = 12,
+        .N_between_samples = 6,
+        .N_resamples = 8,
+        .seed = 97531,
+        .observables = {"energy", "sigma_x", "star_x"}
+    };
+    paratoric::ParallelTemperingSpec pt_spec = {
+        .enabled = true,
+        .ladder_s = {0.24, 0.31},
+        .swap_period = 3,
+        .validate_swap_weight = true
+    };
+
+    auto mc = paratoric::ExtendedToricCodeQMC<'z'>();
+    const double max_deviation = mc.validate_parallel_tempering_swap_weight_debug(
+        paratoric::Config{sim_spec, param_spec, lat_spec, paratoric::OutSpec{}, pt_spec}
+    );
+    BOOST_TEST_MESSAGE("L=8 PT cached-vs-bruteforce max log-weight deviation (alt): " << max_deviation);
+    BOOST_TEST(max_deviation < 1e-8);
+}
+
 } // namespace paratoric

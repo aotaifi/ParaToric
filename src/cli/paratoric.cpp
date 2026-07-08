@@ -12,10 +12,14 @@
 #include <boost/program_options/value_semantic.hpp>
 #include <boost/program_options/variables_map.hpp>
 
+#include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
+#include <limits>
+#include <stdexcept>
 #include <vector>
 
 namespace po = boost::program_options;
@@ -54,6 +58,12 @@ int main(int argc, char **argv) {
         std::filesystem::path restart_from;
         int checkpoint_every_samples;
         int checkpoint_every_seconds;
+        std::vector<double> pt_ladder;
+        double pt_ladder_start;
+        double pt_ladder_end;
+        int pt_ladder_count;
+        int pt_swap_period;
+        bool pt_validate_swap_weight;
         int process_index;
 
         po::options_description desc("Run extended toric code QMC simulation");
@@ -85,6 +95,12 @@ int main(int argc, char **argv) {
         ("restart_from", po::value(&restart_from)->default_value({}), "Resume etc_sample from a checkpoint file.")
         ("checkpoint_every_samples", po::value(&checkpoint_every_samples)->default_value(0), "Write an etc_sample checkpoint every N completed samples.")
         ("checkpoint_every_seconds", po::value(&checkpoint_every_seconds)->default_value(0), "Write an etc_sample checkpoint every N seconds, checked at sample boundaries.")
+        ("pt_ladder", po::value(&pt_ladder)->multitoken(), "Enable PT with explicit self-dual s ladder values; sets h=lambda=s and requires mu=J=1.")
+        ("pt_ladder_start", po::value(&pt_ladder_start)->default_value(std::numeric_limits<double>::quiet_NaN()), "Start of an evenly spaced PT self-dual s ladder.")
+        ("pt_ladder_end", po::value(&pt_ladder_end)->default_value(std::numeric_limits<double>::quiet_NaN()), "End of an evenly spaced PT self-dual s ladder.")
+        ("pt_ladder_count", po::value(&pt_ladder_count)->default_value(0), "Number of points in an evenly spaced PT self-dual s ladder.")
+        ("pt_swap_period", po::value(&pt_swap_period)->default_value(1000), "PT neighbor-swap attempt period in Metropolis updates.")
+        ("pt_validate_swap_weight", po::value(&pt_validate_swap_weight)->default_value(false), "Recompute PT swap weights at every swap attempt and record max deviation.")
         ("process_index,procid", po::value(&process_index), "Identifier of process (for debugging).")
         ("lattice_type,lat", po::value(&lattice_type), "Type of lattice used.")
         ("lattice_backend,latbe", po::value(&lattice_backend)->default_value("boost"), "Lattice backend used by benchmark modes (boost or flat_square).")
@@ -150,21 +166,52 @@ int main(int argc, char **argv) {
             .checkpoint_every_samples = checkpoint_every_samples,
             .checkpoint_every_seconds = checkpoint_every_seconds
         };
+        if (pt_ladder.empty() && pt_ladder_count > 0) {
+            if (!std::isfinite(pt_ladder_start) || !std::isfinite(pt_ladder_end)) {
+                throw std::invalid_argument("pt_ladder_start and pt_ladder_end are required with pt_ladder_count.");
+            }
+            if (pt_ladder_count == 1) {
+                pt_ladder.push_back(pt_ladder_start);
+            } else {
+                pt_ladder.reserve(static_cast<size_t>(pt_ladder_count));
+                for (int i = 0; i < pt_ladder_count; ++i) {
+                    const double t = static_cast<double>(i) / static_cast<double>(pt_ladder_count - 1);
+                    pt_ladder.push_back(pt_ladder_start + t * (pt_ladder_end - pt_ladder_start));
+                }
+            }
+        }
+        if (!pt_ladder.empty()) {
+            if (std::any_of(pt_ladder.begin(), pt_ladder.end(), [](double s) { return !std::isfinite(s) || s <= 0.0; })) {
+                throw std::invalid_argument("pt_ladder values must be finite and positive.");
+            }
+            if (!std::is_sorted(pt_ladder.begin(), pt_ladder.end())) {
+                throw std::invalid_argument("pt_ladder values must be sorted in ascending order.");
+            }
+            if (std::adjacent_find(pt_ladder.begin(), pt_ladder.end()) != pt_ladder.end()) {
+                throw std::invalid_argument("pt_ladder values must be strictly increasing.");
+            }
+        }
+        paratoric::ParallelTemperingSpec pt_spec = {
+            .enabled = !pt_ladder.empty(),
+            .ladder_s = pt_ladder,
+            .swap_period = pt_swap_period,
+            .validate_swap_weight = pt_validate_swap_weight
+        };
 
         if (simulation == "etc_sample") {
             auto io = paratoric::IO();
             io.etc_sample(
-                paratoric::Config{sim_spec, param_spec, lat_spec, out_spec}
+                paratoric::Config{sim_spec, param_spec, lat_spec, out_spec, pt_spec}
                 );
         } else if (simulation == "etc_hysteresis") {
             auto io = paratoric::IO();
             io.etc_hysteresis(
-                paratoric::Config{sim_spec, param_spec, lat_spec, out_spec}
+                paratoric::Config{sim_spec, param_spec, lat_spec, out_spec, pt_spec}
                 );
         } else if (simulation == "etc_thermalization") {
             auto io = paratoric::IO();
             io.etc_thermalization(
-                paratoric::Config{sim_spec, param_spec, lat_spec, out_spec}
+                paratoric::Config{sim_spec, param_spec, lat_spec, out_spec, pt_spec}
                 );
         } else if (simulation == "etc_core_update_benchmark") {
             auto run_benchmark = [&](auto& mc) {

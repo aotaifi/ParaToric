@@ -119,7 +119,8 @@ Result run_etc_sample_backend(const Config& config, const std::filesystem::path&
                 .restart_from=config.out_spec.restart_from,
                 .checkpoint_every_samples=config.out_spec.checkpoint_every_samples,
                 .checkpoint_every_seconds=config.out_spec.checkpoint_every_seconds
-            }}
+            },
+            config.pt_spec}
     );
 }
 
@@ -280,6 +281,43 @@ void IO::etc_sample(
             .write(block_acceptance_fraction.data(), H5::PredType::NATIVE_DOUBLE);
         acceptance_grp.createDataSet("block_mean_acceptance_ratio", H5::PredType::NATIVE_DOUBLE, dataspace)
             .write(block_mean_acceptance_ratio.data(), H5::PredType::NATIVE_DOUBLE);
+    }
+
+    const auto& pt = result_spec.pt_diagnostics;
+    if (pt.enabled) {
+        H5::Group pt_grp = getOrCreateGroup(diagnostics_grp, "parallel_tempering");
+        auto ds_world_size = pt_grp.createDataSet("world_size", H5::PredType::NATIVE_INT, scalar_space);
+        ds_world_size.write(&(pt.world_size), H5::PredType::NATIVE_INT);
+        auto ds_rank = pt_grp.createDataSet("rank", H5::PredType::NATIVE_INT, scalar_space);
+        ds_rank.write(&(pt.rank), H5::PredType::NATIVE_INT);
+        auto ds_initial_index = pt_grp.createDataSet("initial_ladder_index", H5::PredType::NATIVE_INT, scalar_space);
+        ds_initial_index.write(&(pt.initial_ladder_index), H5::PredType::NATIVE_INT);
+        auto ds_final_index = pt_grp.createDataSet("final_ladder_index", H5::PredType::NATIVE_INT, scalar_space);
+        ds_final_index.write(&(pt.final_ladder_index), H5::PredType::NATIVE_INT);
+        auto ds_initial_s = pt_grp.createDataSet("initial_s", H5::PredType::NATIVE_DOUBLE, scalar_space);
+        ds_initial_s.write(&(pt.initial_s), H5::PredType::NATIVE_DOUBLE);
+        auto ds_final_s = pt_grp.createDataSet("final_s", H5::PredType::NATIVE_DOUBLE, scalar_space);
+        ds_final_s.write(&(pt.final_s), H5::PredType::NATIVE_DOUBLE);
+        auto ds_swap_attempted = pt_grp.createDataSet("swap_attempted", H5::PredType::NATIVE_UINT64, scalar_space);
+        ds_swap_attempted.write(&(pt.swap_attempted), H5::PredType::NATIVE_UINT64);
+        auto ds_swap_accepted = pt_grp.createDataSet("swap_accepted", H5::PredType::NATIVE_UINT64, scalar_space);
+        ds_swap_accepted.write(&(pt.swap_accepted), H5::PredType::NATIVE_UINT64);
+        auto ds_max_dev = pt_grp.createDataSet("max_swap_log_weight_deviation", H5::PredType::NATIVE_DOUBLE, scalar_space);
+        ds_max_dev.write(&(pt.max_swap_log_weight_deviation), H5::PredType::NATIVE_DOUBLE);
+        if (!pt.swap_attempted_by_link.empty()) {
+            hsize_t dims[1] = { pt.swap_attempted_by_link.size() };
+            H5::DataSpace dataspace{ 1, dims };
+            pt_grp.createDataSet("swap_attempted_by_link", H5::PredType::NATIVE_UINT64, dataspace)
+                .write(pt.swap_attempted_by_link.data(), H5::PredType::NATIVE_UINT64);
+            pt_grp.createDataSet("swap_accepted_by_link", H5::PredType::NATIVE_UINT64, dataspace)
+                .write(pt.swap_accepted_by_link.data(), H5::PredType::NATIVE_UINT64);
+        }
+        if (!pt.ladder_index_by_sample.empty()) {
+            hsize_t dims[1] = { pt.ladder_index_by_sample.size() };
+            H5::DataSpace dataspace{ 1, dims };
+            pt_grp.createDataSet("ladder_index_by_sample", H5::PredType::NATIVE_INT, dataspace)
+                .write(pt.ladder_index_by_sample.data(), H5::PredType::NATIVE_INT);
+        }
     }
 }
 

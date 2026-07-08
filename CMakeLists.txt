@@ -109,9 +109,30 @@ target_include_directories(paratoric_core
 if (PARATORIC_LINK_MPI)
   find_package(MPI QUIET)
   if(MPI_FOUND)
-    target_link_libraries(paratoric_core PRIVATE MPI::MPI_C MPI::MPI_CXX)
+    target_compile_definitions(paratoric_core PUBLIC PARATORIC_HAS_MPI)
+    target_link_libraries(paratoric_core PUBLIC MPI::MPI_C MPI::MPI_CXX)
   else()
-    message(STATUS "MPI not found: building core without MPI")
+    find_program(PARATORIC_MPI_CXX_WRAPPER NAMES mpicxx HINTS ENV PATH PATHS /usr/lib64/openmpi/bin /usr/bin)
+    if (PARATORIC_MPI_CXX_WRAPPER)
+      execute_process(
+        COMMAND ${PARATORIC_MPI_CXX_WRAPPER} --showme:compile
+        OUTPUT_VARIABLE PARATORIC_MPI_COMPILE_FLAGS
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+      )
+      execute_process(
+        COMMAND ${PARATORIC_MPI_CXX_WRAPPER} --showme:link
+        OUTPUT_VARIABLE PARATORIC_MPI_LINK_FLAGS
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+      )
+      separate_arguments(PARATORIC_MPI_COMPILE_FLAGS NATIVE_COMMAND "${PARATORIC_MPI_COMPILE_FLAGS}")
+      separate_arguments(PARATORIC_MPI_LINK_FLAGS NATIVE_COMMAND "${PARATORIC_MPI_LINK_FLAGS}")
+      target_compile_definitions(paratoric_core PUBLIC PARATORIC_HAS_MPI)
+      target_compile_options(paratoric_core PUBLIC ${PARATORIC_MPI_COMPILE_FLAGS})
+      target_link_options(paratoric_core PUBLIC ${PARATORIC_MPI_LINK_FLAGS})
+      message(STATUS "MPI wrapper found: building core with manual MPI flags")
+    else()
+      message(STATUS "MPI not found: building core without MPI")
+    endif()
   endif()
 endif()
 

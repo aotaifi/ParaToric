@@ -2868,6 +2868,14 @@ Lattice::integrated_plaquette_energy_diff(
 }
 
 double Lattice::total_integrated_star_energy() {
+    return cached_total_integrated_star_energy();
+}
+
+double Lattice::cached_total_integrated_star_energy() const {
+    return total_integrated_star_energy_cache_;
+}
+
+double Lattice::recompute_total_integrated_star_energy() {
     double total_integrated_star_energy = 0.;
     for (size_t star_center = 0; star_center < (size_t)get_vertex_count(); ++star_center) {
         const auto& sedges = get_star_edges(star_center);
@@ -2879,6 +2887,14 @@ double Lattice::total_integrated_star_energy() {
 }
 
 double Lattice::total_integrated_plaquette_energy() {
+    return cached_total_integrated_plaquette_energy();
+}
+
+double Lattice::cached_total_integrated_plaquette_energy() const {
+    return total_integrated_plaquette_energy_cache_;
+}
+
+double Lattice::recompute_total_integrated_plaquette_energy() {
     double total_integrated_plaquette_energy = 0.;
     for (size_t plaquette_index = 0; plaquette_index < plaquette_vector.size(); ++plaquette_index) {
         const auto& pedges = get_plaquette_edges(plaquette_index);
@@ -3009,6 +3025,14 @@ double Lattice::integrated_edge_energy_diff(const Edge& edg, double imag_time_1,
 }
 
 double Lattice::total_integrated_edge_energy() {
+    return cached_total_integrated_edge_energy();
+}
+
+double Lattice::cached_total_integrated_edge_energy() const {
+    return total_integrated_edge_energy_cache_;
+}
+
+double Lattice::recompute_total_integrated_edge_energy() {
     double total_integrated_edge_energy = 0.;
     for (const auto& edg : egde_cache_) {
         total_integrated_edge_energy += integrated_edge_energy(edg, 0, BETA);
@@ -3025,6 +3049,9 @@ double Lattice::total_integrated_edge_energy_weighted() {
 }
 
 void Lattice::init_potential_energy() {
+    total_integrated_edge_energy_cache_ = 0.;
+    total_integrated_star_energy_cache_ = 0.;
+    total_integrated_plaquette_energy_cache_ = 0.;
     for (const auto& edg : egde_cache_) {
         set_potential_edge_energy(edg, integrated_edge_energy(edg, 0, BETA));
     }
@@ -3155,6 +3182,14 @@ double Lattice::get_non_diag_single_energy_z() {
     return energy_beta_h / BETA;
 }
 
+double Lattice::recompute_non_diag_single_energy_z() const {
+    std::size_t count = 0;
+    for (const auto& edg : egde_cache_) {
+        count += g[edg].single_spin_flips.size();
+    }
+    return static_cast<double>(count) / BETA;
+}
+
 double Lattice::get_non_diag_tuple_energy_x() {
     const double energy_beta_J = static_cast<double>(total_plaquette_flip_count_);
     // energy_beta_J is the plaquette energy term multiplied by J and beta. The returned value is the plaquette energy multiplied by J
@@ -3165,6 +3200,14 @@ double Lattice::get_non_diag_tuple_energy_z() {
     const double energy_beta_mu = static_cast<double>(total_star_flip_count_);
     // energy_beta_mu is the star energy term multiplied by mu and beta. The returned value is the star energy multiplied by mu
     return energy_beta_mu / BETA;
+}
+
+double Lattice::recompute_non_diag_tuple_energy_z() const {
+    std::size_t count = 0;
+    for (const auto& v : boost::make_iterator_range(boost::vertices(g))) {
+        count += g[v].star_flips.size();
+    }
+    return static_cast<double>(count) / BETA;
 }
 
 double Lattice::get_diag_tuple_energy_x() {
@@ -4159,6 +4202,9 @@ void Lattice::write_checkpoint_state(std::ostream& out) const {
     write_binary(out, total_single_spin_flip_count_);
     write_binary(out, total_plaquette_flip_count_);
     write_binary(out, total_star_flip_count_);
+    write_binary(out, total_integrated_edge_energy_cache_);
+    write_binary(out, total_integrated_star_energy_cache_);
+    write_binary(out, total_integrated_plaquette_energy_cache_);
 }
 
 void Lattice::read_checkpoint_state(std::istream& in) {
@@ -4201,6 +4247,9 @@ void Lattice::read_checkpoint_state(std::istream& in) {
     read_binary(in, total_single_spin_flip_count_);
     read_binary(in, total_plaquette_flip_count_);
     read_binary(in, total_star_flip_count_);
+    read_binary(in, total_integrated_edge_energy_cache_);
+    read_binary(in, total_integrated_star_energy_cache_);
+    read_binary(in, total_integrated_plaquette_energy_cache_);
 
     if (!event_vectors_are_sorted()) {
         throw std::runtime_error("Checkpoint event vectors violate sorted-order invariant.");

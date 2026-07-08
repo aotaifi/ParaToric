@@ -112,6 +112,13 @@ struct OutSpec {
     int checkpoint_every_seconds = 0;
 };
 
+struct ParallelTemperingSpec {
+    bool enabled = false;
+    std::vector<double> ladder_s{};
+    int swap_period = 1000;
+    bool validate_swap_weight = false;
+};
+
 /**
  * @brief Configuration for starting a simulation
  * 
@@ -126,6 +133,7 @@ struct Config{
     ParamSpec param_spec{};
     LatSpec lat_spec{};
     OutSpec out_spec{};
+    ParallelTemperingSpec pt_spec{};
 };
 
 struct AcceptanceDiagnostics {
@@ -138,6 +146,23 @@ struct AcceptanceDiagnostics {
     std::vector<std::uint64_t> block_attempted{};
     std::vector<std::uint64_t> block_accepted{};
     std::vector<double> block_acceptance_ratio_sum{};
+};
+
+struct ParallelTemperingDiagnostics {
+    bool enabled = false;
+    bool mpi_compiled = false;
+    int world_size = 1;
+    int rank = 0;
+    int initial_ladder_index = 0;
+    int final_ladder_index = 0;
+    double initial_s = 0.;
+    double final_s = 0.;
+    std::uint64_t swap_attempted = 0;
+    std::uint64_t swap_accepted = 0;
+    double max_swap_log_weight_deviation = 0.;
+    std::vector<std::uint64_t> swap_attempted_by_link{};
+    std::vector<std::uint64_t> swap_accepted_by_link{};
+    std::vector<int> ladder_index_by_sample{};
 };
 
 /**
@@ -177,6 +202,7 @@ struct Result {
     std::vector<std::vector<std::variant<std::complex<double>, double>>> series{};
     std::vector<double> acc_ratio{};
     AcceptanceDiagnostics production_acceptance{};
+    ParallelTemperingDiagnostics pt_diagnostics{};
     std::vector<double> mean{}, mean_std{}, binder{}, binder_std{}, tau_int{};
     std::vector<std::vector<std::vector<std::variant<std::complex<double>, double>>>> series_hys{};
     std::vector<std::vector<double>> mean_hys{}, mean_std_hys{}, binder_hys{}, binder_std_hys{}, tau_int_hys{};

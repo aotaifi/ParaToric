@@ -46,7 +46,7 @@ public:
         // In this vector the imaginary times of star flips are stored
         std::vector<double> star_flips;
         // In this vector we store the integrated potential energy of the star
-        double integrated_star_energy;
+        double integrated_star_energy = 0.;
         // These are the real space coordinates of the lattice site
         double x = 0.;
         double y = 0.;
@@ -67,7 +67,7 @@ public:
         // In this vector the imaginary times of single spin flips are stored
         std::vector<double> single_spin_flips; 
         // In this vector we store the integrated potential energy of the edge
-        double integrated_edge_energy;
+        double integrated_edge_energy = 0.;
         // In this vector we store all the plaquettes of which this edge is part of 
         std::vector<int> part_of_plaquette_lookup;
         int source_vertex = -1;
@@ -744,6 +744,8 @@ public:
      * 
      */
     double total_integrated_star_energy();
+    double cached_total_integrated_star_energy() const;
+    double recompute_total_integrated_star_energy();
 
     /**
      * @brief Return the total plaquette energy (integrated over imaginary time) of all plaquettes 
@@ -753,6 +755,8 @@ public:
      * 
      */
     double total_integrated_plaquette_energy();
+    double cached_total_integrated_plaquette_energy() const;
+    double recompute_total_integrated_plaquette_energy();
 
     /**
      * @brief Integrated STAR–energy difference for a plaquette–plus–single–flip combination update.
@@ -919,6 +923,8 @@ public:
      * 
      */
     double total_integrated_edge_energy();
+    double cached_total_integrated_edge_energy() const;
+    double recompute_total_integrated_edge_energy();
 
     // Weighted version, w(tau)=min(tau, beta-tau) on [0, beta]
     double total_integrated_edge_energy_weighted();
@@ -977,6 +983,7 @@ public:
      * 
      */
     double get_non_diag_single_energy_z();
+    double recompute_non_diag_single_energy_z() const;
 
     /**
      * @brief Returns the sum of all plaquette flips in the imaginary time axis of the lattice divided by beta WITHOUT an overall negative sign. The result is the plaquette energy term multiplied by J!
@@ -993,6 +1000,7 @@ public:
      * 
      */
     double get_non_diag_tuple_energy_z();
+    double recompute_non_diag_tuple_energy_z() const;
 
     /**
      * @brief Returns the sum of all star terms at imaginary time beta (or equivalently zero) WITHOUT an overall negative sign WITHOUT multiplying it by mu.
@@ -1212,6 +1220,9 @@ private:
     std::size_t total_single_spin_flip_count_ = 0;
     std::size_t total_plaquette_flip_count_ = 0;
     std::size_t total_star_flip_count_ = 0;
+    double total_integrated_edge_energy_cache_ = 0.;
+    double total_integrated_star_energy_cache_ = 0.;
+    double total_integrated_plaquette_energy_cache_ = 0.;
 
     struct SnapshotSpoolState {
         std::filesystem::path path{};
@@ -1399,11 +1410,13 @@ inline double Lattice::get_potential_edge_energy(const Edge& edg) {
 }
 
 inline void Lattice::set_potential_edge_energy(const Edge& edg, double potential_energy) {
+    total_integrated_edge_energy_cache_ += potential_energy - g[edg].integrated_edge_energy;
     g[edg].integrated_edge_energy = potential_energy;
 }
 
 inline void Lattice::add_potential_edge_energy(const Edge& edg, double diff) {
     g[edg].integrated_edge_energy += diff;
+    total_integrated_edge_energy_cache_ += diff;
 }
 
 inline double Lattice::get_potential_star_energy(int star_index) {
@@ -1411,11 +1424,13 @@ inline double Lattice::get_potential_star_energy(int star_index) {
 }
     
 inline void Lattice::set_potential_star_energy(int star_index, double potential_energy) {
+    total_integrated_star_energy_cache_ += potential_energy - g[star_index].integrated_star_energy;
     g[star_index].integrated_star_energy = potential_energy;
 }
 
 inline void Lattice::add_potential_star_energy(int star_index, double diff) {
     g[star_index].integrated_star_energy += diff;
+    total_integrated_star_energy_cache_ += diff;
 }
 
 inline double Lattice::get_potential_plaquette_energy(int plaquette_index) {
@@ -1423,11 +1438,13 @@ inline double Lattice::get_potential_plaquette_energy(int plaquette_index) {
 }
     
 inline void Lattice::set_potential_plaquette_energy(int plaquette_index, double potential_energy) {
+    total_integrated_plaquette_energy_cache_ += potential_energy - integrated_plaquette_energy_vector[plaquette_index];
     integrated_plaquette_energy_vector[plaquette_index] = potential_energy;
 }
 
 inline void Lattice::add_potential_plaquette_energy(int plaquette_index, double diff) {
     integrated_plaquette_energy_vector[plaquette_index] += diff;
+    total_integrated_plaquette_energy_cache_ += diff;
 }
 
 inline std::string Lattice::get_orientation(const Edge& edg) {
