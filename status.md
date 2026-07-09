@@ -59,13 +59,27 @@ Updated: 2026-07-08, ~21:10 CEST.
    directly via squeue/sacct; still unresolved as an infra item, flagged to PI earlier,
    not re-blocking.
 
+## Ensemble driver — DONE
+`scripts/ensemble_diagnostics.py` (commit `8b6fd05`), Python-only (reuses the shared
+`ai-workflow/qmc_common/hdf5_readers.py` reader, no new C++). Computes Gelman-Rubin
+R-hat, cross-chain tau agreement (I4), Neff/N>=100*tau checks, and a cold/hot-start
+combined-z check (I5). One suspicious-looking synthetic number (R-hat=1.18 for a
+"40 SE offset" case) was independently hand-verified by Martina and confirmed correct
+(only 1 of 4 chains was offset, diluting the standard R-hat formula's between-chain
+term — not a bug). No existing tool found before writing this (checked ParaToric/scripts,
+ai-workflow/qmc_common, MCP surface, and paratoric_tampered/scripts first).
+
 ## Active workers
 None currently running.
 
-## Next action
-Ensemble driver (K independent seeds per point, cross-chain tau/R-hat check — no code
-exists for this yet) is the last M0 infra piece before G2 pilot staging (L=120, retuned
-ladder spacing given the uneven L=8 acceptance rates). **Recommend a PI check-in before
-committing further dispatch budget to this**, given how much ground (and how many real
-issues) surfaced already — this file plus doc/run_tracker_multicritical.md carry full
-continuity for a clean resume either way.
+## Next action — the one remaining M0 step
+Stage and submit the **G2 pilot**: PT ladder through the multicritical region, L=120,
+beta=120, <=2 days walltime, >=4 chains, 1 node, explicit memory, concise-alert wrapper
+(note: that wrapper failed twice this session on a DNS issue — may need to watch the
+job directly via squeue/sacct again instead). Ladder spacing needs to be wider/retuned
+vs the L=8 validation (per-link acceptance there ranged 6.5%-55.4%, target is 20-40%).
+GO if tau_worst drops >=5x vs the L120 baseline (tau~9000-10000, doc/run_tracker's
+Baseline anchors section). **This is the harness's explicit hard-stop-for-PI-review gate,
+regardless of GO/NO-GO** — distinct from the general M0 "go" already given, since it
+commits real multi-day cluster time. Have not started staging this yet, pending explicit
+PI confirmation to proceed with this specific step.
