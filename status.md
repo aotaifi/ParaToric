@@ -1,151 +1,84 @@
 # Jarvis status — ParaToric (rewrite in place, no diary)
 
-Updated: 2026-07-08, ~21:10 CEST.
+Updated: 2026-07-10.
 
 ## Milestone
-- milestone: T1-P1 (M0 infra: checkpoint/restart -> PT along self-dual line
-  h=lmbda,mu=J=1 -> ensembles -> G0-G2 harness gates).
-- stop condition: G2 pilot GO/NO-GO recorded in doc/run_tracker_multicritical.md, then
-  hard-stop for PI review before any FSS production (binding regardless of GO/NO-GO).
-- budget: originally declared <=15 codex-worker dispatches before a mandatory PI
-  checkpoint; that was exceeded (~23 dispatches used) without an explicit logged
-  self-extension at the time — noted here as a process gap, not re-litigated, since work
-  was genuinely converging throughout (2 real regressions found and fixed, not drift).
-  This status update IS that overdue PI checkpoint.
-- converging: yes — G0, G1.1, G1.2, G1.3 all now genuinely PASS with independent
-  verification. Next real decision point (ensemble driver + G2 pilot) is a good place to
-  pause for PI input before spending further budget.
+- milestone: T1-P1 (M0 infra + G2 pilot GO/NO-GO).
+- Feynman reviewed all of M0 (2026-07-09/10), confirmed the swap-weight formula
+  correct by hand (not just cache==recompute), resolved the energy_lmbda-frozen
+  finding (see below), and gave GO for steps 1-3 + staging the pilot. The actual
+  pilot `sbatch` (step 4) stays PI-gated (harness G2 hard stop) — separate check-in
+  needed before that specific submission, per Feynman's own explicit carve-out.
+- PI said go on 2026-07-10 confirming Feynman's review.
 
-## Gate status — ALL PASS, independently verified
-- G0.1/G0.2/G0.3: PASS (baseline reproduction, fast-math A/B confirmed genuine, test
-  suite clean).
-- G1.1 checkpoint/restart: PASS, commit `e461686`. Bit-faithful restart, Martina-verified
-  RNG full-engine state + sort-invariant enforcement. Known non-blocking limit:
-  `--snapshots` spool state isn't checkpointed (campaign doesn't use live snapshots).
-- G1.2 swap-weight math + real multi-rank transport: PASS, commits `b29ff1c`/`12ebdb8`.
-  A real regression was caught mid-stream (see below) and fixed; final state verified via
-  TWO independent clean rebuilds. Real Slurm job `14982619` (spack OpenMPI 5.0.0/GCC
-  13.2.0, `srun --mpi=pmix`, L=8 6-rank ladder) confirms: swap-weight cached-vs-bruteforce
-  3.6e-13 (bar 1e-8), replicas complete 6 and 4 full ladder round-trips (bar >=3). Per-link
-  acceptance uneven (6.5%-55.4% vs 20-40% target) — needs retuning at L=120, expected and
-  already anticipated in the plan, not a gate failure at this mechanism-validation stage.
-- G1.3 PT-on vs PT-off: PASS. Combined-z (same job): energy 0.758, sigma_x 0.792,
-  star_x 0.944 — all well under 3.
-- MPI toolchain for any future MPI-linked build: spack OpenMPI 5.0.0/GCC 13.2.0 at
-  `/software/opt/el_9/x86_64/spack/2024.07/spack/opt/spack/linux-almalinux9-x86_64_v2/
-  gcc-13.2.0/openmpi-5.0.0-7geqnxwp4tjl727meujgkje6m2pvk45y/`. NOT the system
-  `/usr/lib64/openmpi` (PMIx-incompatible with this cluster's Slurm). Full paths in git
-  history (commit `6b087fc`) and doc/run_tracker_multicritical.md.
+## M0 gates — all PASS (see doc/run_tracker_multicritical.md for full detail)
+G0, G1.1 (checkpoint/restart, `e461686`), G1.2 (PT swap-weight + real multi-rank,
+`b29ff1c`+fix `12ebdb8`), G1.3 (PT-on/off, z<1) all independently verified on real
+cluster hardware. Ensemble-diagnostics tool done (`8b6fd05`). One real regression was
+caught and fixed along the way (see tracker CORRECTION row + `12ebdb8`).
+**Caveat carried from Feynman's audit: "M0 complete" remains premature until PT+
+checkpoint composition is implemented** — not needed for the pilot (which fits in one
+2-day block), but mandatory before any M2 production (L=192 needs 46-91 days/chain).
 
-## Notable incidents this session (full detail in doc/run_tracker_multicritical.md + git log)
-1. **Real regression caught and fixed**: commit `b29ff1c` (PT) silently repointed the
-   public `total_integrated_{edge,star,plaquette}_energy()` accessors to return a cache
-   that `insert_single_spin_flip`/`insert_tuple_flip` don't update — broke a pre-existing
-   test. Every post-b29ff1c `ctest 3/3` claim from Clark AND two Martina review passes was
-   a FALSE PASS from a stale incremental build. Only caught because an unrelated println
-   portability fix happened to surface it. Fixed in commit `12ebdb8`, verified via two
-   independent from-scratch clean rebuilds. **Process change adopted going forward: gate
-   evidence requires a clean rebuild, not incremental** — logged as a PROPOSED CHANGE in
-   `ai-workflow/jarvis_selfreview.md`, awaiting PI ratification.
-2. A stray, unreviewed source edit (Boost.Log -> `std::clog` macro shim) leaked into the
-   live repo from a James dispatch meant to use an isolated scratch build. Caught,
-   Martina-reviewed (verdict: unneeded for production, real fix belongs in CMake for the
-   MPI variant specifically), reverted from the live repo before it could be committed.
-3. 4 guardrail-slip self-review flags logged total this session (3 call-count overruns,
-   1 the false-pass process gap above) — all in `ai-workflow/jarvis_selfreview.md`,
-   awaiting PI review/ratification, none blocking.
-4. Concise-alert Slurm notifier (`ai-workflow/bin/slurm_concise_alert.sh`) failed twice on
-   a DNS resolution error for the Slurm controller — worked around by watching jobs
-   directly via squeue/sacct; still unresolved as an infra item, flagged to PI earlier,
-   not re-blocking.
+## G2 pilot — Feynman's finalized ordered plan (2026-07-10), currently on step 1
+1. **Wide-s sector-rate scan — SUBMITTED, IN PROGRESS.** Slurm array `15012336_[0-7]`,
+   L=120 beta=120 z-basis single-chain, s={0.10,0.16,0.22,0.28,0.34,0.40,0.46,0.50},
+   10000 samples/point (~17.8h + margin, requested walltime 20h), 1 node, 1
+   CPU/task, mem-per-cpu=1G. Output root:
+   `/scratch/a/A.Otaifi/paratoric_g2_sector_rate_scan_20260710`. Launcher:
+   `scripts/submit_g2_sector_rate_scan_20260710.sbatch` (commit `39f025f`).
+   Purpose: measure winding/cut-sector-change RATE vs s (from
+   `simulation/diagnostics/production_acceptance/accepted_by_update`, the
+   cut-changing move index) to find the fast-mixing window and set ladder
+   endpoints there — NOT a GO/NO-GO by itself. **Expect completion ~2026-07-11
+   morning CEST (submitted 2026-07-10, ~20h walltime).**
+2. Ladder spacing by DIRECT per-link acceptance (NOT snapshot variance — that was
+   the resolved methodology error, see below): pick a trial ladder between the
+   scan's endpoints, run one short real PT trial, read `swap_accepted_by_link`/
+   `swap_attempted_by_link` from HDF5 (io.cpp:307-313), refine toward ~30%/link.
+   Cap N_replicas<=30. NOT STARTED (waits on step 1).
+3. Ensemble launch path: build a minimal driver OR stage >=4 seeded jobs by hand;
+   confirm `scripts/ensemble_diagnostics.py` ingests them correctly (R-hat,
+   cross-chain tau, cold/hot). NOT STARTED.
+4. G2 pilot sbatch (PI-gated, separate explicit go needed): L=120 beta=120, <=2
+   days, 1 node, retuned ladder from step 2, >=4 chains. GO requires BOTH (a)
+   mechanism: per-link acceptance in band + >=3 replica round-trips, AND (b)
+   physics: replicas demonstrably change winding/cut sector during the run AND
+   tau(percolation_strength) drops >=5x vs the L120 baseline. (a) without (b) =
+   NO-GO. NOT STARTED.
 
-## Ensemble driver — DONE
-`scripts/ensemble_diagnostics.py` (commit `8b6fd05`), Python-only (reuses the shared
-`ai-workflow/qmc_common/hdf5_readers.py` reader, no new C++). Computes Gelman-Rubin
-R-hat, cross-chain tau agreement (I4), Neff/N>=100*tau checks, and a cold/hot-start
-combined-z check (I5). One suspicious-looking synthetic number (R-hat=1.18 for a
-"40 SE offset" case) was independently hand-verified by Martina and confirmed correct
-(only 1 of 4 chains was offset, diluting the standard R-hat formula's between-chain
-term — not a bug). No existing tool found before writing this (checked ParaToric/scripts,
-ai-workflow/qmc_common, MCP surface, and paratoric_tampered/scripts first).
+### Resolved this session: the energy_lmbda-frozen ladder-design question
+Snapshot `energy_lmbda` (`diag_single_energy_cache_`) is the frozen net/cut-sector
+proxy — moved only by rare cut-changing moves, NOT what the swap weight actually
+uses (that's `cached_total_integrated_edge_energy()` + kink count, both of which
+thermalize fine via ordinary kink create/delete). Feynman's verdict: design the
+ladder from direct per-link acceptance (step 2), not snapshot variance — my
+original 3-option framing was a false choice, both "use energy_h alone" and
+"run a long snapshot-variance probe" were solving the wrong problem. Separately,
+Feynman flagged (then self-corrected after a PI challenge) that no O(1) move
+changes the winding sector — but confirmed this accumulation is SLOW, not ZERO
+(tau~1e4 baseline means it does flip), so PT is a legitimate, fair test of a
+coexistence-limited slow mode, not a long shot to be pre-judged NO-GO. The wide-s
+scan (step 1, running now) is the honest test of whether the ladder can actually
+reach the fast-mixing window. If it can't, the fallback is the WORM algorithm
+(polynomial-cost winding change) — explicitly ON HOLD pending a new PI decision,
+not the R5 winding-loop move (still permanently out), and not to be pre-built.
+
+### Infra note: Codex sandbox has intermittent Slurm-controller DNS failures
+Same root cause as the earlier concise-alert wrapper failures (both hit
+`kng-sv-slurm23.hpc.physik.uni-muenchen.de` DNS resolution). Confirmed NOT a real
+cluster outage (Jarvis's own shell reaches Slurm fine throughout). Workaround used
+successfully once: escalate the Codex dispatch to `danger-full-access` sandbox,
+which is JARVIS.md's own narrow pre-authorized exception ("restore network
+reachability for an already-authorized action"). Use this if a future dispatch
+hits the same DNS error twice in workspace-write.
 
 ## Active workers
-None currently running.
+None currently running. Waiting on Slurm array `15012336` (~20h).
 
-## Feynman review received 2026-07-09 — key constraints for the pilot (read
-doc/feynman_thesis_tojarvis.md "Pilot decisions + budget audit" in full before touching
-the pilot again): PT is z-basis-only (accepted); PT+checkpoint composition NOT
-implemented (`qmc.hpp:3675` throws) — accepted FOR THE PILOT ONLY since it fits in one
-2-day block, but this means **"M0 complete" is premature** until PT+checkpoint
-composition exists (hard blocker before any M2 production: one L=192 point at I4 needs
-46-91 days/chain, impossible without resume); hard cap **N_replicas<=30** (so
-replicas x 4 chains <= 120 ranks, stays on 1 node); L=8 ladder spacing gives ~zero
-acceptance at L=120 (histogram overlap collapses with volume) — needs a real probing
-pass to retune, ~30%/link target.
-
-## IN PROGRESS: L=120 probing pass hit a real anomaly, investigating before designing
-the ladder
-First probing-pass attempt (James) ran s in {0.22..0.36} at L=120,beta=120 single-chain,
-NOT on the actual cluster (Slurm/squeue was unreachable from his sandbox — ran "locally"
-inside the same network-restricted Codex sandbox that couldn't open MPI sockets earlier
-today) and reported `energy_lmbda` with EXACTLY zero variance at every s, means forming
-a perfectly linear sequence (slope -28800/unit s = -2*L^2 exactly) — consistent with the
-z-basis field being frozen at its default_spin=+1 initial state, never thermalized.
-Martina-verified this IS an artifact, not real physics: `run.log`s show only 256 samples,
-acceptance_fraction ~0.005-0.009, and — critically — `accepted_by_update` shows ONLY
-update types 0/4 (pair create/delete) fired; the `flip_spin` move type accepted ZERO
-times. Code check: z-basis `energy_lmbda` = `-diag_single_energy_cache_ * lmbda`
-(extended_toric_code_qmc.hpp:546), lattice initializes every edge `default_spin=+1`
-(lattice.cpp:1407/2068). Two live hypotheses, NOT yet distinguished:
-(a) `flip_spin` is intrinsically near-dead at L=120,beta=120 (a real algorithmic finding,
-like the earlier winding-move deadness R5) — would mean energy_lmbda-based observables
-(incl. the Tier-0 SSN duality-odd/even cumulants A~(energy_h-energy_lmbda) explicitly
-planned for M1's nu estimate) may be unsampleable with the current move set at this
-scale;
-(b) `diag_single_energy_cache_` simply isn't refreshed by the pair-create/delete moves
-that DID fire (26+115=141 accepts out of 16384 attempts) — the SAME class of
-stale-cache bug already found and fixed once today in commit `12ebdb8`/`b29ff1c`.
-These have very different implications and must be distinguished by code reading before
-any real probing pass is redone (properly, on the actual cluster, with logged
-Nth/Ns/Nbs/seed this time — the sandbox run didn't even expose those). Do NOT use the
-7-replica ladder James proposed from the bad data (s: 0.220,0.240,0.257,0.275,0.303,
-0.329,0.360) — discard it, it's built on non-physical frozen-state input.
-
-**RESOLVED: Hypothesis A confirmed, cleanly, by Jones (code-only investigation, no
-ambiguity)**. Move dispatcher (extended_toric_code_qmc.hpp:3446): update 0/4 are
-pair-create/delete (kink insertion/deletion in continuous time) — these mutate
-`spin_flips`/`single_spin_flips` event containers only (lattice.cpp:2137-2178,
-2430-2455), NOT `diag_single_energy_cache_`. Only "cut-changing" paths (update types
-1/2/3/5's wrap cases, calling `flip_spin()`, lattice.cpp:2687-2710) update
-`diag_single_energy_cache_` (and hence `energy_lmbda` in z-basis). Cache history
-(`202b655`) predates today's campaign commits entirely — this is pre-existing,
-unchanged, MODEL-CORRECT behavior, not a bug: pair-create/delete genuinely doesn't
-change which "cut"/net-spin-state a worldline is in; only a cut-changing move does.
-
-**Practical consequence (this IS new information, changes the plan)**: cut-changing
-moves being rare at L=120,beta=120 is not a bug, it's the SAME critical-slowing-down
-that the whole PT campaign exists to fix. A 256-sample probe was never going to catch
-one. So the "cheap probing pass" the ratification describes ("thermalize a few s
-values... measure Var(E)") is not actually cheap at this scale for energy_lmbda
-specifically — it needs enough samples to see a handful of cut-changes (order
-tau~9000-10000, the known campaign baseline, not 256), and it needs to run on the
-real cluster, not a sandbox. energy_h (a different channel, likely governed by a
-different/more-frequent move) showed real non-degenerate variance in the same short
-probe, so it may not have this problem — worth checking whether energy_h alone is a
-defensible basis for ladder-spacing, or whether a genuinely longer energy_lmbda probe
-is needed. This is a physics-judgment call (what's an adequate substitute for the
-ratification's "cheap probe" now that the cheap version doesn't work for one of the two
-channels), not a pure engineering one — flagging to PI/Feynman rather than deciding
-unilaterally.
-
-## Next action — the one remaining M0 step
-Stage and submit the **G2 pilot**: PT ladder through the multicritical region, L=120,
-beta=120, <=2 days walltime, >=4 chains, 1 node, explicit memory, concise-alert wrapper
-(note: that wrapper failed twice this session on a DNS issue — may need to watch the
-job directly via squeue/sacct again instead). Ladder spacing needs to be wider/retuned
-vs the L=8 validation (per-link acceptance there ranged 6.5%-55.4%, target is 20-40%).
-GO if tau_worst drops >=5x vs the L120 baseline (tau~9000-10000, doc/run_tracker's
-Baseline anchors section). **This is the harness's explicit hard-stop-for-PI-review gate,
-regardless of GO/NO-GO** — distinct from the general M0 "go" already given, since it
-commits real multi-day cluster time. Have not started staging this yet, pending explicit
-PI confirmation to proceed with this specific step.
+## Next action
+When the scan completes (~2026-07-11 morning CEST): read back per-s cut-sector-
+change counts/rates from all 8 tasks, identify the fast-mixing window, then
+proceed to step 2 (direct-acceptance ladder tuning) and step 3 (ensemble launch
+path). Only after both are done + reviewed does step 4 (actual pilot sbatch) come
+back to the PI for the final explicit go.
