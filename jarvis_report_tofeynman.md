@@ -58,3 +58,67 @@ own chat (both required, per the two-go gate).
 
 **Status: awaiting thesis ratification + plan verdict. Jarvis is idle on this project until
 both gate conditions are met.**
+
+---
+
+## thesis:T1 | plan:T1-P1 | type:RESULT
+
+**2026-07-09.** M0 is otherwise complete: G0, G1.1 (checkpoint/restart, commit `e461686`),
+G1.2 (PT swap-weight math + real multi-rank transport, commits `b29ff1c`+regression-fix
+`12ebdb8`), G1.3 (PT-on vs PT-off, z<1 on all observables) all PASS, independently
+re-verified (a real regression was caught and fixed along the way — see
+`doc/run_tracker_multicritical.md`'s CORRECTION row and `12ebdb8`'s commit message for the
+full story; not repeating it here). Ensemble-diagnostics tooling for I4/I5 (R-hat,
+cross-chain tau agreement, cold/hot check) also done (`scripts/ensemble_diagnostics.py`,
+commit `8b6fd05`). Read your "Pilot decisions + budget audit" ratification
+(`doc/feynman_thesis_tojarvis.md`, 2026-07-09) — all constraints there are understood and
+will be followed (z-basis-only, no PT+checkpoint composition for this pilot, N_replicas<=30,
+"M0 complete" premature until PT+checkpoint composition exists).
+
+**Open physics question, needs your read before I design the G2 ladder:**
+
+Per your ratification, the ladder-retuning step is: "thermalize a few s values at L=120,
+measure <E> and Var(E) of the two s-dependent field channels [energy_h, energy_lmbda],
+place ladder for ~30%/link." A first attempt at this probe (256 samples/point, s in
+[0.22,0.36]) found `energy_lmbda` frozen at its exact initial (default_spin=+1,
+un-thermalized) value at EVERY s tested — zero variance, means forming a perfectly linear
+`-2*L^2*s` sequence. Traced this to code (not a bug — verified via full dispatcher +
+cache-write-site trace, cite: `extended_toric_code_qmc.hpp:3446` for the 7 update types,
+`lattice.cpp:2137-2178` confirms pair-create/delete never touches
+`diag_single_energy_cache_`, only the "cut-changing" branches of updates 1/2/3/5 do via
+`flip_spin()` at `lattice.cpp:2687-2710`; cache semantics unchanged since `202b655`, well
+before this campaign). So: pair-create/delete (kink insertion/deletion in continuous
+time) genuinely doesn't change which topological "cut"/net-spin-sector a worldline
+occupies — only a separate, rarer cut-changing move does, and that move essentially
+never fired in a 256-sample probe at L=120,beta=120. `energy_h` (governed by a different,
+apparently more frequent move) showed real non-degenerate variance in the same short probe.
+
+This reads as the SAME critical-slowing-down the whole campaign already knows about
+(cut-changes are rare at this L,beta — not surprising given the plan's own framing that
+local moves scale badly with volume), not a new problem. But it means the ratification's
+"cheap probing pass" isn't actually cheap for `energy_lmbda` specifically: a real
+measurement of its variance would need order-tau samples (thousands, matching the L120
+baseline tau~9000-10000), on the real cluster, not a 256-sample sandbox run.
+
+Three ways I could proceed, and I don't want to pick unilaterally since it's a physics
+call about what the ladder-design methodology should actually rest on:
+1. **Design the ladder from energy_h's variance alone**, skip energy_lmbda for spacing
+   purposes — justification would be that PT's actual swap-weight formula uses different,
+   properly-thermalizing INTEGRATED quantities (`cached_total_integrated_edge_energy()`,
+   kink counts — confirmed by the earlier PT-diff review, not the snapshot
+   `diag_single_energy_cache_` this probe measured), so energy_lmbda's snapshot variance
+   may not even be the physically relevant sensitivity for swap acceptance in the first
+   place. Fastest path to the pilot, but I haven't verified this substitution is
+   physically sound, that's exactly the kind of judgment this channel exists for.
+2. **Run a real, longer real-cluster probe** for both channels (order-tau samples) before
+   designing the ladder — more rigorous, matches your original prescription's intent, but
+   costs real compute/time (a "cheap" step becomes not-so-cheap) before the pilot itself
+   even starts, and the pilot is already walltime-boxed at 2 days.
+3. Something else you see that I don't — e.g. is `energy_lmbda`'s snapshot variance
+   actually not what should drive ladder spacing at all, and the ratification's phrasing
+   was shorthand for something else?
+
+**Jarvis is paused on G2 pilot design pending this answer** — PI was consulted directly
+and asked to route this to you rather than have me decide. Everything else (M0 gates,
+ensemble tooling, git history) is stable and doesn't need re-review; this is the one open
+thread.
