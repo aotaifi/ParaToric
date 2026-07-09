@@ -1,21 +1,20 @@
 # Multicritical Campaign Tracker — current-state card
 
-Updated: 2026-07-08 (rewrite this card in place; durable results -> plan/report).
+Updated: 2026-07-09 (rewrite this card in place; durable results -> plan/report).
 
 ## Status
-- Phase: M0 in progress. Thesis T1 ratified, T1-P1 status GO — see
-  doc/feynman_thesis_tojarvis.md (2026-07-08). G0 gates PASS. Checkpoint/restart
-  (G1.1) PASS (commit e461686). PT along self-dual line implemented (commit
-  b29ff1c); it introduced a real regression (public total_integrated_*_energy()
-  wrongly returned stale cache) caught by a clean-rebuild bisection and fixed +
-  independently re-verified twice (commit 12ebdb8) — G1.2 swap-weight math is
-  now genuinely PASS. Real multi-rank MPI validation (G1.2 round-trips/
-  acceptance, G1.3 PT-on-vs-off) still pending: needs the cluster's spack
-  OpenMPI 5.0.0/GCC 13.2.0 toolchain (system OpenMPI 4.1.1 has an incompatible
-  PMIx build for this Slurm) — exact paths below, code is now ready to build
-  with it (the earlier `<print>`/GCC13 blocker is also fixed in 12ebdb8).
-- G1.2 and G1.3 both PASS on real multi-rank cluster hardware (job 14982619,
-  see gate row below). PT is genuinely validated end to end.
+- Phase: M0 infra essentially complete. Thesis T1 ratified, T1-P1 status GO — see
+  doc/feynman_thesis_tojarvis.md. G0, G1.1, G1.2, G1.3 all PASS (checkpoint/restart
+  commit `e461686`; PT commit `b29ff1c` + regression fix `12ebdb8`; real multi-rank
+  validation on job `14982619`). Ensemble-diagnostics analysis tool added (commit
+  `8b6fd05`, `scripts/ensemble_diagnostics.py`) for I4/I5 (R-hat, cross-chain tau
+  agreement, cold/hot-start check) — verified via independent synthetic + real-data
+  smoke test, no bugs found.
+- Only remaining M0 item: stage and submit the G2 pilot (L=120, beta=120, PT ladder,
+  <=2 days walltime, >=4 chains, 1 node). This is a hard-stop-for-PI-review gate
+  regardless of GO/NO-GO per the harness — not submitted yet, awaiting explicit PI
+  go for this specific step (distinct from the general M0 authorization already
+  given, given the real compute/time commitment).
 - Next action: ensemble driver (K independent seeds per point, cross-chain
   tau/R-hat check — no code exists for this yet), then G2 pilot (L=120
   ladder, retuned spacing given the uneven L=8 acceptance rates). Winding-loop
