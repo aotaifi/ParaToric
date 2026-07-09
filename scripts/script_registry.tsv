@@ -1,0 +1,2 @@
+script	purpose	inputs	outputs	notes
+ensemble_diagnostics.py	Multicritical harness I4/I5 ensemble diagnostics for same-point independent ParaToric chains	ParaToric obs.h5 paths/globs under /simulation/results	stdout PASS/FLAG criteria with Rhat, mean-z, tau ratio, N, Neff, cold/hot z	Uses shared ai-workflow/qmc_common/hdf5_readers.py; Rhat requires stored observable series moments
