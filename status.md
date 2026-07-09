@@ -72,6 +72,45 @@ ai-workflow/qmc_common, MCP surface, and paratoric_tampered/scripts first).
 ## Active workers
 None currently running.
 
+## Feynman review received 2026-07-09 — key constraints for the pilot (read
+doc/feynman_thesis_tojarvis.md "Pilot decisions + budget audit" in full before touching
+the pilot again): PT is z-basis-only (accepted); PT+checkpoint composition NOT
+implemented (`qmc.hpp:3675` throws) — accepted FOR THE PILOT ONLY since it fits in one
+2-day block, but this means **"M0 complete" is premature** until PT+checkpoint
+composition exists (hard blocker before any M2 production: one L=192 point at I4 needs
+46-91 days/chain, impossible without resume); hard cap **N_replicas<=30** (so
+replicas x 4 chains <= 120 ranks, stays on 1 node); L=8 ladder spacing gives ~zero
+acceptance at L=120 (histogram overlap collapses with volume) — needs a real probing
+pass to retune, ~30%/link target.
+
+## IN PROGRESS: L=120 probing pass hit a real anomaly, investigating before designing
+the ladder
+First probing-pass attempt (James) ran s in {0.22..0.36} at L=120,beta=120 single-chain,
+NOT on the actual cluster (Slurm/squeue was unreachable from his sandbox — ran "locally"
+inside the same network-restricted Codex sandbox that couldn't open MPI sockets earlier
+today) and reported `energy_lmbda` with EXACTLY zero variance at every s, means forming
+a perfectly linear sequence (slope -28800/unit s = -2*L^2 exactly) — consistent with the
+z-basis field being frozen at its default_spin=+1 initial state, never thermalized.
+Martina-verified this IS an artifact, not real physics: `run.log`s show only 256 samples,
+acceptance_fraction ~0.005-0.009, and — critically — `accepted_by_update` shows ONLY
+update types 0/4 (pair create/delete) fired; the `flip_spin` move type accepted ZERO
+times. Code check: z-basis `energy_lmbda` = `-diag_single_energy_cache_ * lmbda`
+(extended_toric_code_qmc.hpp:546), lattice initializes every edge `default_spin=+1`
+(lattice.cpp:1407/2068). Two live hypotheses, NOT yet distinguished:
+(a) `flip_spin` is intrinsically near-dead at L=120,beta=120 (a real algorithmic finding,
+like the earlier winding-move deadness R5) — would mean energy_lmbda-based observables
+(incl. the Tier-0 SSN duality-odd/even cumulants A~(energy_h-energy_lmbda) explicitly
+planned for M1's nu estimate) may be unsampleable with the current move set at this
+scale;
+(b) `diag_single_energy_cache_` simply isn't refreshed by the pair-create/delete moves
+that DID fire (26+115=141 accepts out of 16384 attempts) — the SAME class of
+stale-cache bug already found and fixed once today in commit `12ebdb8`/`b29ff1c`.
+These have very different implications and must be distinguished by code reading before
+any real probing pass is redone (properly, on the actual cluster, with logged
+Nth/Ns/Nbs/seed this time — the sandbox run didn't even expose those). Do NOT use the
+7-replica ladder James proposed from the bad data (s: 0.220,0.240,0.257,0.275,0.303,
+0.329,0.360) — discard it, it's built on non-physical frozen-state input.
+
 ## Next action — the one remaining M0 step
 Stage and submit the **G2 pilot**: PT ladder through the multicritical region, L=120,
 beta=120, <=2 days walltime, >=4 chains, 1 node, explicit memory, concise-alert wrapper
