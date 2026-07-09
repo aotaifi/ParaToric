@@ -111,6 +111,33 @@ Nth/Ns/Nbs/seed this time — the sandbox run didn't even expose those). Do NOT 
 7-replica ladder James proposed from the bad data (s: 0.220,0.240,0.257,0.275,0.303,
 0.329,0.360) — discard it, it's built on non-physical frozen-state input.
 
+**RESOLVED: Hypothesis A confirmed, cleanly, by Jones (code-only investigation, no
+ambiguity)**. Move dispatcher (extended_toric_code_qmc.hpp:3446): update 0/4 are
+pair-create/delete (kink insertion/deletion in continuous time) — these mutate
+`spin_flips`/`single_spin_flips` event containers only (lattice.cpp:2137-2178,
+2430-2455), NOT `diag_single_energy_cache_`. Only "cut-changing" paths (update types
+1/2/3/5's wrap cases, calling `flip_spin()`, lattice.cpp:2687-2710) update
+`diag_single_energy_cache_` (and hence `energy_lmbda` in z-basis). Cache history
+(`202b655`) predates today's campaign commits entirely — this is pre-existing,
+unchanged, MODEL-CORRECT behavior, not a bug: pair-create/delete genuinely doesn't
+change which "cut"/net-spin-state a worldline is in; only a cut-changing move does.
+
+**Practical consequence (this IS new information, changes the plan)**: cut-changing
+moves being rare at L=120,beta=120 is not a bug, it's the SAME critical-slowing-down
+that the whole PT campaign exists to fix. A 256-sample probe was never going to catch
+one. So the "cheap probing pass" the ratification describes ("thermalize a few s
+values... measure Var(E)") is not actually cheap at this scale for energy_lmbda
+specifically — it needs enough samples to see a handful of cut-changes (order
+tau~9000-10000, the known campaign baseline, not 256), and it needs to run on the
+real cluster, not a sandbox. energy_h (a different channel, likely governed by a
+different/more-frequent move) showed real non-degenerate variance in the same short
+probe, so it may not have this problem — worth checking whether energy_h alone is a
+defensible basis for ladder-spacing, or whether a genuinely longer energy_lmbda probe
+is needed. This is a physics-judgment call (what's an adequate substitute for the
+ratification's "cheap probe" now that the cheap version doesn't work for one of the two
+channels), not a pure engineering one — flagging to PI/Feynman rather than deciding
+unilaterally.
+
 ## Next action — the one remaining M0 step
 Stage and submit the **G2 pilot**: PT ladder through the multicritical region, L=120,
 beta=120, <=2 days walltime, >=4 chains, 1 node, explicit memory, concise-alert wrapper
