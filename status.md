@@ -98,12 +98,25 @@ reachability for an already-authorized action"). Use this if a future dispatch
 hits the same DNS error twice in workspace-write.
 
 ## Active workers
-None currently running. Array `15012336` finished (2 completed, 6 timed out).
+None currently running. **v2 sector-rate scan submitted and running**: Slurm array
+`15034719_[0-63]` (43 RUNNING, 1 PENDING at last check), redesigned per PI decision
+after v1 (`15012336`) only completed 2/8 points and lacked `full_time_series`.
+v2 design: 8 s-values x 8 independent parallel chains each (64 tasks total,
+embarrassingly parallel — no MPI/node constraints, unlike the actual pilot),
+1500 samples/chain (12k aggregate/s-value, more depth than v1's 10k), same
+N_between_samples=5e6, `--full_time_series 1` + `percolation_probability`/
+`percolation_strength` added to `--observables` (the actual fix — v1 couldn't
+see sector changes at all without this). 8h walltime/task, generous margin
+vs the measured 5.6-6.5s/sample from v1's 2 completed points; losing one of 64
+short tasks to a timeout is cheap, unlike losing one of 8 long ones. Output root:
+`/scratch/a/A.Otaifi/paratoric_g2_sector_rate_scan_v2_20260711`. Launcher:
+`scripts/submit_g2_sector_rate_scan_v2_20260711.sbatch` (commit `3a0294d`).
+Expect most tasks done within a few hours given the sizing.
 
 ## Next action
-Redesign the sector-rate scan (full_time_series=1, per-s-scaled sample counts)
-before resubmitting — flagged to PI given the real wall-clock cost already spent
-(~1 day) without the needed answer. Once a real sector-mixing-rate-vs-s signal
-exists, proceed to step 2 (direct-acceptance ladder tuning) and step 3 (ensemble
-launch path). Step 4 (actual pilot sbatch) still needs a separate explicit PI go
-after that.
+When v2 completes: analyze the per-sample `anyon_count`/`percolation_probability`
+series (aggregated across each s-value's 8 chains) for actual sector-change
+events — this is the real measurement step 1 was always supposed to produce.
+Then proceed to step 2 (direct-acceptance ladder tuning, NOT snapshot variance)
+and step 3 (ensemble launch path). Step 4 (actual pilot sbatch) still needs a
+separate explicit PI go after that, per the harness G2 hard stop.
