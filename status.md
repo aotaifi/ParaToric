@@ -106,17 +106,23 @@ A PT run report without all of these is incomplete and must not gate a decision.
 - PT+checkpoint composition — M2 production blocker, not a pilot item, not now.
 
 ## Known non-blocking items carried forward
-- Job `15038796` (sampling-window thermalization scan): 12/54 tasks FAILED
-  with `Exception caught: the argument ('2304000000') for option
-  '--N_thermalization' is invalid` — an INT32 OVERFLOW: the CLI's
-  `--N_thermalization` (raw moves = sweeps * 2*L^2) exceeds ~2.147e9 for the
-  2,000,000-sweep depth at L=24 (2.304e9 moves) and L=32 (4.096e9 moves); L=16
-  at the same depth (1.024e9 moves) fits and succeeded. All 12 failures are
-  exactly {L=24,L=32} x {3 h-values} x {2 starts}. Not blocking: 100k/500k
-  depths (well under the int32 limit at every L tested) succeeded for all 9
-  (L,h) points; only the extra/optional 2M depth is missing for L>=24. Fix
-  (not urgent, logging for later): widen the CLI's N_thermalization arg type
-  to int64/long, or cap requested depths below ~2e9/(2*L^2) moves for large L.
+- Job `15038796` (sampling-window thermalization scan) int32-overflow bug:
+  FIXED, commit `af0a3c2` (widened SimSpec::N_thermalization + CLI/C-API/
+  pybind to int64_t, pure type-widening, clean rebuild 4/4 ctest, new
+  regression test parses 3e9). Rerun of the 12 previously-failed tasks
+  (L in {24,32} x 3 h x 2 starts, at 2M sweeps) submitted as job `15038977`
+  (Codex sandbox DNS issue recurred even under danger-full-access this time;
+  submitted directly from Jarvis's own shell instead). Readout pending.
+
+## Sampling-window thermalization readout (job 15038796, 41/54 usable + 1 pending)
+8 of 9 (L,h) points converge cleanly at the SHALLOWEST tested depth, 100k
+sweeps (gaps 0.02-1.97sigma on POP/strength/density) — cheap and safe to use
+for the Linsel benchmark re-run. **RED FLAG: L=24,h=0.335 density still
+disagrees at 3.26sigma at the deepest depth then-available (500k)** — its 2M
+data was exactly the overflow-failed subset, so undetermined whether it
+converges deeper; job `15038977` (above) resolves this. One task (L=32,
+h=0.50, default_spin=+1, 500k sweeps, task 49) was still running at last
+check — recheck before finalizing that row (was reported "100k provisional").
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause
