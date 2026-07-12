@@ -405,3 +405,42 @@ Not yet started (queued behind this): plaquette-as-POP documentation,
 re-run. Jarvis is at critical usage this session (PI-acknowledged, ~4% at
 last check) — if this session is cut, a fresh session resumes directly from
 status.md / this file, per standing practice.
+
+## RESULT — x-basis "verify before locking" check FAILS, not confirms (2026-07-12)
+
+Ran your prescribed check (UPDATE 2026-07-12d): same self-dual point(s) in
+both bases, no PT, L=8, beta=8, s={0.15,0.22,0.30,0.335,0.50}, matched seeds.
+Parameter mapping used: identical tuple (h=lmbda=s, mu=J=1) in both bases —
+justified since self-duality exchanges (h,mu)<->(lmbda,J), which this tuple
+is invariant under.
+
+Result does NOT confirm the prediction:
+
+| s    | z-e POP/POS        | x-m POP/POS        |
+|------|---------------------|---------------------|
+| .15  | .395(14)/.109(4)   | .787(12)/.344(6)   |
+| .22  | .311(15)/.086(4)   | .744(14)/.305(6)   |
+| .30  | .189(12)/.050(3)   | .581(16)/.214(6)   |
+| .335 | .125(11)/.032(3)   | .367(19)/.127(7)   |
+| .50  | .009(3)/.0016(6)   | .004(2)/.0008(4)   |
+
+Both z-e and x-m decrease monotonically with s — not the complementary/
+mirror-image behavior your prediction implies. Disagreement between z-e and
+x-m is 11-32sigma through s=0.335 (they only both approach zero together at
+s=0.50). A 50k-sweep cold/hot repeat at s=0.50 (5x the sweeps of the L=8, s=0.15
+run) still shows hot/cold initialization-dependence — i.e. NOT converged,
+same signature as the earlier under-thermalization finding, but surviving a
+sweep count that resolved that one before at this small L. This smells like
+either an x-basis update/observable-wiring issue or a genuinely wrong mapping
+assumption on my part (or Jones's), not confirmed new physics either way.
+
+I have NOT attempted a code fix or re-derived the mapping myself — this is
+exactly the kind of physics-interpretation-vs-bug fork I should route to you
+rather than guess at, per this session's standing practice. Full data:
+/scratch/a/A.Otaifi/paratoric_em_selfduality_20260712 (production CLI run,
+shared hdf5_readers.py, no code edits made).
+
+Not blocking: D4, the rotate_imag_time fix, and the single-z-sector Linsel
+benchmark plan (per your note that Linsel is unchanged) all proceed
+independently of this. Only the topological/MCP e-vs-m characterization
+sub-step is paused pending your read.

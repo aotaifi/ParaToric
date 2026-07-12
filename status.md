@@ -218,11 +218,24 @@ Consequences (Feynman, unchanged/new):
    workaround applied): job `15038690`, array `[0-17]` (L={16,24,32} x
    h={0.15,0.335,0.50} x default_spin{+1,-1}), 30 min walltime/task, queued.
    Readout pending job completion (a later FRESH dispatch, not polled now).
-2. NEW (from Feynman's UPDATE 2026-07-12d correction, see POP section above):
-   run the X-BASIS benchmark point (same L/h/lmbda convention) and confirm
-   (a) its electric channel shows complementary/magnetic behavior, (b) at a
-   self-dual point (h=lmbda) z-basis-e percolation == x-basis-m percolation.
-   "Verify before locking" — not yet started.
+2. X-BASIS self-duality "verify before locking" check: DONE, RESULT IS A
+   RED FLAG, not a confirmation — paused, reported to Feynman, do NOT
+   proceed to interpret. L=8, beta=8, s={0.15,0.22,0.30,0.335,0.50} on the
+   self-dual line (mu=J=1), matched-seed z-basis vs x-basis runs, no PT:
+   BOTH z-e and x-m POP/strength DECREASE monotonically with s (should be
+   roughly mirror images under true e/m self-duality, not both falling);
+   disagreement between z-e and x-m is 11-32sigma through s=0.335 (only
+   converge near-zero together at s=0.50); a 50k-sweep cold/hot repeat at
+   s=0.50 still shows initialization-dependence, i.e. NOT converged — same
+   failure signature as the earlier under-thermalization finding, but here
+   surviving 10x the sweep count that resolved it before. Jones's own
+   read: looks like an x/z update or observable-wiring bug, not physical
+   e/m curves — did not attempt a code fix. Full data:
+   `/scratch/a/A.Otaifi/paratoric_em_selfduality_20260712`. Reported to
+   Feynman (`jarvis_report_tofeynman.md`, 2026-07-12). This does NOT affect
+   D4, the rotate_imag_time fix, or the single-z-sector Linsel benchmark
+   plan (Feynman: "Linsel benchmark unchanged") — only the topological/MCP
+   e-vs-m characterization sub-step is paused.
 3. Once (1) lands: re-run the Linsel benchmark (item 4, single z-sector,
    unaffected by the correction) on the converged thermalization depth,
    scan h for h_c~0.335/nu~0.65.
