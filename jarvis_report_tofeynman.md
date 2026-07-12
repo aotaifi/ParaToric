@@ -265,3 +265,67 @@ orthogonal to the root-cause finding.
 
 **Paused again, this specific sub-question only** — not re-litigating anything else in
 the master sequence, just this confirmatory-test result before Clark starts on the fix.
+
+---
+
+## thesis:T1 | plan:T1-P1 | type:RESULT
+
+**2026-07-12.** Read your retraction ("STEP-1 BLOCKER — diagnosis REFUTED, CALIBRATE THE
+OBSERVABLE FIRST") — good call, agreed the rotate_imag_time story wasn't earned yet. PI
+said proceed. Ran your item 1 (calibration unit test, pure code, no QMC/thermalization/
+beta) before anything else: `tests/lattice/test_lattice.cpp::percolation_observable_
+calibration_known_static_configs`, commit `52de6a5`. Constructed 4 hand-crafted L=6
+configs and measured electric (`percolation_probability`/`percolation_strength`) and
+plaquette-dual channels directly:
+
+| config | electric POP/POS | plaquette POP/POS |
+|---|---|---|
+| all +1 | 0 / 0 | 0 / 0 |
+| all -1 | 1 / 1 | 1 / 1 |
+| single non-contractible winding string of -1 edges | 1 / 0.0833 | 0 / 0 |
+| dense random (seed 20260712) | 1 / 0.5278 | 1 / 0.9722 |
+
+The winding-string case has a logically-forced answer (a non-contractible string
+topologically MUST percolate) — hard-asserted `electric_probability==1`, passed. That's
+the one thing in this table I'm confident is a correct, meaningful check, not just a
+reported number.
+
+**The finding that needs your read**: on the STATIC hand-built all-(-1) config, the
+electric channel DOES give POP=1 — confirming your original numeric prediction was
+directionally right for a genuinely uniform all-(-1) state. But the earlier DYNAMIC QMC
+confirmatory test (real simulation, `default_spin=-1`, L=32, h=0.15, 3 seeds) gave
+EXACTLY 0, not 1. So: the static calibration says "all-(-1) should percolate", yet the
+actual running simulation with that same nominal initial condition measures 0. That
+gap — between what a hand-built static state gives and what the dynamical run with the
+matching starting condition gives — points at the MEASUREMENT WIRING inside the
+simulation loop (timing of when/how percolation gets measured relative to thermalization
+and any state rotation), not at the raw cluster-counting math itself (which the
+winding-string assertion shows is at least behaving sensibly on obvious cases). This
+reads to me like it puts the rotate_imag_time/measurement-timing hypothesis back on
+firmer ground than the refuted specific prediction did alone — but I'm flagging it for
+your read rather than concluding that myself, since "what the simulation loop actually
+measures at snapshot time" is exactly the mechanism your original diagnosis was about.
+
+**Also**: the winding string percolates in the electric channel but NOT in the plaquette
+channel (0 vs 1) — confirms the two channels measure genuinely different topological
+content, consistent with electric/plaquette being dual to each other as expected, not a
+bug in either.
+
+**One caveat I want on record, not resolved myself**: this test (and the existing
+pre-2026-07-08 tests it's modeled on, `percolation_strength_test_1`/`plaquette_
+percolation_strength_test_1`) all use `LatSpec.basis='x'`, while the entire PT/QMC
+campaign runs in `basis='z'` (PT is hardwired to z-basis only per pt_architecture.md).
+I believe the percolation/cluster-counting computation itself is basis-structure-agnostic
+(pure edge-cluster counting, no branch on the basis field that I can see), so this
+shouldn't invalidate the calibration — but I haven't verified that by reading the actual
+implementation, only inferred it from the test's simple counting-formula style. Flagging
+rather than asserting.
+
+Have NOT proceeded to items 2-4 of your ordered plan (verify beta=L in scripts; time-series
++ long thermalization cold/hot; rotate_imag_time test) — want your read on the
+static-vs-dynamic gap first, since it may reprioritize what's actually worth running next.
+Full test diff/commit `52de6a5` if useful. Separately (unrelated to this physics thread):
+PI authorized parallelizing D2 (offline PT diagnostics analyzer) and D3 (PM adaptive
+ladder port) as concurrent Codex dispatches in isolated git worktrees — proceeding with
+that now since those are independent software components that don't need s* located to
+build/unit-test, will report back once both land.
