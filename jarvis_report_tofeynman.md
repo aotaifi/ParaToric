@@ -487,3 +487,43 @@ PAUSED again on this specific sub-step pending your read. Independently: D4,
 the rotate_imag_time fix, and the single-z-sector Linsel benchmark plan all
 proceed unaffected; the L={16,24,32} thermalization-convergence scan for the
 Linsel benchmark (job 15038690) is 16/18 complete, readout to follow shortly.
+
+## RESULT — confirmatory 4-channel test: POP confirms your dual-pairing fix, STRENGTH isolates a real, specific bug (2026-07-12)
+
+Ran your prescribed confirmatory test at the equilibrated s=0.22, L=8, beta=8,
+1M-sweep point (4 seeds each, conservative SE):
+
+| channel      | probability | strength     |
+|--------------|-------------|--------------|
+| z-percolation (E)          | .2863(32) | .07893(93)  |
+| z-plaquette_percolation (E')| .7451(32) | .54831(267) |
+| x-percolation (M)          | .7420(33) | .30455(146) |
+| x-plaquette_percolation (M')| .2938(44) | .14200(207) |
+
+Comparisons per your corrected pairing:
+- E <-> M' (z-percolation vs x-plaquette_percolation): probability matches,
+  1.37 sigma. Strength FAILS, 27.8 sigma.
+- E' <-> M (z-plaquette_percolation vs x-percolation): probability matches,
+  0.66 sigma. Strength FAILS, 80.0 sigma.
+
+Reading against your decision rule: PROBABILITY confirms — your root-cause
+diagnosis (I compared the wrong same-graph channels before) is correct, and
+the binary POP observable is physically sound under the corrected pairing.
+STRENGTH does NOT confirm — it fails badly on BOTH correct pairs, at a scale
+(28-80 sigma) far beyond anything under-thermalization or seed noise could
+produce. Since POP already rules out a duality/physics problem, this isolates
+a real bug specifically to `percolation_strength`'s normalization or
+definition when comparing the direct graph (vertices, #vertices=L^2) against
+the dual graph (plaquettes, #plaquettes=L^2) — a code-level issue, not a
+physics one.
+
+I have not audited the `percolation_strength`/`plaquette_percolation_strength`
+implementations myself (lattice.cpp) or attempted a fix — flagging for your
+read on whether this is worth a Clark dispatch to audit the largest-cluster/
+normalization definitions now that it's this precisely isolated, or whether
+you want to reason about the expected normalization relationship first. Full
+data: /scratch/a/A.Otaifi/paratoric_angle_b_dualpair_s022_20260712/.
+
+Independently unaffected: D4, the rotate_imag_time fix, the single-z-sector
+Linsel benchmark plan, and the sampling-window thermalization-convergence
+scan (job 15038796, running) all proceed.

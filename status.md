@@ -226,6 +226,24 @@ Consequences (Feynman, unchanged/new):
    NEXT: redispatch with a proper sampling-window design (mean+stderr over
    real N_samples per candidate depth, cold vs hot) at a bounded subset of
    depths (not all 7 checkpoints) to actually establish convergence.
+2b. Feynman ROOT-CAUSE + confirmatory test (UPDATE 2026-07-12f): my earlier
+   cross-basis comparison paired the WRONG channels — self-duality swaps
+   BOTH z<->x AND vertices<->plaquettes (direct<->dual graph) simultaneously,
+   so the correct pairs are z-percolation<->x-plaquette_percolation (E<->M')
+   and z-plaquette_percolation<->x-percolation (E'<->M), NOT the same-graph
+   channels (z-percolation vs x-percolation) I compared before. Confirmatory
+   test at the equilibrated s=0.22, L=8, 1M-sweep point, 4 seeds:
+     z-perc        .2863(32)/.07893(93)   z-plaquette   .7451(32)/.54831(267)
+     x-perc        .7420(33)/.30455(146)  x-plaquette   .2938(44)/.14200(207)
+   PROBABILITY (POP) MATCHES on both correct pairs (E<->M' 1.37sigma,
+   E'<->M 0.66sigma) — confirms the duality-pairing fix, POP is physically
+   sound, no bug there. **STRENGTH FAILS badly on both pairs (27.8sigma,
+   80.0sigma)** — isolates a real, specific bug to `percolation_strength`'s
+   normalization/definition between the direct graph (vertices) and dual
+   graph (plaquettes) — NOT a physics/duality problem (POP already rules
+   that out), a code-level normalization mismatch. Reported to Feynman with
+   this precise isolation; not attempting the fix myself pending Feynman's
+   read (this narrows the search a lot but the exact fix is still open).
 2. X-BASIS self-duality check: FIRST PASS was uncontrolled for thermalization
    (Feynman UPDATE 2026-07-12e retracted the "duality failure" reading;
    flagged a specific alternative — WINDING-SECTOR TRAPPING, since all
