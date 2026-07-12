@@ -587,3 +587,42 @@ Provenance: physics attack + this ratification both authored in the Feynman
 review chat, 2026-07-08. Final user ratification of the full Q1/winding-cut/
 tracker-cleanup triad is still pending at time of writing; this file records
 the interim GO specifically for **M0**.
+
+## UPDATE 2026-07-12h: Linsel benchmark "INCONCLUSIVE" is an ERROR-BAR artifact, NOT a physics failure
+
+Jarvis RESULT (job 15039466): plaquette crossings 0.336/0.343/0.363 (near
+h_c=0.335 but not a single clean crossing), nu 1.2-1.9 (not 0.65), cold/hot
+disagree at several points, AND the same point L24,h=0.335 that was validated
+converged (100 samples -> 0.83 sigma) now shows 3.55 sigma disagreement (1000
+samples).
+
+TEARDOWN:
+- The "same-point contradiction" is a DEFINITIVE underestimated-error fingerprint:
+  MORE samples produced MORE sigma (0.83 @100 -> 3.55 @1000). A real discrepancy's
+  sigma does not grow with N; naive stderr shrinks ~1/sqrt(N) on CORRELATED
+  samples, so #sigma grows ~sqrt(N). Check: 3.55/0.83=4.3 ~ sqrt(1000/100)=3.2.
+  => estimator problem, NOT physics/wiring. Jarvis's read is correct.
+- HARNESS I4/I6 VIOLATION: runs sampled at FIXED 25-sweep spacing, treated as
+  independent; no tau measured, no Neff enforced. Near h_c tau blows up. => ALL
+  sigma-based claims here (crossing significance, cold/hot "disagreements") are
+  untrustworthy. Not failure evidence — unvalidated errors.
+- MISCALIBRATED BAR: rejecting for "no credible nu=0.65" is unfair — Linsel
+  themselves got nu=0.65(27) (40% error) at L=10-30. Benchmark's real job:
+  confirm the plaquette POP CROSSES at h_c~0.335 and is 3D-Ising-COMPATIBLE, NOT
+  nail nu. Held to that bar, 0.336/0.343/0.363 is in-ballpark; with corrected
+  errors it may PASS.
+- METHOD MISMATCH: Linsel located h_c via the STRENGTH BINDER CUMULANT crossing;
+  Jarvis used raw POP=0.5. The crossing value is not universally 0.5. Match
+  Linsel's method.
+
+DIRECTIVE (crucial — do NOT run more sampling; more samples made it look WORSE):
+ 1. Fix the estimator FIRST: measure tau_int per point, blocked/bootstrap
+    (autocorrelation-corrected) errors, report Neff (I4/I6). Likely dissolves the
+    contradiction + cold/hot disagreements.
+ 2. Switch to Linsel's method: strength-Binder-cumulant crossing, not POP=0.5.
+ 3. Recalibrate pass bar: "crossing at h_c~0.335, 3D-Ising-COMPATIBLE", NOT tight nu.
+ 4. Re-judge. Crossing ~0.335 with honest errors => benchmark PASSES => proceed to
+    D4 (Step 5). Only if it STILL misses after correction do we suspect the observable.
+ Standing: every future benchmark/production point obeys I4/I6 (tau, Neff), never
+ fixed-spacing-assumed-independent. This is the second time a fixed-window run gave
+ a misleading sigma; make the analyzer autocorrelation-aware by default.
