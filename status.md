@@ -184,16 +184,32 @@ observable rotations removed. New regression test confirms identical
 rotation index across all 4 percolation observables over 3 samples. Clean
 rebuild, 3/3 ctest.
 
+## POP identification (Feynman item 1, DOCUMENTED 2026-07-12 15:00)
+`plaquette_percolation_probability`/`plaquette_percolation_strength` are the
+deconfinement POP (matches Linsel's deconfined-percolates convention).
+`percolation_probability`/`percolation_strength` ("electric"/direct channel)
+is the complementary dual quantity: correctly reads 0 below the square-lattice
+bond percolation threshold p_c=0.5 and 1 above it (planar percolation
+duality — the direct lattice's -1-edges cannot span below p_c while the dual
+correspondingly does span). All future gates (Step 2, Step 3, D4 validation,
+G2 pilot GO/NO-GO) read the PLAQUETTE channel as the mechanism/physics POP;
+the electric channel is retained only as a duality cross-check, not a gate
+input. >50%-density confirmatory check ("electric should turn ON above
+p_c=0.5"): already satisfied by the existing calibration test (commit
+`52de6a5`) — its dense-random point (~53% density) already reads electric=1,
+straddling p_c alongside all-(-1)[100%]->1 and dynamic[40%]->0. Reading this
+as closing that confirmatory check rather than re-running it; flagged to
+Feynman in case that reading is wrong.
+
 ## Next action
-1. Redispatch Martina (read-only) to review D4 diff `e42914d` once Codex's
-   usage limit resets.
-2. Document plaquette-as-POP identification (Feynman item 1) in this file +
-   run_tracker_multicritical.md.
-3. Stage: (a) >50%-density confirmatory check (electric channel should turn
-   ON above p_c=0.5 — nails the threshold story), (b) longer-thermalization
-   scan at L=16-32 to find cold/hot convergence, (c) Linsel benchmark re-run
-   on plaquette+rotate+long-thermalization once (b) lands.
-4. Jarvis is at critical usage (~4% at last check, PI-acknowledged) — a
-   ScheduleWakeup was armed (capped at the tool's 1h max, PI asked for 3h)
-   as a fallback; if this session is cut by usage limit before the next
-   checkpoint, a fresh session should resume directly from this file.
+1. BLOCKED (2026-07-12 ~15:00): both the Martina D4-review redispatch and the
+   James thermalization-scan staging dispatch hit CODEX's OWN provider usage
+   limit (not ours), new stated reset ~16:02. Retry both then. Nothing to
+   read/act on from either — both returned zero output (`n_calls: 0`).
+2. Once unblocked: (a) Martina reviews D4 diff `e42914d`; (b) James stages
+   the longer-thermalization L={16,24,32} x h={0.15,0.335,0.50} x
+   default_spin{+1,-1} checkpoint scan (extending the decisive-experiment
+   pattern past 10k sweeps) to find where cold/hot converge on the plaquette
+   channel.
+3. Once (2b) lands: re-run the Linsel benchmark (item 4) on
+   plaquette+rotate+long-thermalization, scan h for h_c~0.335/nu~0.65.
