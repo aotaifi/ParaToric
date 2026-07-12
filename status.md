@@ -208,6 +208,10 @@ Feynman in case that reading is wrong.
    earlier ~1h wall, and the PI's re-enable attempt did not clear it. Both
    Martina's D4 review and James's thermalization-scan staging returned zero
    output (`n_calls: 0`) both times. Nothing to read/act on until it clears.
+   PI is checking Codex/ChatGPT billing directly (looks like an account-level
+   cap, not something retrying fixes) — Jarvis is PAUSED on Codex dispatches
+   until the PI confirms access is genuinely restored. No wakeup armed; wait
+   for the PI.
 2. Once unblocked: (a) Martina reviews D4 diff `e42914d`; (b) James stages
    the longer-thermalization L={16,24,32} x h={0.15,0.335,0.50} x
    default_spin{+1,-1} checkpoint scan (extending the decisive-experiment
