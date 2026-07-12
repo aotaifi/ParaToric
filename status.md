@@ -120,9 +120,11 @@ sweeps (gaps 0.02-1.97sigma on POP/strength/density) — cheap and safe to use
 for the Linsel benchmark re-run. **RED FLAG: L=24,h=0.335 density still
 disagrees at 3.26sigma at the deepest depth then-available (500k)** — its 2M
 data was exactly the overflow-failed subset, so undetermined whether it
-converges deeper; job `15038977` (above) resolves this. One task (L=32,
-h=0.50, default_spin=+1, 500k sweeps, task 49) was still running at last
-check — recheck before finalizing that row (was reported "100k provisional").
+converges deeper; job `15038977` (12 tasks, rerun at 2M sweeps) resolves
+this, at 2/12 done, ~35min remaining on the rest. Task 49 (L=32,h=0.50,
+default_spin=+1, 500k sweeps) COMPLETED — that row is no longer provisional
+(recheck against the 100k value once finalized, but no reason to expect a
+change). Final table + Linsel benchmark staging waiting on 15038977.
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause
