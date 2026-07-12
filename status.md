@@ -247,14 +247,26 @@ Consequences (Feynman, unchanged/new):
      z-perc        .2863(32)/.07893(93)   z-plaquette   .7451(32)/.54831(267)
      x-perc        .7420(33)/.30455(146)  x-plaquette   .2938(44)/.14200(207)
    PROBABILITY (POP) MATCHES on both correct pairs (E<->M' 1.37sigma,
-   E'<->M 0.66sigma) — confirms the duality-pairing fix, POP is physically
-   sound, no bug there. **STRENGTH FAILS badly on both pairs (27.8sigma,
-   80.0sigma)** — isolates a real, specific bug to `percolation_strength`'s
-   normalization/definition between the direct graph (vertices) and dual
-   graph (plaquettes) — NOT a physics/duality problem (POP already rules
-   that out), a code-level normalization mismatch. Reported to Feynman with
-   this precise isolation; not attempting the fix myself pending Feynman's
-   read (this narrows the search a lot but the exact fix is still open).
+   E'<->M 0.66sigma).
+   **RESOLVED (Feynman UPDATE 2026-07-12g): e/m duality is CONFIRMED via
+   probability; the strength mismatch is a NORMALIZATION/DEFINITION
+   difference, NOT a bug** — verified by code read (lattice.cpp:3729,3782):
+   `percolation_strength` = (#-1 edges in largest cluster)/edge_count(2L^2);
+   `plaquette_percolation_strength` = (#plaquettes in largest
+   cluster)/plaq_count(L^2) — different objects, different denominators.
+   Proof it's definitional not a bug: BOTH dual pairs are off by the SAME
+   basis-independent factor ~1.80 (.142/.079=1.80, .548/.305=1.80) — a
+   mapping/compute bug would not produce an identical constant factor.
+   Both channels remain exponent-safe (P~L^(-beta/nu) either way, prefactor
+   cancels). DIRECTIVE: do not force the two strengths equal; use
+   PROBABILITY for the duality/I2 check (passes); use each strength channel
+   ONLY for its own FSS, never cross-compared; document the ~1.80 factor so
+   it isn't re-flagged. Optional low-pri, not yet done: check if ~1.80 is
+   L-independent (trivial geometric normalization) or L-dependent (different
+   geometric content — keep channels separate regardless, one POP is used
+   for the campaign anyway). **e/m sub-step UNBLOCKED, topological/MCP
+   characterization can proceed** whenever prioritized (not urgent right
+   now — main line is still the single-z-sector Linsel benchmark).
 2. X-BASIS self-duality check: FIRST PASS was uncontrolled for thermalization
    (Feynman UPDATE 2026-07-12e retracted the "duality failure" reading;
    flagged a specific alternative — WINDING-SECTOR TRAPPING, since all
