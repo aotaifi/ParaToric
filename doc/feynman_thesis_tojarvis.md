@@ -325,6 +325,43 @@ NEXT STEPS (instrument, do NOT predict outcomes):
 Lesson logged: do not convert a hand-wave about what an observable returns into a
 physics conclusion; calibrate the instrument on known inputs first.
 
+### UPDATE 2026-07-12b: calibration DONE (cluster math CORRECT) — finalized experiment
+
+Calibration unit test (commit 52de6a5) results on hand-built L=6 static configs:
+  all+1: electric 0/0, plaq 0/0 | all-1: electric 1/1, plaq 1/1 |
+  winding string: electric 1/0.083 (hard-asserted PASS), plaq 0/0 |
+  dense random: electric 1/0.528, plaq 1/0.972.
+=> cluster-counting MATH is correct; all-(-1) DOES percolate electrically (my
+original STATIC prediction was right). The channels are genuine duals.
+
+THE GAP: static all-(-1) -> electric=1, but dynamic default_spin=-1 run ->
+electric=0. This proves ONLY that the config AT MEASUREMENT != all-(-1). It does
+NOT prove measurement-wiring — it fits EQUALLY:
+ (a) the BASE RELAXED (global-single-flip ~140k attempts over 488 sweeps; lmbda=0.3
+     favors +1, so all-(-1) base relaxes toward +1-biased equilibrium; electric=0
+     is then the CORRECT answer) = PI's under-thermalization hypothesis. Also
+     explains original plaquette 0.970 (caught earlier in relaxation) vs longer runs.
+ (b) measurement wiring (base still ~all-(-1) but observable reads another slice).
+Do NOT apply rotate_imag_time yet — (a) and (b) are not yet separated.
+
+FINALIZED DECISIVE EXPERIMENT (one instrumented run splits everything):
+ L=32, h=0.15, lmbda=0.3, beta=L, BOTH default_spin=+/-1, THERMALIZATION SCAN
+ (measure at ~100/500/2000/10000 sweeps), logging per measurement:
+   1. percolation_strength (both channels),
+   2. the sigma_z=-1 BASE edge count (the density the cluster math consumes),
+   3. percolation on the BASE vs on a ROTATED slice of the same config.
+ Readout:
+   - edge-count relaxes + percolation tracks it + cold/hot converge => (a)
+     under-thermalization; fix = thermalize longer / accelerate base relaxation;
+     equilibrium = converged value (then ask if h=0.15,lmbda=0.3 is even the phase
+     we think, and if electric is the right channel there).
+   - edge-count stays high but percolation=0 => (b) measurement wiring; THEN
+     rotate_imag_time is earned.
+   - base vs rotated slice differ => slice matters (rotate relevant); same => drop it.
+ ALONGSIDE (cheap): verify beta=L enforced in job scripts; re-assert the 4 known
+ configs in basis='z' (calibration ran in 'x'; campaign is 'z') or confirm the
+ counting code has no basis branch.
+
 ## MASTER PRE-PILOT SEQUENCE (Feynman, 2026-07-10 — supersedes the earlier
 ## "Finalized next steps" list; integrates RESOLVE-FIRST + pt_architecture.md)
 
