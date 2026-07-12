@@ -183,7 +183,7 @@ typedef struct {
  */
 typedef struct {
     int  N_samples;         /* 0 = thermalization-only */
-    int  N_thermalization;
+    int64_t N_thermalization;
     int  N_between_samples;
     int  N_resamples;
     bool custom_therm;      /* used only by sampling */

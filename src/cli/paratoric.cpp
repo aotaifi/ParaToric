@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
     try {
         std::string simulation;
         int N_samples;
-        int N_thermalization;
+        std::int64_t N_thermalization;
         int N_between_samples;
         double beta;
         double h_constant;

@@ -76,7 +76,7 @@ struct ParamSpec {
  */
 struct SimSpec {
     int    N_samples                = 1000;     // 0 for thermalization-only
-    int    N_thermalization         = 10000;
+    std::int64_t N_thermalization   = 10000;
     int    N_between_samples        = 1000;
     int    N_resamples              = 1000;
     bool   custom_therm             = false; // used only by sampling

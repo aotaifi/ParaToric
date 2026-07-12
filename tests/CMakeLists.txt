@@ -5,6 +5,7 @@ find_package(Boost COMPONENTS unit_test_framework REQUIRED NO_MODULE)
 set(test_sources
     lattice/test_lattice.cpp
     lattice/test_flat_square_lattice.cpp
+    cli/test_cli_options.cpp
     mcmc/test_extended_toric_code_qmc.cpp
 )
 
@@ -25,6 +26,11 @@ foreach(test_src IN LISTS test_sources)
         paratoric::core
         Boost::unit_test_framework
     )
+
+    if(test_name STREQUAL "test_cli_options")
+      find_package(Boost REQUIRED COMPONENTS program_options NO_MODULE)
+      target_link_libraries(${test_name} PRIVATE Boost::program_options)
+    endif()
 
     add_test(NAME ${test_name} COMMAND ${test_name})
 endforeach()

@@ -1682,7 +1682,7 @@ double ExtendedToricCodeQMC<Basis, LatticeT>::validate_parallel_tempering_swap_w
             double acc_ratio = 1.;
             double max_deviation = 0.;
             const std::int64_t steps =
-                static_cast<std::int64_t>(std::max(config.sim_spec.N_thermalization, 0))
+                std::max(config.sim_spec.N_thermalization, std::int64_t{0})
                 + static_cast<std::int64_t>(std::max(config.sim_spec.N_samples, 1))
                     * static_cast<std::int64_t>(std::max(config.sim_spec.N_between_samples, 1));
             const std::int64_t swap_period = parallel_tempering_swap_period_moves(config.pt_spec, config.lat_spec);
@@ -3591,7 +3591,7 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_thermalization(
 
     if (config.sim_spec.seed != 0) rng->set_seed(config.sim_spec.seed);
 
-    const auto thermalization_count = static_cast<size_t>(std::max(config.sim_spec.N_thermalization, 0));
+    const auto thermalization_count = static_cast<size_t>(std::max(config.sim_spec.N_thermalization, std::int64_t{0}));
     std::vector<double> acc_ratio_vector;
     acc_ratio_vector.reserve(thermalization_count);
     // Vector to store observable results for all snapshots
@@ -4300,7 +4300,7 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_core_update_benchmark(
     start_acceptance_diagnostics(diagnostics);
     start_acceptance_block();
 
-    const std::int64_t thermalization_updates = std::max(config.sim_spec.N_thermalization, 0);
+    const std::int64_t thermalization_updates = std::max(config.sim_spec.N_thermalization, std::int64_t{0});
     const std::int64_t sample_updates =
         static_cast<std::int64_t>(std::max(config.sim_spec.N_samples, 0))
         * static_cast<std::int64_t>(std::max(config.sim_spec.N_between_samples, 0));

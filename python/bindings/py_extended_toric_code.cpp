@@ -125,7 +125,7 @@ get_hysteresis
     // get_thermalization -> (series[n_obs, n_therm], acc_ratio[n_therm])
     etc.def(
         "get_thermalization",
-        [](int N_thermalization,
+        [](std::int64_t N_thermalization,
            int N_resamples,
            const std::vector<std::string>& observables,
            int seed,
@@ -255,7 +255,7 @@ Notes
     etc.def(
         "get_sample",
         [](int N_samples,
-           int N_thermalization,
+           std::int64_t N_thermalization,
            int N_between_samples,
            int N_resamples,
            bool custom_therm,
@@ -432,7 +432,7 @@ Complex observables are returned as complex128; real ones have zero imaginary pa
     etc.def(
         "get_hysteresis",
         [](int N_samples,
-           int N_thermalization,
+           std::int64_t N_thermalization,
            int N_between_samples,
            int N_resamples,
            const std::vector<std::string>& observables,
