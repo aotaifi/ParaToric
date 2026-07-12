@@ -163,3 +163,69 @@ locating the right range.
 further, pending your read.** Full data at
 `/scratch/a/A.Otaifi/paratoric_g2_sector_rate_scan_v2_20260711/` if useful; tracker row
 dated 2026-07-12 has the complete numeric breakdown.
+
+---
+
+## thesis:T1 | plan:T1-P1 | type:RESULT
+
+**2026-07-12.** Executed your MASTER PRE-PILOT SEQUENCE items 0 (D1) and 1 (observable
+validation). D1 is done and independently verified — see below for a process note. Step 1
+(the Linsel POP benchmark) ran but came back INCONCLUSIVE, with a specific new physics
+puzzle that needs your read before I touch anything else in the sequence.
+
+### D1 (swap_period in sweeps) — DONE, commit `8e54db2`, both a code fix and a real
+process lesson
+Implemented exactly as specified in `doc/pt_architecture.md` Sec 3/6: new primary CLI
+`--pt_swap_period_sweeps` (default 2.0), `swap_period_moves = round(sweeps * 2*L^2)`,
+legacy `--pt_swap_period` kept as an explicit override. Independently verified twice
+(clean rebuilds by both the implementer and an independent reviewer) — confirmed used at
+both thermalization and production swap-trigger gates, formula and CLI validation both
+correct. G1.2/G1.3's L=8 "6/4 round-trips" result stands as-is; it simply never
+transferred to L=120 as previously assumed (0.035 sweeps/swap there vs 7.8 at L=8).
+
+Process note, since it revises something I'd have otherwise reported as settled: the
+implementation also needed a Boost.Log/clang++-20 compatibility shim
+(`src/logging/trivial_log.hpp`). An EARLIER session had introduced then reverted an almost
+identical shim, on the verdict "not needed for the default clang build." That verdict
+turned out to be a stale-incremental-build false negative — confirmed this time by
+`git archive`-extracting the pre-D1 commit into a bare directory and rebuilding fresh:
+`boost/log` genuinely triggers a reproducible clang20+Boost-1.75-MPL incompatibility
+(`lock_access_mode::unlocked_access` outside its `mpl::integral_c` valid range) with
+nothing to do with today's changes. Logged in `ai-workflow/jarvis_selfreview.md`.
+
+### Step 1 (Linsel POP benchmark) — INCONCLUSIVE, new finding needs your read
+Setup exactly per your spec: lmbda=0.3 fixed (off self-dual line), mu=J=1, z-basis, no PT,
+L={16,24,32}, beta=L, h scanned across h_c=0.335(2) at {0.15,0.25,0.30,0.335,0.37,0.42,
+0.50}. Both `percolation_probability`/`percolation_strength` (the "electric" channel) and
+`plaquette_percolation_probability`/`plaquette_percolation_strength` (the "plaquette"
+channel) measured. Full table: `/scratch/a/A.Otaifi/paratoric_linsel_percolation_
+benchmark_20260712/linsel_pop_long_summary.tsv`.
+
+**Finding 1**: the "electric" `percolation_*` channel is essentially zero across the
+ENTIRE tested range, including h=0.15 (deep into what should be the deconfined phase per
+Linsel). It never shows the expected large-POP-at-small-h behavior at all. This channel
+does not look like Linsel's POP in this setup.
+
+**Finding 2 (the one I actually need your read on)**: the `plaquette_percolation_*`
+channel IS large at small h (0.970 at L=32, h=0.15, one run) — the right qualitative shape
+— but shows SEVERE initial-spin-condition sensitivity at the exact same physical point:
+0.970 (`default_spin=-1` start) vs 0.132 (`default_spin=+1` start) at L=32, h=0.15, same
+everything else. That's not noise-level disagreement; it looks like either (a) genuine
+non-equilibration even at these small sizes (which would be surprising for ordinary
+short-range criticality with local updates, but not impossible if something about this
+observable's approach to equilibrium is unusually slow), (b) a bug in how the plaquette
+percolation observable is computed or how its state resets/carries over depending on the
+initial condition, or (c) a parameter/basis convention mismatch putting this point in a
+different physical regime than intended (e.g. is `default_spin` supposed to be physically
+irrelevant here the way it would be for a symmetric Hamiltonian, or does our convention
+actually break that symmetry at finite h/lmbda in a way I'm not accounting for?). I don't
+have the grounding to tell these apart.
+
+James (the dispatched worker) correctly stopped here rather than forcing a channel
+identification or a "confirmed correct" conclusion — did not proceed to relocating s* on
+the self-dual line.
+
+**Jarvis is paused on the whole master sequence pending your read of Finding 2** — this
+gates whether Step 1 can even be resolved, and everything downstream (locating s*, D2/D4/D3,
+the pilot) depends on trusting a percolation observable. PI was consulted and asked me to
+route this to you rather than dispatch further investigation myself.
