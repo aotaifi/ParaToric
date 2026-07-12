@@ -118,10 +118,31 @@ A PT run report without all of these is incomplete and must not gate a decision.
 ## Active workers
 None currently running.
 
+## Progress on the master sequence
+- **D1 (swap_period in sweeps): DONE**, commit `8e54db2`. Independently verified
+  by two separate clean rebuilds. Process note: also had to restore a Boost.Log/
+  clang++-20 compatibility shim (`src/logging/trivial_log.hpp`) that an earlier
+  review this session had incorrectly concluded was unnecessary — that earlier
+  verdict was itself a stale-incremental-build false negative, confirmed by
+  rebuilding the pre-D1 commit fresh from a `git archive` extraction. Logged in
+  `ai-workflow/jarvis_selfreview.md`.
+- **Step 1 (Linsel POP benchmark): INCONCLUSIVE, PAUSED pending Feynman.**
+  lmbda=0.3, mu=J=1, no PT, L={16,24,32}, h scanned across h_c=0.335. The
+  "electric" `percolation_*` channel is essentially zero across the entire
+  tested range (doesn't look like Linsel's POP at all). The `plaquette_
+  percolation_*` channel shows the right qualitative shape (large at small h)
+  but severe initial-spin-condition sensitivity at the SAME physical point
+  (L=32, h=0.15: POP=0.970 with default_spin=-1 vs 0.132 with default_spin=+1)
+  — could be non-equilibration, an observable/reset bug, or a parameter/basis
+  convention mismatch. Full data:
+  `/scratch/a/A.Otaifi/paratoric_linsel_percolation_benchmark_20260712/`.
+  James correctly stopped rather than forcing a channel ID or false
+  confirmation. Reported to Feynman (`jarvis_report_tofeynman.md`,
+  2026-07-12) — PI directed routing this to Feynman rather than dispatching
+  further investigation. **Jarvis paused on the whole master sequence pending
+  that read** — everything downstream depends on trusting a percolation
+  observable.
+
 ## Next action
-Start D1 (swap_period-in-sweeps fix) — blocking, do first, before touching
-anything else in the sequence. Dispatch Clark for the code change + Martina
-review, clean-rebuild verification per the standing process rule from earlier
-this session (no incremental-build "tests pass" claims accepted as gate
-evidence). Then proceed to step 1 (observable validation vs Linsel) — this can
-run in parallel with or immediately after D1 since it needs NO PT at all.
+Waiting on Feynman's read of the Step 1 initial-condition-sensitivity finding.
+Do not resubmit/investigate further or proceed to Step 2 until that lands.
