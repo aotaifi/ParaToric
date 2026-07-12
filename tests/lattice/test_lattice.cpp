@@ -8,6 +8,7 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <random>
 #include <vector>
 #include <string>
 
@@ -1427,6 +1428,109 @@ BOOST_AUTO_TEST_CASE(plaquette_percolation_strength_test_1) {
     lat.flip_spin(lat.edge_in_between(14, 15));
 
     BOOST_CHECK(7/(double)lat.get_plaquette_count() == lat.plaquette_percolation_strength());
+}
+
+namespace {
+
+struct PercolationReadout {
+    double electric_probability;
+    double electric_strength;
+    double plaquette_probability;
+    double plaquette_strength;
+};
+
+PercolationReadout measure_percolation(Lattice& lat) {
+    return {
+        lat.percolation_probability(),
+        lat.percolation_strength(),
+        lat.plaquette_percolation_probability(),
+        lat.plaquette_percolation_strength()
+    };
+}
+
+void report_percolation_readout(const std::string& label, const PercolationReadout& readout) {
+    BOOST_TEST_MESSAGE(
+        label
+        << ": electric_probability=" << readout.electric_probability
+        << ", electric_strength=" << readout.electric_strength
+        << ", plaquette_probability=" << readout.plaquette_probability
+        << ", plaquette_strength=" << readout.plaquette_strength
+    );
+}
+
+void flip_vertical_winding_string(Lattice& lat, int L, int x) {
+    for (int y = 0; y < L; ++y) {
+        const int v = y * L + x;
+        const int next = ((y + 1) % L) * L + x;
+        lat.flip_spin(lat.edge_in_between(v, next));
+    }
+}
+
+void flip_random_edges(Lattice& lat, int L, unsigned seed) {
+    std::mt19937 rng(seed);
+    std::bernoulli_distribution flip(0.5);
+
+    for (int y = 0; y < L; ++y) {
+        for (int x = 0; x < L; ++x) {
+            const int v = y * L + x;
+            const int right = y * L + ((x + 1) % L);
+            const int down = ((y + 1) % L) * L + x;
+            if (flip(rng)) {
+                lat.flip_spin(lat.edge_in_between(v, right));
+            }
+            if (flip(rng)) {
+                lat.flip_spin(lat.edge_in_between(v, down));
+            }
+        }
+    }
+}
+
+} // namespace
+
+BOOST_AUTO_TEST_CASE(percolation_observable_calibration_known_static_configs) {
+    const int L = 6;
+
+    LatSpec all_plus_spec = {
+        'x', // basis
+        "square", // lattice type
+        L, // system size
+        6., // beta
+        "periodic", // boundaries
+        1 // default spin
+    };
+
+    LatSpec all_minus_spec = {
+        'x', // basis
+        "square", // lattice type
+        L, // system size
+        6., // beta
+        "periodic", // boundaries
+        -1 // default spin
+    };
+
+    auto all_plus = Lattice(all_plus_spec);
+    const auto all_plus_readout = measure_percolation(all_plus);
+    report_percolation_readout("all_plus", all_plus_readout);
+
+    auto all_minus = Lattice(all_minus_spec);
+    const auto all_minus_readout = measure_percolation(all_minus);
+    report_percolation_readout("all_minus", all_minus_readout);
+
+    auto winding_string = Lattice(all_plus_spec);
+    flip_vertical_winding_string(winding_string, L, 0);
+    const auto winding_string_readout = measure_percolation(winding_string);
+    report_percolation_readout("single_vertical_winding_string", winding_string_readout);
+    BOOST_CHECK_EQUAL(1.0, winding_string_readout.electric_probability);
+    BOOST_CHECK_GT(winding_string_readout.electric_strength, 0.0);
+    BOOST_TEST_MESSAGE(
+        "single_vertical_winding_string channel_agreement="
+        << (winding_string_readout.electric_probability == winding_string_readout.plaquette_probability)
+    );
+
+    auto dense_random = Lattice(all_plus_spec);
+    flip_random_edges(dense_random, L, 20260712u);
+    const auto dense_random_readout = measure_percolation(dense_random);
+    report_percolation_readout("dense_random_seed_20260712", dense_random_readout);
 }
 
 } // namespace paratoric
