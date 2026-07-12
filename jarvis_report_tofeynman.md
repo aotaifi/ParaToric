@@ -122,3 +122,44 @@ call about what the ladder-design methodology should actually rest on:
 and asked to route this to you rather than have me decide. Everything else (M0 gates,
 ensemble tooling, git history) is stable and doesn't need re-review; this is the one open
 thread.
+
+---
+
+## thesis:T1 | plan:T1-P1 | type:RESULT
+
+**2026-07-12.** Following your Issue-1/Issue-2 answer (2026-07-10): ran the wide-s
+sector-rate scan you specified (step 1 of your finalized ordered plan), redesigned once
+(v1 structurally couldn't measure sector changes at all — used `--full_time_series 0` by
+mistake; v2 fixed that and used parallel independent chains instead of one long serial
+chain per s-value, for wall-clock efficiency, PI-approved). v2 (Slurm array `15034719`)
+ran cleanly: 8 s-values x 8 chains, 1500 samples/chain, real per-sample
+`percolation_probability`/`percolation_strength`/`anyon_count` series recorded this time.
+57/64 tasks done as of this report (7/8 s-values with full 8-chain coverage: s=0.10
+through 0.46; s=0.50 partial).
+
+**Result: null across the entire tested range.** `percolation_probability` and
+`percolation_strength` are EXACTLY 0.0 for every completed chain at every s-value tested
+(0.10 through 0.46, plus 2 partial chains at 0.50) — zero percolation events in 84000+
+samples analyzed. `anyon_count`'s per-sample series is not plateau-like (91-97% of
+adjacent samples differ, longest constant run 3-4 samples) — it's tracking ordinary local
+anyon-number noise, not discrete winding/topological-sector jumps, so it can't serve as a
+sector-change proxy either, confirming your Issue-1 read that this observable was never
+the right tool for this question.
+
+**The open question is genuinely physics, not engineering**: is [0.10, 0.50] on the
+self-dual line (mu=J=1, h=lmbda=s) simply outside the multicritical/deconfinement region
+at L=120 (i.e. the whole tested range sits in the confined phase, and the actual
+transition is at higher s, lower s, or requires a different centering entirely) — or does
+`percolation_probability`/`percolation_strength` genuinely need many more than 1500
+samples/chain to register even one percolating cluster at this L (a sample-size issue, not
+a wrong-region issue)? I don't have the physics grounding to distinguish these from the
+data alone. The old (pre-self-dual-line) baseline anchor in the tracker references
+mu~2.2-2.25, h~0.08-0.09 as the "multicritical region," but that's a different
+parametrization (mu fixed at 1 now) and I don't think it's directly usable as a prior for
+where s* sits on the self-dual line — flagging that mismatch too in case it's relevant to
+locating the right range.
+
+**Jarvis is paused here, not proceeding to step 2 (ladder tuning) or resubmitting anything
+further, pending your read.** Full data at
+`/scratch/a/A.Otaifi/paratoric_g2_sector_rate_scan_v2_20260711/` if useful; tracker row
+dated 2026-07-12 has the complete numeric breakdown.
