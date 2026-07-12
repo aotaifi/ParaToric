@@ -9,6 +9,22 @@ Verdict from code review: feasible ONLY after Markov-chain upgrades (PT +
 checkpointing + ensembles). Backend/CPU work is capped at ~2x and is not on
 the critical path. Worst observable: percolation_strength (tau 2k-10k).
 
+## Phase-diagram sketch (reconciled 2026-07-12, canonical)
+
+1. OFF the self-dual line: two duality-related 2nd-order (3D Ising) lines bound
+   the deconfined/topological phase (single-field Higgs & confinement transitions).
+2. ON the self-dual line (h=lmbda): the two Ising lines meet and the transition
+   becomes 1st-order (Tupitsyn PRB 82 085114 / BPV, bimodal energy) — the MCP sits
+   there.
+3. The MCP is the CORE of this project: decide 1st-order vs multicritical-XY (BPV)
+   vs new self-dual class (SSN, nu~0.67) by FSS along the self-dual s-line.
+UNITS/LOCATION (a real convention trap): the MCP location is quoted differently in
+different parametrizations. Tupitsyn/BPV: 3D CLASSICAL gauge-Higgs couplings
+lambda_bond*≈0.226, lambda_pl*≈0.752. Linsel (arXiv:2401.08770) = the QUANTUM
+extended toric code = OUR model/units: self-dual MCP ~ s*≈0.33-0.35 (their Fig 3;
+they left the precise value/nature as FUTURE WORK = our target). Our s* must be
+MEASURED (locate-s* step); best prior s*≈0.33-0.35 (Linsel), NOT 0.226 (classical).
+
 ## Competing scenarios to discriminate
 
 1. First-order point (weakly first-order plausible).
@@ -33,9 +49,16 @@ the critical path. Worst observable: percolation_strength (tau 2k-10k).
 ### M1 — Locate the multicritical point
 - Duality (x<->z basis) pins the point to the self-dual line: 1-parameter scan
   along it for where the single transition line splits / two lines meet.
-- Observables: percolation_probability crossings + Binder cumulants from both
-  dual arms; duality consistency as a systematic check.
-- Deliverable: (h*, lambda*) with error bar, L up to ~96.
+- LOCKED OPERATIONAL PRIOR (2026-07-12): self-dual MCP s* = h = lmbda (mu=J=1) is
+  ~0.33-0.35 in OUR quantum units (Linsel arXiv:2401.08770, same model; they left
+  the precise value as future work = this deliverable). NOT 0.226 — that is the
+  classical gauge-Higgs lambda_bond (Tupitsyn/BPV), a different parametrization.
+  Center the locate-s* scan on 0.33-0.35, bracket generously (~0.25-0.42); the
+  s-ladder and reservoir placement key off the measured s*.
+- Observables: percolation_probability crossings (use PROBABILITY for the
+  duality/I2 check — dual pairs z-perc==x-plaq, z-plaq==x-perc, confirmed) +
+  Binder cumulants from both dual arms; duality consistency as a systematic check.
+- Deliverable: s* (= h*=lmbda*) with error bar, L up to ~96.
 
 ### M2 — FSS ladder at the multicritical point
 - Sizes: L in {32, 48, 64, 96, 128, 192} (extend to 256 only if M3 ambiguous),

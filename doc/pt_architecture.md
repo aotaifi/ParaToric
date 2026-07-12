@@ -133,6 +133,39 @@ kink times on swap (t_new = t*beta_p/beta). ParaToric tempers s with beta FIXED
 -> NO time rescaling. Do not port the rescaling. Only the ladder-spacing,
 scheduling, and diagnostic logic transfer; the swap payload is different.
 
+## 5b. PRODUCTION ladder = self-dual s-line; D4 is benchmark-only (PI-confirmed 2026-07-12)
+
+- PRODUCTION PT runs on the SINGLE parameter s = h = lmbda (mu=J=1): a 1D ladder
+  ALONG the self-dual line, crossing the MCP at once. This is the existing PT
+  (self-dual-only) and stays the production path.
+- D4's decoupled (h, lmbda) generalization is BENCHMARK-ONLY (run PT across
+  Linsel's known fixed-lmbda Ising line for a correctness check). It does NOT
+  change production. Reason to keep production 1D: a decoupled 2D (h,lmbda)
+  production ladder is impractical to tune; the self-dual line is the natural 1D
+  path through the MCP. After D4, production = the h=lmbda special case.
+- The s-ladder brackets the MCP with BENIGN phases: deconfined/toric (low s) ->
+  MCP (s*) -> confined (high s). No transition is crossed except the MCP itself.
+- NUANCE (ladder placement): "benign phase" != "good reservoir for the WINDING
+  mode". The winding/topological sector is EXACTLY conserved at s=0 (ideal toric)
+  and gets MORE frozen the deeper into the deconfined phase; it mixes FASTEST
+  near/just-below s* (strings percolate, not yet critically frozen), and freezes
+  again in the confined phase (strings too dilute). So the slow mode is frozen at
+  BOTH deep ends and fluctuates only near s* — UNLIKE textbook PT. Therefore:
+  (i) CONCENTRATE rungs near/just-below s*, do NOT reach far into deconfined;
+  (ii) VERIFY the reservoir mixes (measure tau(percolation) at the low-s rungs).
+  s* IS NOT YET MEASURED (that is the "locate s*" step). UNITS TRAP: Tupitsyn/BPV
+  quote the MCP in CLASSICAL gauge-Higgs couplings (lambda_bond*≈0.226) — NOT our
+  quantum field. Linsel (arXiv:2401.08770) = our quantum model: self-dual MCP
+  ~ s*≈0.33-0.35 (their Fig 3; precise value left as future work = our target).
+  Best prior in OUR units: s*≈0.33-0.35, NOT 0.226 (classical) and NOT the earlier
+  mis-derived 0.31/[0.15,0.25]/[0.22,0.30] (all thrash — superseded). So the useful
+  reservoir "just below s*" is ~s in [0.28,0.34]; the dense part of the ladder sits
+  ~0.30-0.34. The s=0.22 convergence point is DEEPER deconfined (valid reservoir,
+  not optimal). MEASURE s* before finalizing the ladder.
+- First-order (H5) still applies: a first-order MCP gives a central-rung
+  acceptance bottleneck on the s-ladder; the s-line is still correct, diagnostics
+  (per-link acceptance, strict round-trips) catch it.
+
 ## 6. Decisions (PI-ratified 2026-07-10)
 
 - D1 [AGREED]: swap_period in sweeps, scaled with L². Blocking, do first.

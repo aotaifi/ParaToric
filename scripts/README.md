@@ -7,7 +7,11 @@ adding new one-off analysis code.
   ensemble checks on ParaToric `obs.h5` files. It reuses the shared
   `/project/theorie/a/A.Otaifi/ai-workflow/qmc_common/hdf5_readers.py`
   ParaToric observable reader and adds cross-chain R-hat, mean-z, tau-ratio,
-  Neff, and cold/hot agreement diagnostics.
+  Neff, and cold/hot agreement diagnostics. Its default error mode recognizes
+  ParaToric's autocorrelation-aware stationary-bootstrap `mean_error`; legacy
+  IID errors can be corrected with `--stored-error naive`. The
+  `binder-crossing` subcommand evaluates the strength Binder cumulant from raw
+  series and linearly brackets adjacent-size crossings.
 - `pt_diagnostics.py`: Python CLI for offline parallel-tempering ladder health
   diagnostics from `ladder_index_by_sample`, including strict endpoint-cycle
   round-trips, tau_ergodic in sweeps, and per-rung up/down flow.
