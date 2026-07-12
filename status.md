@@ -114,17 +114,27 @@ A PT run report without all of these is incomplete and must not gate a decision.
   (Codex sandbox DNS issue recurred even under danger-full-access this time;
   submitted directly from Jarvis's own shell instead). Readout pending.
 
-## Sampling-window thermalization readout (job 15038796, 41/54 usable + 1 pending)
-8 of 9 (L,h) points converge cleanly at the SHALLOWEST tested depth, 100k
-sweeps (gaps 0.02-1.97sigma on POP/strength/density) — cheap and safe to use
-for the Linsel benchmark re-run. **RED FLAG: L=24,h=0.335 density still
-disagrees at 3.26sigma at the deepest depth then-available (500k)** — its 2M
-data was exactly the overflow-failed subset, so undetermined whether it
-converges deeper; job `15038977` (12 tasks, rerun at 2M sweeps) resolves
-this, at 2/12 done, ~35min remaining on the rest. Task 49 (L=32,h=0.50,
-default_spin=+1, 500k sweeps) COMPLETED — that row is no longer provisional
-(recheck against the 100k value once finalized, but no reason to expect a
-change). Final table + Linsel benchmark staging waiting on 15038977.
+## Sampling-window thermalization readout: FINALIZED (jobs 15038796 + 15038977)
+L=24,h=0.335 (the one red flag, 3.26sigma density disagreement at 500k)
+RESOLVED at 2M sweeps: cold/hot now agree (POP z=0.83, strength z=0.71,
+density z=1.28 — all well under 3sigma). All other 11 rerun tasks (2M sweeps)
+cross-checked against their already-converged 100k values: max z=2.95,
+consistent. Final safe thermalization depth per (L,h):
+
+| L  | h=.15 | h=.335 | h=.50 |
+|----|------:|-------:|------:|
+| 16 | 100k  | 100k   | 100k  |
+| 24 | 100k  | **2M** | 100k  |
+| 32 | 100k  | 100k   | 100k  |
+
+**Recommended per-L depth for the upcoming Linsel h-scan** (conservative,
+covers untested intermediate h since h_c=0.335 is generally the hardest
+point): L=16 -> 100k sweeps, L=24 -> 2M sweeps, L=32 -> 100k sweeps. (L=24's
+2M requirement specifically at/near h_c is plausible — closer to criticality
+-> slower dynamics — and doesn't need to generalize to L=16/32 which tested
+clean at 100k throughout.) Next: stage the Linsel benchmark re-run (plaquette
+channel + rotate fix + these depths, scan h across h_c~0.335 at L={16,24,32},
+lmbda=0.3, mu=J=1, beta=L, no PT) per Feynman's finalized next-step item 4.
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause
