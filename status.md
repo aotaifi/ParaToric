@@ -184,34 +184,48 @@ observable rotations removed. New regression test confirms identical
 rotation index across all 4 percolation observables over 3 samples. Clean
 rebuild, 3/3 ctest.
 
-## POP identification (Feynman item 1, DOCUMENTED 2026-07-12 15:00)
-`plaquette_percolation_probability`/`plaquette_percolation_strength` are the
-deconfinement POP (matches Linsel's deconfined-percolates convention).
-`percolation_probability`/`percolation_strength` ("electric"/direct channel)
-is the complementary dual quantity: correctly reads 0 below the square-lattice
-bond percolation threshold p_c=0.5 and 1 above it (planar percolation
-duality — the direct lattice's -1-edges cannot span below p_c while the dual
-correspondingly does span). All future gates (Step 2, Step 3, D4 validation,
-G2 pilot GO/NO-GO) read the PLAQUETTE channel as the mechanism/physics POP;
-the electric channel is retained only as a duality cross-check, not a gate
-input. >50%-density confirmatory check ("electric should turn ON above
-p_c=0.5"): already satisfied by the existing calibration test (commit
-`52de6a5`) — its dense-random point (~53% density) already reads electric=1,
-straddling p_c alongside all-(-1)[100%]->1 and dynamic[40%]->0. Reading this
-as closing that confirmatory check rather than re-running it; flagged to
-Feynman in case that reading is wrong.
+## POP identification — SUPERSEDED then CORRECTED (Feynman UPDATE 2026-07-12d)
+Earlier entry here (2026-07-12 15:00, "plaquette=POP, electric=its dual") is
+WRONG and RETRACTED by Feynman's own follow-up correction. Code fact: both
+`is_winding_percolating` (lattice.cpp:3334, clusters VERTICES via sigma_z=-1
+edges) and `is_winding_plaquette_percolating` (:3597, clusters PLAQUETTES via
+the SAME sigma_z=-1 edge set) are two VIEWS of the same ELECTRIC (sigma_z)
+STRING SECTOR — direct-graph vs dual-graph clustering of identical data, NOT
+independent e/m order parameters. The genuine magnetic (m, flux/sigma_x-
+string) sector requires an X-BASIS run (em self-duality). The p_c=0.5 "planar
+duality" story from the earlier entry is explicitly WITHDRAWN as an assertion
+(the empirical calibration numbers themselves still stand — all-(-1)[100%]->1,
+dense-random[~53%]->1, dynamic[40%]->0 — just not that rigorous-derivation
+framing of why).
+Consequences (Feynman, unchanged/new):
+- Linsel benchmark: UNCHANGED — still a single-electric-sector check; validate
+  whichever z-channel reproduces h_c~0.335. The >50%-density confirmatory data
+  point (dense-random->1) still stands as calibration evidence either way.
+- Topological/MCP characterization: NEW required sub-step — needs BOTH bases
+  (z-basis e-percolation AND x-basis m-percolation), with EQUALITY at the
+  self-dual point (h=lmbda) as the real MCP/topological signature. Cheap at
+  small L, no PT needed.
+- VERIFY BEFORE LOCKING (Feynman's explicit instruction, not yet done): run
+  the same benchmark point in the X-BASIS, confirm its electric channel shows
+  complementary/magnetic behavior, and confirm z-basis-e == x-basis-m at a
+  self-dual point. Added to Next action below.
 
 ## Next action
-1. BLOCKED (2026-07-12, retried ~15:xx and again after PI said Codex access
-   was re-enabled): Codex's OWN usage limit now reports reset **2026-07-13
-   13:02** (next day, not next hour) — this is a longer/harder cap than the
-   earlier ~1h wall, and the PI's re-enable attempt did not clear it. Both
-   Martina's D4 review and James's thermalization-scan staging returned zero
-   output (`n_calls: 0`) both times. Nothing to read/act on until it clears.
-   PI is checking Codex/ChatGPT billing directly (looks like an account-level
-   cap, not something retrying fixes) — Jarvis is PAUSED on Codex dispatches
-   until the PI confirms access is genuinely restored. No wakeup armed; wait
-   for the PI.
+1. Codex access confirmed restored by PI (2026-07-12). Martina's D4 review:
+   PASS on all 7 spec points, no defect found (commit `e42914d` clean). James's
+   thermalization-convergence scan staged + submitted under danger-full-access
+   (Codex sandbox's known intermittent Slurm-DNS issue recurred, standing
+   workaround applied): job `15038690`, array `[0-17]` (L={16,24,32} x
+   h={0.15,0.335,0.50} x default_spin{+1,-1}), 30 min walltime/task, queued.
+   Readout pending job completion (a later FRESH dispatch, not polled now).
+2. NEW (from Feynman's UPDATE 2026-07-12d correction, see POP section above):
+   run the X-BASIS benchmark point (same L/h/lmbda convention) and confirm
+   (a) its electric channel shows complementary/magnetic behavior, (b) at a
+   self-dual point (h=lmbda) z-basis-e percolation == x-basis-m percolation.
+   "Verify before locking" — not yet started.
+3. Once (1) lands: re-run the Linsel benchmark (item 4, single z-sector,
+   unaffected by the correction) on the converged thermalization depth,
+   scan h for h_c~0.335/nu~0.65.
 2. Once unblocked: (a) Martina reviews D4 diff `e42914d`; (b) James stages
    the longer-thermalization L={16,24,32} x h={0.15,0.335,0.50} x
    default_spin{+1,-1} checkpoint scan (extending the decisive-experiment
