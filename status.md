@@ -176,9 +176,22 @@ h=0.336, 24/32 at h=0.361) and only 2 chains/point (cold+hot) violates this
 project's own I4 four-chain bar for a proper R-hat check. Made
 `ensemble_diagnostics.py` autocorrelation-aware by default anyway (good
 standing-rule fix regardless), but the specific hypothesis for THIS
-disagreement is refuted. Verdict remains INCONCLUSIVE; root cause still
-open. Reported to Feynman. PAUSED on further Linsel/D4-validation work
-pending Feynman's read of this refutation.
+disagreement is refuted. Reported to Feynman.
+
+**Feynman's SECOND diagnosis (UPDATE 2026-07-12i): retracted the naive-error
+hypothesis, identified a real physical inconsistency instead** — the
+depth-setting scan said L24,h=0.335 needs 2M sweeps but L32,h=0.335 only
+needs 100k: BACKWARDS, since thermalization time near a critical point grows
+with L (critical slowing, tau~L^z), so L32 at h_c should need AT LEAST as
+much as L24, not 20x less. Root cause: that scan used only 2 chains (1
+cold+1 hot) — too weak to catch non-convergence via cold/hot disagreement
+(I5); within-chain Neff being high does NOT prove convergence, only
+decorrelation within whatever basin the chain is stuck in. **DECISIVE TEST
+STAGED**: job `15039919`, 8 independent chains (4 cold/4 hot, distinct
+seeds) at L=32,h=0.335, checkpoints at 2M/4M/8M sweeps, judged via cold-
+GROUP vs hot-GROUP agreement (proper 4-chain R-hat, not 2-chain z-score).
+Expected completion ~00:22 CEST (hard deadline 04:27, 8h walltime cap).
+PAUSED on further Linsel/D4-validation work pending this test's result.
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause
