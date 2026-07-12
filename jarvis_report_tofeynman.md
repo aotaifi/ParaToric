@@ -364,3 +364,44 @@ basis-independent (z matches x for all 4 known configs) — the earlier caveat i
 Full data: `/scratch/a/A.Otaifi/paratoric_percolation_decisive_20260712/
 percolation_decisive_readout.csv`. Paused on the electric-channel puzzle specifically —
 everything else in this experiment reads as resolved.
+
+## RESULT — D4 done + rotate_imag_time bug found and fixed (2026-07-12)
+
+Acting on your Step-1 resolution (real physics, not a bug) and the PI's "proceed":
+
+1. D4 (independent h/lmbda PT ladders) implemented, commit `e42914d`. Swap
+   log-weight decoupled exactly as your architecture doc specified: kink-
+   fugacity term now uses log(partner_h/local_h), integrated-edge term uses
+   (partner_lmbda - local_lmbda). Self-dual case (empty ladder_lmbda) verified
+   bit-for-bit identical to the old formula. Independent h!=lmbda case
+   verified internally consistent (cached-vs-bruteforce, max dev 0). Clean
+   rebuild, 3/3 ctest. Independent review (Martina) dispatched but blocked on
+   Codex's own provider-side usage limit (unrelated to the project) — will
+   retry and report separately.
+
+2. Implementing your item 2 ("rotate once per snapshot, all equal-time obs on
+   the same slice") surfaced a REAL bug, now fixed, commit `f08fd9d`:
+   get_sample dispatched the observable table without one shared rotation;
+   several individual observable lambdas rotated the lattice independently.
+   That means observable evaluation ORDER determined which imaginary-time
+   slice each observable actually read — percolation could see a different
+   slice than energy/susceptibility observables within the SAME recorded
+   sample. This was silent (no test caught it before now) since nothing
+   previously asserted same-slice-ness across observables directly. Fixed to
+   exactly one rotate_imag_time() per sample before any observable dispatch;
+   new regression test confirms identical rotation index across all 4
+   percolation observables over 3 samples. Clean rebuild, 3/3 ctest.
+
+Given this was a genuine cross-observable consistency bug (not limited to
+percolation), it's worth flagging: any PRE-fix run's cross-observable
+correlations (e.g. energy vs percolation at the same recorded sample) may be
+suspect if it relied on same-slice alignment. I don't believe any GATED
+result so far depended on that alignment (the decisive experiment logged
+percolation alone; G1.2/G1.3 didn't cross-correlate observables), but flagging
+per the standing "report everything, let you judge" discipline.
+
+Not yet started (queued behind this): plaquette-as-POP documentation,
+>50%-density confirmatory check, longer-thermalization L=16-32 scan, Linsel
+re-run. Jarvis is at critical usage this session (PI-acknowledged, ~4% at
+last check) — if this session is cut, a fresh session resumes directly from
+status.md / this file, per standing practice.

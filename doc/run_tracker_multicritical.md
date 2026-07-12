@@ -201,3 +201,26 @@ Updated: 2026-07-12 (rewrite this card in place; durable results -> plan/report)
   stay with cumulant-FSS + percolation d_f only? Former is the only path to a
   genuine exponent statement but is new-code scope beyond M0.
 - Q3: Confirm z=1 (R3) at one self-dual point before the FSS ladder.
+
+## 2026-07-12 checkpoint: Step-1 closed, D4 done, rotate_imag_time bug fixed
+- Feynman resolved the electric-percolation-channel puzzle: REAL PHYSICS, not
+  a bug (dynamic density 37-40% vs square-lattice bond p_c=0.5; plaquette is
+  the deconfinement POP, matching Linsel; electric is the correctly-near-zero
+  dual quantity). Closes Step 1. PI: "proceed."
+- D4 (independent h/lmbda PT ladders) DONE, commit `e42914d`. Self-dual
+  fallback preserved bit-for-bit; swap weight decoupled (kink term ~ h,
+  edge term ~ lmbda) per the Hamiltonian. Clean rebuild, 3/3 ctest. Martina
+  review dispatched, blocked on CODEX'S OWN usage-limit wall (not a project
+  finding) — retry pending.
+- Real bug found + fixed while implementing Feynman's item 2: `get_sample`
+  dispatched observables without one shared rotation per sample; some
+  observable lambdas rotated independently, so evaluation ORDER determined
+  which tau-slice each observable read (percolation could differ from
+  energy/susceptibility in the same sample). Fixed, commit `f08fd9d`: one
+  rotate_imag_time() per sample, all equal-time observables share it. New
+  regression test confirms identical rotation index across all 4 percolation
+  observables. Clean rebuild, 3/3 ctest.
+- Remaining before Linsel-with-PT re-validation: adopt plaquette_percolation_*
+  as POP (documentation only), >50%-density confirmatory check (electric
+  should turn ON), find converged thermalization depth at L=16-32, then
+  re-run the Linsel h-scan on plaquette+rotate+long-thermalization.

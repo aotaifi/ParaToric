@@ -149,7 +149,51 @@ None currently running.
   back unexpected. Full data:
   `/scratch/a/A.Otaifi/paratoric_electric_defaultspin_minus_confirm_20260712/`.
 
+## Feynman's Step-1 resolution (2026-07-12, PI: "proceed") — closes Step 1
+Electric-channel puzzle is REAL PHYSICS, not a bug: dynamic base density
+relaxes to 37-40%, square-lattice bond percolation p_c=0.5 -> direct/electric
+correctly reads 0 below threshold (calibration confirms across all-(-1)[100%]
+->1, dense-random[~53%]->1, dynamic[40%]->0, straddling p_c). The PLAQUETTE
+channel is the deconfinement POP (matches Linsel's deconfined-percolates);
+electric is the correctly-near-zero dual quantity in this regime.
+Finalized next steps: (1) adopt plaquette_percolation_* as POP + document
+[still open, Jarvis], (2) apply earned rotate_imag_time fix [DONE, see below],
+(3) thermalize much longer, find L=16-32 convergence [open], (4) re-run Linsel
+benchmark on plaquette+rotate+long-thermalization, scan h for h_c~0.335/nu~0.65
+[open, blocked on (3)].
+
+## D4 (generalize PT to independent h,lmbda): DONE, commit `e42914d`
+ladder_lmbda added alongside existing ladder_s (h-ladder); empty ladder_lmbda
+= self-dual fallback, bit-for-bit identical to old behavior. Swap log-weight
+decoupled: kink-fugacity term now scales with h, integrated-edge term with
+lmbda (was single conflated s). CLI: --pt_ladder_lmbda_start/_end. Clean
+rebuild, 3/3 ctest (3 old PT tests unmodified + 2 new: h!=lmbda cached-vs-
+bruteforce max dev 0; explicit-lmbda-equals-h vs empty-fallback exact match,
+2.75e-14). Martina review dispatched but hit Codex's OWN usage-limit wall
+(not ours) — retry after Codex's stated reset (~10:43, exact TZ unconfirmed).
+Actual Linsel-line-WITH-PT validation run still gated on (3)/(4) above.
+
+## rotate_imag_time same-slice fix: DONE, commit `f08fd9d`
+Real bug found: get_sample dispatched observables without a shared rotation;
+some individual observable lambdas rotated independently -> evaluation ORDER
+determined which tau-slice each observable saw, so percolation observables
+could read a different slice than energy/susceptibility observables in the
+SAME sample. Fixed: exactly one rotate_imag_time() now precedes observable
+dispatch per sample (production/hysteresis/thermalization loops); per-
+observable rotations removed. New regression test confirms identical
+rotation index across all 4 percolation observables over 3 samples. Clean
+rebuild, 3/3 ctest.
+
 ## Next action
-Waiting on Feynman's read of the confirmatory-test refutation (does it refute,
-complicate, or turn out to be orthogonal to the frozen-base diagnosis). Do not
-start the rotate_imag_time fix (Clark) or proceed to Step 2 until that lands.
+1. Redispatch Martina (read-only) to review D4 diff `e42914d` once Codex's
+   usage limit resets.
+2. Document plaquette-as-POP identification (Feynman item 1) in this file +
+   run_tracker_multicritical.md.
+3. Stage: (a) >50%-density confirmatory check (electric channel should turn
+   ON above p_c=0.5 — nails the threshold story), (b) longer-thermalization
+   scan at L=16-32 to find cold/hot convergence, (c) Linsel benchmark re-run
+   on plaquette+rotate+long-thermalization once (b) lands.
+4. Jarvis is at critical usage (~4% at last check, PI-acknowledged) — a
+   ScheduleWakeup was armed (capped at the tool's 1h max, PI asked for 3h)
+   as a fallback; if this session is cut by usage limit before the next
+   checkpoint, a fresh session should resume directly from this file.
