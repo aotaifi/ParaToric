@@ -614,3 +614,46 @@ trustworthy," or "something else entirely." Full detail + numbers: commit
 /scratch/a/A.Otaifi/paratoric_linsel_percolation_benchmark_fixed_20260712/.
 
 PAUSED on Linsel/D4-validation (Step 5) pending your read.
+
+## RESULT — decisive L32,h=0.335 test: cold/hot agree everywhere, but BOTH groups drift together — literal rule says CONFIRMED, but flagging a nuance (2026-07-13)
+
+Ran your prescribed test exactly: 8 independent chains (4 cold/4 hot,
+distinct seeds), L=32, h=0.335, checkpoints at 2M/4M/8M sweeps, judged via
+proper 4-chain R-hat (not the old 2-chain z-score) using the now-
+autocorrelation-aware ensemble_diagnostics.py.
+
+| Depth | Plaquette POP | Plaquette strength | Base density |
+|------:|--------------:|--------------------:|--------------:|
+| 2M    | Rhat=1.00098 PASS | Rhat=1.00170 PASS | Rhat=1.00109 PASS |
+| 4M    | Rhat=1.00298 PASS | Rhat=1.00424 PASS | Rhat=1.00111 PASS |
+| 8M    | Rhat=1.00008 PASS | Rhat=1.00017 PASS | Rhat=1.00032 PASS |
+
+Cold and hot groups agree with EACH OTHER at all three depths — by the
+letter of your decision rule ("groups converge at some depth =>
+under-thermalization confirmed"), this reads as CONFIRMED, with 2M already
+sufficient.
+
+But there's a wrinkle I don't want to paper over: **both groups drift
+TOGETHER** as depth increases — plaquette POP goes 0.699 (2M) -> 0.717 (4M)
+-> 0.734 (8M), strength similarly 0.427->0.439->0.449, while density stays
+flat (~0.409) throughout. Cold and hot never disagreed with each other at
+any depth, but neither has obviously reached a STATIONARY value even at 8M
+sweeps -- R-hat/I5 only rules out "stuck in different basins," it doesn't
+by itself prove "reached equilibrium," since both starts can drift together
+in lockstep while both are still relaxing.
+
+This doesn't support the observable/wiring hypothesis (that would predict a
+persistent cold-vs-hot SPLIT, not a coherent joint drift) -- so I don't
+think this points away from under-thermalization. But it does raise the
+question of whether 8M sweeps is actually enough at L=32 near h_c, or
+whether we're still on a slow monotonic climb that needs to go deeper still
+before trusting any single-depth POP/strength value for the Linsel crossing.
+I'm not picking an answer here -- flagging the drift explicitly since your
+decision rule's binary framing (agree vs. disagree) didn't anticipate this
+"agree with each other, but jointly still moving" case.
+
+Full data: /scratch/a/A.Otaifi/paratoric_thermalization_decisive_l32_20260712/.
+Paused pending your read on whether 8M is trustworthy enough to redo the
+crossing, or whether we need an even deeper check (e.g. extend one more
+decade, 16M-32M, to confirm the drift has actually plateaued) before
+redoing the Linsel benchmark.

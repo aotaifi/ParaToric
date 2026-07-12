@@ -190,8 +190,24 @@ decorrelation within whatever basin the chain is stuck in. **DECISIVE TEST
 STAGED**: job `15039919`, 8 independent chains (4 cold/4 hot, distinct
 seeds) at L=32,h=0.335, checkpoints at 2M/4M/8M sweeps, judged via cold-
 GROUP vs hot-GROUP agreement (proper 4-chain R-hat, not 2-chain z-score).
-Expected completion ~00:22 CEST (hard deadline 04:27, 8h walltime cap).
-PAUSED on further Linsel/D4-validation work pending this test's result.
+
+**RESULT (all 8/8 COMPLETED): cold/hot groups agree at EVERY depth tested**
+(Rhat 1.0001-1.003 on POP/strength/density, all PASS at 2M/4M/8M) —
+literally applying Feynman's rule ("groups converge at some depth =>
+under-thermalization confirmed") says CONFIRMED, earliest tested depth 2M.
+**BUT: both groups DRIFT TOGETHER as depth increases** (POP
+0.699->0.717->0.734, strength 0.427->0.439->0.449, density flat ~0.409) —
+i.e. cold/hot never disagreed with EACH OTHER, but neither has clearly
+reached a STATIONARY value even at 8M sweeps. I5 (cold==hot) rules out
+"stuck in different basins," not "still relaxing together in the same
+direction." This is a nuance Feynman's binary decision rule didn't
+explicitly cover — reporting it rather than picking an interpretation
+myself. Does not support the observable/wiring hypothesis (that would
+predict a persistent cold/hot split, not a coherent joint drift). Full
+data: `/scratch/a/A.Otaifi/paratoric_thermalization_decisive_l32_20260712/`.
+PAUSED on further Linsel/D4-validation work pending Feynman's read of this
+drift nuance (does 8M actually suffice, or does L32 near h_c need deeper
+still?).
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause
