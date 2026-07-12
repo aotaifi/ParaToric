@@ -218,24 +218,28 @@ Consequences (Feynman, unchanged/new):
    workaround applied): job `15038690`, array `[0-17]` (L={16,24,32} x
    h={0.15,0.335,0.50} x default_spin{+1,-1}), 30 min walltime/task, queued.
    Readout pending job completion (a later FRESH dispatch, not polled now).
-2. X-BASIS self-duality "verify before locking" check: DONE, RESULT IS A
-   RED FLAG, not a confirmation — paused, reported to Feynman, do NOT
-   proceed to interpret. L=8, beta=8, s={0.15,0.22,0.30,0.335,0.50} on the
-   self-dual line (mu=J=1), matched-seed z-basis vs x-basis runs, no PT:
-   BOTH z-e and x-m POP/strength DECREASE monotonically with s (should be
-   roughly mirror images under true e/m self-duality, not both falling);
-   disagreement between z-e and x-m is 11-32sigma through s=0.335 (only
-   converge near-zero together at s=0.50); a 50k-sweep cold/hot repeat at
-   s=0.50 still shows initialization-dependence, i.e. NOT converged — same
-   failure signature as the earlier under-thermalization finding, but here
-   surviving 10x the sweep count that resolved it before. Jones's own
-   read: looks like an x/z update or observable-wiring bug, not physical
-   e/m curves — did not attempt a code fix. Full data:
-   `/scratch/a/A.Otaifi/paratoric_em_selfduality_20260712`. Reported to
-   Feynman (`jarvis_report_tofeynman.md`, 2026-07-12). This does NOT affect
-   D4, the rotate_imag_time fix, or the single-z-sector Linsel benchmark
-   plan (Feynman: "Linsel benchmark unchanged") — only the topological/MCP
-   e-vs-m characterization sub-step is paused.
+2. X-BASIS self-duality check: FIRST PASS was uncontrolled for thermalization
+   (Feynman UPDATE 2026-07-12e retracted the "duality failure" reading;
+   flagged a specific alternative — WINDING-SECTOR TRAPPING, since all
+   current moves are local-only (no worm; R5 winding-loop move DOA) and
+   could in principle leave cold/hot stuck in different topological sectors
+   FOREVER, a fundamentally different failure from slow thermalization with
+   the OPPOSITE fix, PT/worm vs "run longer"). Feynman prescribed a decisive
+   discriminating check: cold/hot vs sweeps, both bases, fixed s=0.22,
+   L=8, checkpoints to 1M sweeps.
+   **RESULT (DECISIVE): cold/hot CONVERGE cleanly WITHIN each basis** (gap
+   0.010 z-prob / 0.004 x-prob at 1M sweeps, both closing monotonically from
+   10k) — rules out BOTH under-thermalization at s=0.22 AND sector-trapping.
+   **But z-e and x-m PLATEAU ~0.45(prob)/~0.22(strength) APART**, flat from
+   50k through 1M sweeps (z~0.29, x~0.75, no trend). This is a genuine,
+   reproducible CROSS-BASIS discrepancy that basis-internal thermalization
+   cannot explain — points to a basis mapping/parameter-convention or
+   observable-wiring bug, not physics, not sector-trapping. Full data:
+   `/scratch/a/A.Otaifi/paratoric_angle_b_convergence_s022_20260712/
+   checkpoint_means.csv`. Reported to Feynman. PAUSED again pending
+   Feynman's read — do not guess at the specific wiring bug myself. Does
+   NOT affect D4, the rotate_imag_time fix, or the single-z-sector Linsel
+   benchmark plan.
 3. Once (1) lands: re-run the Linsel benchmark (item 4, single z-sector,
    unaffected by the correction) on the converged thermalization depth,
    scan h for h_c~0.335/nu~0.65.

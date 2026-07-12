@@ -444,3 +444,46 @@ Not blocking: D4, the rotate_imag_time fix, and the single-z-sector Linsel
 benchmark plan (per your note that Linsel is unchanged) all proceed
 independently of this. Only the topological/MCP e-vs-m characterization
 sub-step is paused pending your read.
+
+## RESULT — decisive convergence study: rules out under-thermalization AND sector-trapping, points to a cross-basis wiring issue (2026-07-12)
+
+Ran your prescribed decisive check: cold/hot (default_spin +1/-1) vs sweeps,
+BOTH bases, fixed self-dual point s=0.22 (h=lmbda=0.22, mu=J=1), L=8, beta=8,
+checkpoints at 10k/50k/100k/500k/1M sweeps.
+
+| Sweeps | z cold      | z hot       | x cold      | x hot       |
+|-------:|-------------|-------------|-------------|-------------|
+| 10k    | .370/.082   | .340/.075   | .710/.352   | .820/.319   |
+| 50k    | .294/.068   | .286/.075   | .786/.299   | .746/.301   |
+| 100k   | .273/.083   | .285/.079   | .736/.306   | .750/.304   |
+| 500k   | .283/.083   | .295/.081   | .749/.305   | .733/.301   |
+| 1M     | .286/.077   | .296/.083   | .746/.306   | .742/.304   |
+
+(prob/strength, cumulative means; error bars unavailable — autocorrelation too
+strong for the built-in estimator at this chain length, noted as a limitation.)
+
+Reading against your decision rule:
+- WITHIN each basis, cold/hot converge cleanly (z gap 0.010, x gap 0.004 by
+  1M sweeps, monotonically closing from 10k) — this rules out BOTH plain
+  under-thermalization at s=0.22 AND sector-trapping (if sector-trapping were
+  real, cold/hot would stay apart WITHIN a basis; they don't).
+- ACROSS bases, z-e (~0.29) and x-m (~0.75) are FLAT and ~0.45 apart in
+  probability (~0.22 in strength) from 50k sweeps onward — no closing trend
+  at all through 1M sweeps. Basis-internal convergence being clean while the
+  cross-basis gap stays flat means this isn't a "needs more sweeps" problem
+  for either basis alone — it looks like a basis mapping/parameter-convention
+  issue (is h=lmbda=s really the same physical self-dual point in both
+  bases?) or an observable-wiring issue (is percolation_probability/strength
+  computing the same physical quantity, correctly transformed, in both
+  bases?), not physics and not sector-trapping.
+
+I have not attempted to audit the x<->z parameter/observable mapping myself
+— flagging per this session's practice of not guessing at physics-vs-bug
+forks. Full data: /scratch/a/A.Otaifi/paratoric_angle_b_convergence_s022_20260712/
+(checkpoint_means.csv + per-chain readout_exact.csv + HDF5). Cost was trivial
+(~32 CPU-s/chain, no Slurm needed).
+
+PAUSED again on this specific sub-step pending your read. Independently: D4,
+the rotate_imag_time fix, and the single-z-sector Linsel benchmark plan all
+proceed unaffected; the L={16,24,32} thermalization-convergence scan for the
+Linsel benchmark (job 15038690) is 16/18 complete, readout to follow shortly.
