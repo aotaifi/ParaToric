@@ -25,7 +25,7 @@ Full spec: `doc/feynman_thesis_tojarvis.md` ("MASTER PRE-PILOT SEQUENCE" +
 H1-H6 ladder-health invariants). Order matters — each step depends on the one
 before it. Pilot sbatch stays PI-gated regardless of how this sequence resolves.
 
-0. **D1 [BLOCKING, IN PROGRESS]**: `swap_period` is currently defined in raw
+0. **D1 [BLOCKING, DONE — see Progress section below]**: `swap_period` was defined in raw
    Metropolis MOVES, not sweeps (types.hpp:118 default 1000 moves). At L=8 that's
    ~7.8 sweeps (healthy — why G1.2/G1.3's "6/4 round-trips" looked fine). At L=120
    that's ~0.035 sweeps (~29 swaps PER sweep) — replicas barely evolve between
@@ -126,23 +126,30 @@ None currently running.
   verdict was itself a stale-incremental-build false negative, confirmed by
   rebuilding the pre-D1 commit fresh from a `git archive` extraction. Logged in
   `ai-workflow/jarvis_selfreview.md`.
-- **Step 1 (Linsel POP benchmark): INCONCLUSIVE, PAUSED pending Feynman.**
-  lmbda=0.3, mu=J=1, no PT, L={16,24,32}, h scanned across h_c=0.335. The
-  "electric" `percolation_*` channel is essentially zero across the entire
-  tested range (doesn't look like Linsel's POP at all). The `plaquette_
-  percolation_*` channel shows the right qualitative shape (large at small h)
-  but severe initial-spin-condition sensitivity at the SAME physical point
-  (L=32, h=0.15: POP=0.970 with default_spin=-1 vs 0.132 with default_spin=+1)
-  — could be non-equilibration, an observable/reset bug, or a parameter/basis
-  convention mismatch. Full data:
-  `/scratch/a/A.Otaifi/paratoric_linsel_percolation_benchmark_20260712/`.
-  James correctly stopped rather than forcing a channel ID or false
-  confirmation. Reported to Feynman (`jarvis_report_tofeynman.md`,
-  2026-07-12) — PI directed routing this to Feynman rather than dispatching
-  further investigation. **Jarvis paused on the whole master sequence pending
-  that read** — everything downstream depends on trusting a percolation
-  observable.
+- **Step 1 (Linsel POP benchmark): root cause diagnosed by Feynman, confirmatory
+  test REFUTED the specific numeric prediction — paused again pending Feynman's
+  read of that refutation.** Feynman's diagnosis (`doc/feynman_thesis_tojarvis.md`
+  "STEP-1 BLOCKER RESOLVED", 2026-07-12): percolation observables (qmc.hpp:
+  481-505) never call `rotate_imag_time()` before measuring, unlike
+  susceptibilities — so they read the frozen tau=0 base config (same mechanism
+  as the earlier energy_lmbda finding). Prediction: `default_spin=+1` -> frozen
+  all-up base -> POP~0; `default_spin=-1` -> frozen all-down base -> POP~1.
+  PI said proceed; ran the prescribed cheap confirmatory test (no code change)
+  first: ELECTRIC `percolation_probability`/`percolation_strength` at L=32,
+  h=0.15, `default_spin=-1`, 3 seeds — all came back exactly 0/0, matching
+  `default_spin=+1`, NOT the predicted ~1. Sizing looked adequate (not an
+  under-thermalization confound as far as I can tell). Candidate explanation
+  I have NOT acted on: the electric channel's percolating objects may be
+  trivially string-free in ANY uniform base state (both signs), for a reason
+  unrelated to the rotate_imag_time diagnosis, while the PLAQUETTE channel's
+  asymmetry (0.970 vs 0.132 — the original Finding 2) remains the real
+  evidence for the frozen-base mechanism. Reported to Feynman
+  (`jarvis_report_tofeynman.md`, 2026-07-12) rather than proceeding to the
+  `rotate_imag_time` code fix on a diagnosis whose confirmatory test just came
+  back unexpected. Full data:
+  `/scratch/a/A.Otaifi/paratoric_electric_defaultspin_minus_confirm_20260712/`.
 
 ## Next action
-Waiting on Feynman's read of the Step 1 initial-condition-sensitivity finding.
-Do not resubmit/investigate further or proceed to Step 2 until that lands.
+Waiting on Feynman's read of the confirmatory-test refutation (does it refute,
+complicate, or turn out to be orthogonal to the frozen-base diagnosis). Do not
+start the rotate_imag_time fix (Clark) or proceed to Step 2 until that lands.
