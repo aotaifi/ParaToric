@@ -202,10 +202,12 @@ as closing that confirmatory check rather than re-running it; flagged to
 Feynman in case that reading is wrong.
 
 ## Next action
-1. BLOCKED (2026-07-12 ~15:00): both the Martina D4-review redispatch and the
-   James thermalization-scan staging dispatch hit CODEX's OWN provider usage
-   limit (not ours), new stated reset ~16:02. Retry both then. Nothing to
-   read/act on from either — both returned zero output (`n_calls: 0`).
+1. BLOCKED (2026-07-12, retried ~15:xx and again after PI said Codex access
+   was re-enabled): Codex's OWN usage limit now reports reset **2026-07-13
+   13:02** (next day, not next hour) — this is a longer/harder cap than the
+   earlier ~1h wall, and the PI's re-enable attempt did not clear it. Both
+   Martina's D4 review and James's thermalization-scan staging returned zero
+   output (`n_calls: 0`) both times. Nothing to read/act on until it clears.
 2. Once unblocked: (a) Martina reviews D4 diff `e42914d`; (b) James stages
    the longer-thermalization L={16,24,32} x h={0.15,0.335,0.50} x
    default_spin{+1,-1} checkpoint scan (extending the decisive-experiment
