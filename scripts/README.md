@@ -25,6 +25,10 @@ adding new one-off analysis code.
   at L=16,24,32. Each independent task thermalizes to one candidate depth, then
   records 100 samples at 25-sweep spacing; base -1-edge density is derived from
   `sigma_z` as `(1-sigma_z)/2`.
+- `submit_thermalization_decisive_l32_20260712.sbatch`: eight-chain decisive
+  L=32, h=0.335 cold/hot test. It keeps each trajectory continuous from 2M to
+  8M sweeps and records plaquette POP/POS plus sigma_z every 25 sweeps, retaining
+  300-sample windows at the 2M/4M/8M checkpoints for fresh-dispatch I5 readout.
 - `submit_linsel_percolation_benchmark_20260712.sbatch`: fixed-observable-pipeline
   rerun of the Linsel off-self-dual benchmark. It maps one L/h/cold-hot
   combination per array task, applies the validated per-L thermalization depth,
