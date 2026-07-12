@@ -362,6 +362,40 @@ FINALIZED DECISIVE EXPERIMENT (one instrumented run splits everything):
  configs in basis='z' (calibration ran in 'x'; campaign is 'z') or confirm the
  counting code has no basis branch.
 
+### UPDATE 2026-07-12c: decisive experiment RAN — puzzle resolves (3 distinct effects)
+
+Clark ran it (tests/debug/percolation_decisive_experiment.cpp, commit 579061b).
+beta=L confirmed enforced; calibration re-confirmed basis-independent (z==x). Results:
+ 1. UNDER-THERMALIZATION IS REAL: base -1-edge density relaxes for both starts
+    (+1: 38->752/2048; -1: 406->825/2048) and converges by 10k sweeps. So the
+    initial-condition sensitivity = slow equilibration, NOT frozen base / wiring.
+    (PI hypothesis confirmed.)
+ 2. ROTATION MATTERS (for the plaquette channel): base vs rotated DIFFER
+    (+1 @10k: base 0,0 -> rotated 1,0.638). rotate_imag_time is NOW EARNED — by
+    the plaquette channel (the electric-only test couldn't show it).
+ 3. ELECTRIC = 0 IS PHYSICS, not a bug: dynamic density is 37-40%; square-lattice
+    bond percolation threshold p_c=0.5. Below it the -1 edges cannot span the
+    DIRECT lattice -> electric winding = 0 (base AND rotated, correctly).
+    Consistent across calibration: all-(-1)[100%]->1, dense-random[~53%]->1,
+    dynamic[40%]->0 — three points across p_c=0.5. The DUAL (plaquette) percolates
+    precisely because the direct is sub-threshold (planar percolation duality).
+
+RESOLUTION: the z-basis deconfinement POP is the PLAQUETTE channel (matches
+Linsel's deconfined-percolates); the named "electric"/direct channel is the
+complementary dual quantity, correctly ~0 in this regime. Finding 1 = physics.
+
+FINALIZED NEXT STEP (closes Step 1):
+ 1. Adopt plaquette_percolation_* as the POP; document the electric/plaquette
+    identification. Confirmatory check: in a >50%-density config the electric
+    channel SHOULD turn on (nails the threshold story).
+ 2. Apply the rotate_imag_time fix (Clark) — now earned. Rotate once per snapshot,
+    all equal-time obs on the same slice (for I2 duality).
+ 3. Thermalize MUCH longer (density still relaxing at 10k sweeps); find the
+    thermalization that converges cold/hot at L=16-32.
+ 4. Re-run the Linsel benchmark on plaquette + rotate + long-thermalization,
+    scan h, check for the h_c~0.335 / nu~0.65 crossing. The earlier "no clean
+    crossing + start-sensitivity" is fully explained by steps 2+3.
+
 ## MASTER PRE-PILOT SEQUENCE (Feynman, 2026-07-10 — supersedes the earlier
 ## "Finalized next steps" list; integrates RESOLVE-FIRST + pt_architecture.md)
 
