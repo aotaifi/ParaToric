@@ -1,2 +1,3 @@
 script	purpose	inputs	outputs	notes
 ensemble_diagnostics.py	Multicritical harness I4/I5 ensemble diagnostics for same-point independent ParaToric chains	ParaToric obs.h5 paths/globs under /simulation/results	stdout PASS/FLAG criteria with Rhat, mean-z, tau ratio, N, Neff, cold/hot z	Uses shared ai-workflow/qmc_common/hdf5_readers.py; Rhat requires stored observable series moments
+adaptive_ladder_pm.py	D3 PM acceptance-rate adaptive PT ladder builder for ParaToric self-dual s ladders	Current s ladder plus measured per-link swap acceptance rates (CLI list or file)	JSON proposed ladder; synthetic validation/self-test summaries	Ports spacing logic from code_ruby_duy_pinning_lab/temp_grid.cpp::adapt_betas; no beta/time rescaling or LOGR

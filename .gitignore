@@ -7,6 +7,7 @@
 /bin/
 /log/
 !/scripts/job_script_creator.ipynb
+!/scripts/adaptive_ladder_pm.py
 command.txt
 .DS_Store
 /Testing/
