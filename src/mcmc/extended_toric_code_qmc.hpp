@@ -403,6 +403,15 @@ class ExtendedToricCodeQMC {
 
         double validate_parallel_tempering_swap_weight_debug(const Config& config);
 
+        std::int64_t load_sample_checkpoint_lattice_debug(
+            const std::filesystem::path& path,
+            const Config& config,
+            LatticeT& lat
+        ) {
+            const auto state = read_sample_checkpoint(path, config, lat);
+            return state.production_metropolis_steps;
+        }
+
         /**
          * @brief This method will run a QMC hysteresis simulation of the extended toric code with the specified parameters and return observables.
          * 

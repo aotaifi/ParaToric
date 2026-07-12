@@ -28,3 +28,14 @@ foreach(test_src IN LISTS test_sources)
 
     add_test(NAME ${test_name} COMMAND ${test_name})
 endforeach()
+
+add_executable(percolation_decisive_experiment debug/percolation_decisive_experiment.cpp)
+target_include_directories(percolation_decisive_experiment
+  PRIVATE
+    ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/src
+)
+target_link_libraries(percolation_decisive_experiment
+  PRIVATE
+    paratoric::core
+)
