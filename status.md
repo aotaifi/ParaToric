@@ -132,9 +132,33 @@ covers untested intermediate h since h_c=0.335 is generally the hardest
 point): L=16 -> 100k sweeps, L=24 -> 2M sweeps, L=32 -> 100k sweeps. (L=24's
 2M requirement specifically at/near h_c is plausible — closer to criticality
 -> slower dynamics — and doesn't need to generalize to L=16/32 which tested
-clean at 100k throughout.) Next: stage the Linsel benchmark re-run (plaquette
-channel + rotate fix + these depths, scan h across h_c~0.335 at L={16,24,32},
-lmbda=0.3, mu=J=1, beta=L, no PT) per Feynman's finalized next-step item 4.
+clean at 100k throughout.)
+
+## Linsel benchmark re-run (job 15039466, all 54/54 COMPLETED): INCONCLUSIVE
+Per-L crossing (plaquette POP=0.5): L16 h=0.384, L24 h=0.367, L32 h=0.364 —
+NOT a single common crossing (pairwise: 16/24=0.336, 16/32=0.343, 24/32=0.363),
+though all in the right ballpark of h_c=0.335(2), not obviously narrowing with
+L as genuine FSS would predict. No credible nu: local-slope fits give
+window-dependent nu~1.2-1.9, not 0.65, not stable.
+**Cold/hot disagreements at SEVERAL (L,h) points** (>2sigma POP and/or
+strength): L16 h={0.25,0.325}; L24 h={0.25,0.335}; L32 h={0.15,0.37}.
+**IMPORTANT INTERNAL INCONSISTENCY**: L24,h=0.335 — the EXACT point just
+validated as converged (0.83sigma/0.71sigma POP/strength) in the
+thermalization-depth-finalization run (jobs 15038796/15038977, SAME 2M-sweep
+depth, same physical parameters) — now shows 3.55sigma/3.28sigma disagreement
+in THIS run. Same point, same depth, different run, contradictory verdict.
+This smells like underestimated error bars from autocorrelation (percolation
+observables near a critical point can have long correlation times; both runs'
+sampling windows — 100 samples/25 sweeps in the validation run, 1000
+samples/25 sweeps here — may be far shorter than the true autocorrelation
+time, making naive stderr too small and turning small real fluctuations into
+spurious multi-sigma "disagreements"), not necessarily a physics or wiring
+problem — but this is a statistics/methodology judgment with real physics
+implications (is percolation reliable near h_c at all with current tooling?),
+so reporting to Feynman rather than deciding unilaterally, consistent with
+this session's practice on other physics-adjacent forks. Full data:
+`/scratch/a/A.Otaifi/paratoric_linsel_percolation_benchmark_fixed_20260712/`.
+PAUSED on further Linsel/D4-validation work pending Feynman's read.
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause

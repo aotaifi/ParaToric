@@ -527,3 +527,49 @@ data: /scratch/a/A.Otaifi/paratoric_angle_b_dualpair_s022_20260712/.
 Independently unaffected: D4, the rotate_imag_time fix, the single-z-sector
 Linsel benchmark plan, and the sampling-window thermalization-convergence
 scan (job 15038796, running) all proceed.
+
+## RESULT — Linsel benchmark re-run (job 15039466): INCONCLUSIVE, with a notable internal inconsistency (2026-07-12)
+
+Ran the re-run with the fixes in place: plaquette channel (your resolved
+POP), rotate_imag_time fix (f08fd9d), and validated per-L thermalization
+depths (L16=100k, L24=2M, L32=100k sweeps). L={16,24,32}, h={0.15,0.25,0.30,
+0.325,0.335,0.345,0.37,0.42,0.50}, both starts, real sampling windows
+(1000 samples/25 sweeps).
+
+Crossing (plaquette POP=0.5): L16 h=0.384, L24 h=0.367, L32 h=0.364.
+Pairwise crossings: 16/24 at 0.336, 16/32 at 0.343, 24/32 at 0.363 — all in
+the right ballpark of h_c=0.335(2) but NOT a single common crossing, and not
+obviously narrowing with L the way genuine FSS should. Local-slope nu
+estimates are window-dependent, 1.2-1.9 — not a credible nu=0.65.
+
+Cold/hot (default_spin +1/-1) disagree (>2sigma, POP and/or strength) at:
+L16 h={0.25,0.325}; L24 h={0.25,0.335}; L32 h={0.15,0.37}.
+
+The one I want to flag most: **L24,h=0.335 is the EXACT point we just
+validated as converged** (jobs 15038796/15038977, 2M sweeps, 0.83sigma/
+0.71sigma agreement) — same physical parameters, same thermalization depth
+— and it now shows 3.55sigma/3.28sigma disagreement in THIS run. Same point,
+contradictory verdict across two runs.
+
+My read (not acted on, flagging for you): this smells like underestimated
+error bars from autocorrelation rather than a real physics or wiring
+problem. Percolation near a critical point can have long correlation times;
+both runs used fairly short sampling windows relative to thermalization
+depth (100 samples/25 sweeps in the validation run, 1000 samples/25 sweeps
+here) — if the true autocorrelation time is longer than 25 sweeps, naive
+stderr from nominally-independent samples is too small, and ordinary
+run-to-run/seed variation can look like several sigma. This would mean the
+benchmark isn't actually FAILING physically — it's under-resourced
+statistically, specifically worse near h_c where slowing-down is expected.
+Alternative I can't rule out: something more specific to L24 or the h=0.335
+point in how this run's staging differs from the validation run's (different
+seeds, different total run length) — haven't audited for that.
+
+Not deciding between these myself — this intersects statistics/tooling
+(does percolation_strength's error estimator need an autocorrelation
+correction before trusting near-critical points at all?) and physics
+(is nu extraction out of reach with the current sampling scheme regardless).
+Full data: /scratch/a/A.Otaifi/paratoric_linsel_percolation_benchmark_fixed_20260712/.
+
+PAUSED on further Linsel benchmark or D4-validation work (Step 5 of the
+master sequence needs a passing Linsel benchmark first) pending your read.
