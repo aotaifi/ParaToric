@@ -16,3 +16,8 @@ adding new one-off analysis code.
   `temp_grid::adapt_betas` spacing logic to ParaToric's `s = h = lmbda`
   ladders, with smoothing, alpha blending, minimum spacing, and a fixed
   iteration cap.
+- `submit_thermalization_convergence_20260712.sbatch`: cold/hot production-CLI
+  sampling-window convergence array for the adopted plaquette percolation gate
+  at L=16,24,32. Each independent task thermalizes to one candidate depth, then
+  records 100 samples at 25-sweep spacing; base -1-edge density is derived from
+  `sigma_z` as `(1-sigma_z)/2`.

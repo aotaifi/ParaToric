@@ -89,31 +89,39 @@ void run_calibration(char basis) {
     }
 }
 
-void print_checkpoint_readout(const std::string& label, const std::filesystem::path& path) {
+template <char Basis>
+void print_checkpoint_readout_for_basis(
+    const std::string& label,
+    const std::filesystem::path& path,
+    int L,
+    double h,
+    double lmbda,
+    int default_spin,
+    int n_between_samples,
+    const std::vector<std::string>& observables
+) {
     const auto underscore = label.rfind('_');
     if (underscore == std::string::npos) {
         throw std::runtime_error("Checkpoint label must end in _<sweeps>: " + label);
     }
     const auto sweeps = std::stoll(label.substr(underscore + 1));
-    const auto moves = static_cast<int>(sweeps * 2LL * 32LL * 32LL);
-    const paratoric::LatSpec lat_spec{'z', "square", 32, 32., "periodic", label.find("spin-1") == 0 ? -1 : 1};
+    const auto moves = sweeps * 2LL * L * L;
+    if (n_between_samples <= 0 || moves % n_between_samples != 0) {
+        throw std::invalid_argument("Checkpoint depth is not divisible by the sample cadence.");
+    }
+    const paratoric::LatSpec lat_spec{Basis, "square", L, static_cast<double>(L), "periodic", default_spin};
     const paratoric::ParamSpec param_spec{
         .mu = 1.,
-        .h = 0.15,
+        .h = h,
         .J = 1.,
-        .lmbda = 0.3
+        .lmbda = lmbda
     };
     const paratoric::SimSpec sim_spec{
-        .N_samples = 1,
-        .N_between_samples = moves,
+        .N_samples = static_cast<int>(moves / n_between_samples),
+        .N_between_samples = n_between_samples,
         .N_resamples = 1,
         .custom_therm = false,
-        .observables = {
-            "percolation_probability",
-            "percolation_strength",
-            "plaquette_percolation_probability",
-            "plaquette_percolation_strength"
-        }
+        .observables = observables
     };
     const paratoric::Config config{
         .sim_spec = sim_spec,
@@ -121,7 +129,7 @@ void print_checkpoint_readout(const std::string& label, const std::filesystem::p
         .lat_spec = lat_spec
     };
     auto rng = std::make_shared<paratoric::rng::RNG>();
-    auto qmc = paratoric::ExtendedToricCodeQMC<'z', paratoric::Lattice>(rng);
+    auto qmc = paratoric::ExtendedToricCodeQMC<Basis, paratoric::Lattice>(rng);
     auto lat = paratoric::Lattice(lat_spec, rng);
     const auto production_moves = qmc.load_sample_checkpoint_lattice_debug(path, config, lat);
     const auto base_minus_edges = lat.get_string_count();
@@ -139,19 +147,82 @@ void print_checkpoint_readout(const std::string& label, const std::filesystem::p
     std::cout << '\n';
 }
 
+void print_checkpoint_readout(
+    const std::string& label,
+    const std::filesystem::path& path,
+    int L,
+    double h,
+    double lmbda,
+    char basis,
+    int default_spin,
+    int n_between_samples,
+    bool electric_only
+) {
+    const std::vector<std::string> observables = electric_only
+        ? std::vector<std::string>{"percolation_probability", "percolation_strength"}
+        : std::vector<std::string>{
+            "percolation_probability", "percolation_strength",
+            "plaquette_percolation_probability", "plaquette_percolation_strength"};
+    if (basis == 'z') {
+        print_checkpoint_readout_for_basis<'z'>(
+            label, path, L, h, lmbda, default_spin, n_between_samples, observables);
+    } else if (basis == 'x') {
+        print_checkpoint_readout_for_basis<'x'>(
+            label, path, L, h, lmbda, default_spin, n_between_samples, observables);
+    } else {
+        throw std::invalid_argument("Basis must be x or z.");
+    }
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
     std::cout << std::setprecision(17);
     run_calibration('x');
     run_calibration('z');
-    if (argc > 1) {
+    int first_pair = 1;
+    int L = 32;
+    double h = 0.15;
+    double lmbda = 0.3;
+    char basis = 'z';
+    int default_spin = 1;
+    int n_between_samples = 100 * 2 * L * L;
+    bool electric_only = false;
+    if (argc > 1 && std::string(argv[1]) == "--scan") {
+        if (argc < 8) {
+            throw std::invalid_argument(
+                "Usage: percolation_decisive_experiment --scan L h default_spin n_between_moves label checkpoint [...]"
+            );
+        }
+        L = std::stoi(argv[2]);
+        h = std::stod(argv[3]);
+        default_spin = std::stoi(argv[4]);
+        n_between_samples = std::stoi(argv[5]);
+        first_pair = 6;
+    } else if (argc > 1 && std::string(argv[1]) == "--basis-scan") {
+        if (argc < 10) {
+            throw std::invalid_argument(
+                "Usage: percolation_decisive_experiment --basis-scan L h lmbda basis default_spin n_between_moves label checkpoint [...]"
+            );
+        }
+        L = std::stoi(argv[2]);
+        h = std::stod(argv[3]);
+        lmbda = std::stod(argv[4]);
+        basis = argv[5][0];
+        default_spin = std::stoi(argv[6]);
+        n_between_samples = std::stoi(argv[7]);
+        first_pair = 8;
+        electric_only = true;
+    }
+    if (argc > first_pair) {
         std::cout << "scan,label,default_spin,moves,base_minus_edges,total_edges,"
                      "base_eprob,base_estrength,base_pprob,base_pstrength,"
                      "rot_eprob,rot_estrength,rot_pprob,rot_pstrength\n";
     }
-    for (int i = 1; i + 1 < argc; i += 2) {
-        print_checkpoint_readout(argv[i], argv[i + 1]);
+    for (int i = first_pair; i + 1 < argc; i += 2) {
+        print_checkpoint_readout(
+            argv[i], argv[i + 1], L, h, lmbda, basis, default_spin,
+            n_between_samples, electric_only);
     }
     return 0;
 }

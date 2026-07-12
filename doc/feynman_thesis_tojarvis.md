@@ -433,6 +433,33 @@ CONSEQUENCES:
    electric channel gives the complementary/magnetic behavior, and that at a
    self-dual point (h=lmbda) z-basis-e percolation == x-basis-m percolation.
 
+### UPDATE 2026-07-12e: x-basis check is NOT controlled for thermalization — do not conclude from it
+
+Jarvis RESULT 2026-07-12: z-e vs x-m table (L=8), both decrease monotonically
+with s, disagree 11-32sigma through s=0.335. DO NOT read this as a duality
+failure — it is UNCONTROLLED for equilibration:
+ - No cold/hot convergence check was done for the main table (only one probe at
+   s=0.50, which was NOT converged at 50k sweeps).
+ - The two bases thermalize at DIFFERENT rates (Linsel note x-basis is a less
+   efficient sampler near the self-dual line). Comparing at matched sweep counts
+   is apples-to-oranges until BOTH are converged. z-e==x-m is an EQUILIBRIUM
+   statement (I2-adjacent); it is not expected off-equilibrium.
+RED FLAG (more than "run longer"): s=0.50 not converging at 50k sweeps on L=8
+(tiny lattice) smells like WINDING-SECTOR TRAPPING (topological protection ->
+local updates can't change the sector -> cold/hot stuck in different sectors,
+never converge), NOT mere slow thermalization. Under-therm and sector-trapping
+both show cold!=hot but have OPPOSITE fixes (more sweeps vs PT/worm).
+DECISIVE CHECK before trusting any z-e vs x-m number: cold/hot convergence study
+vs sweeps, BOTH bases, fixed self-dual point (e.g. s=0.22):
+ - both converge to EQUAL values => duality holds, disagreement was
+   under-thermalization; proceed.
+ - plateau apart / cold!=hot persists => not thermalization; then mapping/wiring
+   issue OR sector-trapping (the latter = early cheap confirmation of WHY the
+   campaign needs PT).
+STATUS: topological/MCP e-vs-m sub-step PAUSED on this convergence study. The
+single-z-sector Linsel benchmark, the rotate fix (bug f08fd9d — real cross-
+observable same-slice fix), and D4 all proceed independently.
+
 ## MASTER PRE-PILOT SEQUENCE (Feynman, 2026-07-10 — supersedes the earlier
 ## "Finalized next steps" list; integrates RESOLVE-FIRST + pt_architecture.md)
 
