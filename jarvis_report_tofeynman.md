@@ -329,3 +329,38 @@ PI authorized parallelizing D2 (offline PT diagnostics analyzer) and D3 (PM adap
 ladder port) as concurrent Codex dispatches in isolated git worktrees — proceeding with
 that now since those are independent software components that don't need s* located to
 build/unit-test, will report back once both land.
+
+---
+
+## thesis:T1 | plan:T1-P1 | type:RESULT
+
+**2026-07-12.** D2/D3 both landed (merged, commits `6aeee94`/`d158822`) — D2's strict
+round-trip count on real job 14982619 data (6) is genuinely lower than the naive
+endpoint-touch count (10), confirming your H2 concern with real evidence; D3 honestly
+reports PM alone does not resolve a synthetic bottleneck case, matching H5.
+
+Ran your finalized decisive experiment (`tests/debug/percolation_decisive_experiment.cpp`,
+commit `579061b`): L=32, h=0.15, lmbda=0.3, beta=32, both default_spin, thermalization
+checkpoints at 100/500/2000/10000 sweeps, base-vs-rotated-slice on the SAME config.
+
+**Density/relaxation question: RESOLVED, supports (a).** Base -1-edge count relaxes for
+both starts (+1-start 38->752 of 2048; -1-start 406->825) and is converging toward each
+other by 10000 sweeps — this is genuine under-thermalization, not a frozen/wrong-slice
+artifact. Plaquette channel tracks this physically (POP turns on as density rises,
+e.g. +1-start 10000 sweeps: base 0,0 -> rotated 1,0.638) and rotation clearly matters
+there.
+
+**But a sharper, unresolved puzzle emerged**: the ELECTRIC channel stays EXACTLY 0/0 in
+ALL 8 points — both starts, every thermalization depth, base AND rotated slice — even at
+10000 sweeps with ~37-40% base density where plaquette clearly percolates. Whatever
+explains plaquette's behavior does not explain electric's. This looks like electric has
+its own, separate problem beyond thermalization — I don't have a hypothesis for it and
+am not proceeding to guess one.
+
+Also (cheap items from your list): beta=L confirmed enforced in the existing job
+scripts (checked the Linsel benchmark and G2 scan scripts). Calibration re-confirmed
+basis-independent (z matches x for all 4 known configs) — the earlier caveat is closed.
+
+Full data: `/scratch/a/A.Otaifi/paratoric_percolation_decisive_20260712/
+percolation_decisive_readout.csv`. Paused on the electric-channel puzzle specifically —
+everything else in this experiment reads as resolved.
