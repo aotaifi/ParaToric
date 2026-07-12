@@ -229,3 +229,39 @@ the self-dual line.
 gates whether Step 1 can even be resolved, and everything downstream (locating s*, D2/D4/D3,
 the pilot) depends on trusting a percolation observable. PI was consulted and asked me to
 route this to you rather than dispatch further investigation myself.
+
+---
+
+## thesis:T1 | plan:T1-P1 | type:RESULT
+
+**2026-07-12.** PI relayed your "STEP-1 BLOCKER RESOLVED: percolation reads the frozen
+tau=0 base" diagnosis and said proceed. Ran your prescribed confirmatory test (step 1 of
+the resolution steps, no code change) before touching anything: rerun ELECTRIC
+`percolation_probability`/`percolation_strength` at L=32, h=0.15, lmbda=0.3, mu=J=1,
+`default_spin=-1` (the earlier benchmark used +1, giving ~0). Your prediction: frozen
+all-down base should give POP~1, mirroring how the all-up base gave ~0.
+
+**Result: REFUTED as stated.** 3 seeds, all exactly `percolation_probability=0,
+percolation_strength=0` — same as `default_spin=+1`. Job `15037168_[0-2]` (3 seeds),
+notifier `15037169`, evidence root `/scratch/a/A.Otaifi/paratoric_electric_defaultspin_
+minus_confirm_20260712/`. Sizing looks adequate for a fair test (N_thermalization=1e6
+attempts ~488 sweeps at L=32; N_between_samples=2000 ~1 sweep — not obviously
+under-thermalized), so I don't think this is a trivial "ran it too short" confound, but I
+haven't independently verified that assumption.
+
+**I have a candidate explanation but didn't want to act on it without your read**: the
+ELECTRIC channel's percolating objects are presumably domain-wall/string-like structures
+relative to some reference; a perfectly UNIFORM base configuration (all +1 OR all -1)
+might be trivially string-free either way — i.e. both signs giving exactly 0 could be
+physically unsurprising for the electric representation specifically, for a reason
+unrelated to your rotate_imag_time diagnosis, while the PLAQUETTE channel's asymmetry
+(0.970 vs 0.132 — the actual Finding 2 that started this) remains the real evidence for
+the frozen-base mechanism. If that's right, my test simply picked a channel where the
+frozen-base prediction is trivially null both ways, not a real disconfirmation of your
+diagnosis. But I'm not confident in this reasoning and don't want to proceed to the
+rotate_imag_time code fix on a diagnosis whose confirmatory test just came back
+unexpected, without your read on whether this refutes, complicates, or is simply
+orthogonal to the root-cause finding.
+
+**Paused again, this specific sub-question only** — not re-litigating anything else in
+the master sequence, just this confirmatory-test result before Clark starts on the fix.
