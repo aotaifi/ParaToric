@@ -2,12 +2,10 @@
 // Copyright (C) 2022-2026  Simon Mathias Linsel, Lode Pollet
 
 #include "io/io.hpp"
+#include "logging/trivial_log.hpp"
 #include "mcmc/extended_toric_code_qmc.hpp"
 #include "paratoric/types/types.hpp"
 
-#include <boost/log/core.hpp> 
-#include <boost/log/expressions.hpp>
-#include <boost/log/trivial.hpp> 
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/value_semantic.hpp>
 #include <boost/program_options/variables_map.hpp>
@@ -62,7 +60,8 @@ int main(int argc, char **argv) {
         double pt_ladder_start;
         double pt_ladder_end;
         int pt_ladder_count;
-        int pt_swap_period;
+        double pt_swap_period_sweeps;
+        int pt_swap_period = 0;
         bool pt_validate_swap_weight;
         int process_index;
 
@@ -99,7 +98,8 @@ int main(int argc, char **argv) {
         ("pt_ladder_start", po::value(&pt_ladder_start)->default_value(std::numeric_limits<double>::quiet_NaN()), "Start of an evenly spaced PT self-dual s ladder.")
         ("pt_ladder_end", po::value(&pt_ladder_end)->default_value(std::numeric_limits<double>::quiet_NaN()), "End of an evenly spaced PT self-dual s ladder.")
         ("pt_ladder_count", po::value(&pt_ladder_count)->default_value(0), "Number of points in an evenly spaced PT self-dual s ladder.")
-        ("pt_swap_period", po::value(&pt_swap_period)->default_value(1000), "PT neighbor-swap attempt period in Metropolis updates.")
+        ("pt_swap_period_sweeps", po::value(&pt_swap_period_sweeps)->default_value(2.0), "PT neighbor-swap attempt period in sweeps; one sweep is 2*L^2 Metropolis updates.")
+        ("pt_swap_period", po::value(&pt_swap_period), "Legacy PT neighbor-swap attempt period in raw Metropolis updates. Do not combine with pt_swap_period_sweeps.")
         ("pt_validate_swap_weight", po::value(&pt_validate_swap_weight)->default_value(false), "Recompute PT swap weights at every swap attempt and record max deviation.")
         ("process_index,procid", po::value(&process_index), "Identifier of process (for debugging).")
         ("lattice_type,lat", po::value(&lattice_type), "Type of lattice used.")
@@ -191,9 +191,21 @@ int main(int argc, char **argv) {
                 throw std::invalid_argument("pt_ladder values must be strictly increasing.");
             }
         }
+        const bool explicit_pt_swap_period_sweeps = vm.count("pt_swap_period_sweeps") > 0
+            && !vm["pt_swap_period_sweeps"].defaulted();
+        if (vm.count("pt_swap_period") > 0 && explicit_pt_swap_period_sweeps) {
+            throw std::invalid_argument("Use either pt_swap_period_sweeps or legacy pt_swap_period, not both.");
+        }
+        if (!std::isfinite(pt_swap_period_sweeps) || pt_swap_period_sweeps <= 0.0) {
+            throw std::invalid_argument("pt_swap_period_sweeps must be finite and positive.");
+        }
+        if (vm.count("pt_swap_period") > 0 && pt_swap_period <= 0) {
+            throw std::invalid_argument("pt_swap_period must be positive when supplied.");
+        }
         paratoric::ParallelTemperingSpec pt_spec = {
             .enabled = !pt_ladder.empty(),
             .ladder_s = pt_ladder,
+            .swap_period_sweeps = pt_swap_period_sweeps,
             .swap_period = pt_swap_period,
             .validate_swap_weight = pt_validate_swap_weight
         };

@@ -5,15 +5,13 @@
 
 #include "lattice/lattice.hpp"
 #include "lattice/flat_square_lattice.hpp"
+#include "logging/trivial_log.hpp"
 #include "paratoric/types/types.hpp"
 #include "rng/rng.hpp"
 #include "statistics/autocorrelation.hpp"
 #include "statistics/bootstrap.hpp"
 
 #include <boost/container/small_vector.hpp>
-#include <boost/log/core.hpp> 
-#include <boost/log/expressions.hpp> 
-#include <boost/log/trivial.hpp> 
 
 #include <algorithm> 
 #include <chrono>
@@ -251,6 +249,35 @@ struct MpiFinalizeGuard {
 
 template<char B>
 concept ValidBasis = (B == 'x' || B == 'z');
+
+inline std::int64_t square_lattice_sweep_size_moves(const LatSpec& lat_spec) {
+    if (lat_spec.system_size <= 0) {
+        throw std::invalid_argument("system_size must be positive for PT sweep scheduling.");
+    }
+    const auto L = static_cast<std::int64_t>(lat_spec.system_size);
+    if (L > std::numeric_limits<std::int64_t>::max() / (2 * L)) {
+        throw std::overflow_error("system_size is too large for PT sweep scheduling.");
+    }
+    return 2 * L * L;
+}
+
+inline std::int64_t parallel_tempering_swap_period_moves(
+    const ParallelTemperingSpec& pt_spec,
+    const LatSpec& lat_spec
+) {
+    if (pt_spec.swap_period > 0) {
+        return static_cast<std::int64_t>(pt_spec.swap_period);
+    }
+    if (!(pt_spec.swap_period_sweeps > 0.0)) {
+        throw std::invalid_argument("pt_swap_period_sweeps must be finite and positive.");
+    }
+    const double moves = pt_spec.swap_period_sweeps
+        * static_cast<double>(square_lattice_sweep_size_moves(lat_spec));
+    if (!(moves <= static_cast<double>(std::numeric_limits<std::int64_t>::max()))) {
+        throw std::overflow_error("pt_swap_period_sweeps is too large.");
+    }
+    return std::max<std::int64_t>(1, std::llround(moves));
+}
 
 template<char Basis, typename LatticeT = Lattice>
 requires ValidBasis<Basis>
@@ -1634,7 +1661,7 @@ double ExtendedToricCodeQMC<Basis, LatticeT>::validate_parallel_tempering_swap_w
                 static_cast<std::int64_t>(std::max(config.sim_spec.N_thermalization, 0))
                 + static_cast<std::int64_t>(std::max(config.sim_spec.N_samples, 1))
                     * static_cast<std::int64_t>(std::max(config.sim_spec.N_between_samples, 1));
-            const int swap_period = std::max(config.pt_spec.swap_period, 1);
+            const std::int64_t swap_period = parallel_tempering_swap_period_moves(config.pt_spec, config.lat_spec);
             for (std::int64_t step = 1; step <= steps; ++step) {
                 metropolis_step(local_lat, local_energy, acc_ratio, config.lat_spec.beta, local_s, 1.0, 1.0, local_s);
                 metropolis_step(partner_lat, partner_energy, acc_ratio, config.lat_spec.beta, partner_s, 1.0, 1.0, partner_s);
@@ -3680,10 +3707,9 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
         if (config.pt_spec.ladder_s.size() != static_cast<size_t>(pt_world_size)) {
             throw std::invalid_argument("PT ladder size must equal the MPI world size.");
         }
-        if (config.pt_spec.swap_period <= 0) {
-            throw std::invalid_argument("pt_swap_period must be positive.");
-        }
     }
+    const std::int64_t pt_swap_period_moves =
+        pt_enabled ? parallel_tempering_swap_period_moves(config.pt_spec, config.lat_spec) : 1;
 
     auto obs_func_vec = get_obs_func_vec(config.sim_spec.observables);
     auto obs_type_vec = get_obs_type_vec(config.sim_spec.observables);
@@ -3811,8 +3837,8 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                 );
                 if constexpr (std::same_as<LatticeT, Lattice>) {
 #ifdef PARATORIC_HAS_MPI
-                if (pt_enabled && ((i + 1) % config.pt_spec.swap_period) == 0) {
-                    const int phase = static_cast<int>(((i + 1) / config.pt_spec.swap_period) & 1);
+                if (pt_enabled && ((i + 1) % pt_swap_period_moves) == 0) {
+                    const int phase = static_cast<int>(((i + 1) / pt_swap_period_moves) & 1);
                     const int partner = (pt_rank % 2 == phase) ? pt_rank + 1 : pt_rank - 1;
                     if (partner >= 0 && partner < pt_world_size) {
                         ++pt_diagnostics.swap_attempted;
@@ -3909,8 +3935,8 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
             );
             if constexpr (std::same_as<LatticeT, Lattice>) {
 #ifdef PARATORIC_HAS_MPI
-            if (pt_enabled && (total_metropolis_step_count % config.pt_spec.swap_period) == 0) {
-                const int phase = static_cast<int>((total_metropolis_step_count / config.pt_spec.swap_period) & 1);
+            if (pt_enabled && (total_metropolis_step_count % pt_swap_period_moves) == 0) {
+                const int phase = static_cast<int>((total_metropolis_step_count / pt_swap_period_moves) & 1);
                 const int partner = (pt_rank % 2 == phase) ? pt_rank + 1 : pt_rank - 1;
                 if (partner >= 0 && partner < pt_world_size) {
                     ++pt_diagnostics.swap_attempted;

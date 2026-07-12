@@ -1202,6 +1202,57 @@ BOOST_AUTO_TEST_CASE(boost_pt_swap_weight_matches_bruteforce_l8) {
     BOOST_TEST(max_deviation < 1e-8);
 }
 
+BOOST_AUTO_TEST_CASE(pt_swap_period_sweeps_resolves_to_l2_scaled_moves) {
+    paratoric::LatSpec l8_lat_spec = {
+        .basis = 'z',
+        .lattice_type = "square",
+        .system_size = 8,
+        .beta = 8.0,
+        .boundaries = "periodic",
+        .default_spin = 1,
+        .lattice_backend = "boost"
+    };
+    paratoric::LatSpec l120_lat_spec = l8_lat_spec;
+    l120_lat_spec.system_size = 120;
+    l120_lat_spec.beta = 120.0;
+
+    paratoric::ParallelTemperingSpec default_sweeps = {
+        .enabled = true,
+        .ladder_s = {0.22, 0.30}
+    };
+    BOOST_CHECK_EQUAL(paratoric::square_lattice_sweep_size_moves(l8_lat_spec), 128);
+    BOOST_CHECK_EQUAL(paratoric::square_lattice_sweep_size_moves(l120_lat_spec), 28800);
+    BOOST_CHECK_EQUAL(paratoric::parallel_tempering_swap_period_moves(default_sweeps, l8_lat_spec), 256);
+    BOOST_CHECK_EQUAL(paratoric::parallel_tempering_swap_period_moves(default_sweeps, l120_lat_spec), 57600);
+
+    paratoric::ParallelTemperingSpec equivalent_old_l8 = {
+        .enabled = true,
+        .ladder_s = {0.22, 0.30},
+        .swap_period_sweeps = 1000.0 / 128.0
+    };
+    const auto equivalent_old_l8_moves =
+        paratoric::parallel_tempering_swap_period_moves(equivalent_old_l8, l8_lat_spec);
+    BOOST_CHECK_EQUAL(equivalent_old_l8_moves, 1000);
+
+    std::vector<std::int64_t> swap_attempt_steps;
+    for (std::int64_t step = 1; step <= 3 * equivalent_old_l8_moves; ++step) {
+        if (step % equivalent_old_l8_moves == 0) {
+            swap_attempt_steps.emplace_back(step);
+        }
+    }
+    BOOST_REQUIRE_EQUAL(swap_attempt_steps.size(), 3);
+    BOOST_CHECK_EQUAL(swap_attempt_steps[1] - swap_attempt_steps[0], equivalent_old_l8_moves);
+    BOOST_CHECK_EQUAL(swap_attempt_steps[2] - swap_attempt_steps[1], equivalent_old_l8_moves);
+
+    paratoric::ParallelTemperingSpec legacy_raw_moves = {
+        .enabled = true,
+        .ladder_s = {0.22, 0.30},
+        .swap_period_sweeps = 2.0,
+        .swap_period = 1000
+    };
+    BOOST_CHECK_EQUAL(paratoric::parallel_tempering_swap_period_moves(legacy_raw_moves, l120_lat_spec), 1000);
+}
+
 BOOST_AUTO_TEST_CASE(boost_pt_swap_weight_matches_bruteforce_l8_alt_seed_ladder) {
     paratoric::LatSpec lat_spec = {
         .basis = 'z',

@@ -115,7 +115,8 @@ struct OutSpec {
 struct ParallelTemperingSpec {
     bool enabled = false;
     std::vector<double> ladder_s{};
-    int swap_period = 1000;
+    double swap_period_sweeps = 2.0;
+    int swap_period = 0; // Legacy raw Metropolis-move period; 0 means use sweeps.
     bool validate_swap_weight = false;
 };
 
