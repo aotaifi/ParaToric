@@ -618,7 +618,6 @@ class ExtendedToricCodeQMC {
         std::function<std::complex<double>(LatticeT&, double, double, double, double)> 
         sigma_x_static_susceptibility_obs 
         = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
-            lat.rotate_imag_time();
             if constexpr (Basis == 'x') return lat.get_diag_M_M(); 
             else return lat.get_non_diag_M_M();
         };
@@ -626,7 +625,6 @@ class ExtendedToricCodeQMC {
         std::function<std::complex<double>(LatticeT&, double, double, double, double)> 
         sigma_x_dynamical_susceptibility_obs 
         = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
-            lat.rotate_imag_time();
             if constexpr (Basis == 'x') return lat.get_diag_dynamical_M_M();
             else return lat.get_kL_kR_single() / static_cast<double>(std::sqrt(2) * h);
         };
@@ -643,7 +641,6 @@ class ExtendedToricCodeQMC {
         std::function<std::complex<double>(LatticeT&, double, double, double, double)> 
         sigma_z_static_susceptibility_obs 
         = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
-            lat.rotate_imag_time();
             if constexpr (Basis == 'x') return lat.get_non_diag_M_M(); 
             else return lat.get_diag_M_M();
         };
@@ -651,7 +648,6 @@ class ExtendedToricCodeQMC {
         std::function<std::complex<double>(LatticeT&, double, double, double, double)> 
         sigma_z_dynamical_susceptibility_obs 
         = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
-            lat.rotate_imag_time();
             if constexpr (Basis == 'x') 
                 return lat.get_kL_kR_single() / static_cast<double>(std::sqrt(2) * lmbda);
             else 
@@ -3632,13 +3628,13 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_thermalization(
         if (reset_potential_energy_count > 0 && total_metropolis_step_count % reset_potential_energy_count == 0) [[unlikely]] {
             // avoid accumulation of small numerical errors leading to bias
             lat.init_potential_energy();
-            lat.rotate_imag_time();
             integrated_pot_energy = total_integrated_pot_energy(
                 lat, config.param_spec.h, config.param_spec.mu, 
                 config.param_spec.J, config.param_spec.lmbda
             );
         }
 
+        lat.rotate_imag_time();
         for (size_t k = 0; k < config.sim_spec.observables.size(); k++) {
             observable_vector[k].emplace_back(
                 obs_func_vec[k](lat, config.param_spec.h, config.param_spec.lmbda, config.param_spec.mu, config.param_spec.J)
@@ -4084,7 +4080,6 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
             if (reset_potential_energy_count > 0 && total_metropolis_step_count % reset_potential_energy_count == 0) [[unlikely]] {
                 // avoid accumulation of small numerical errors leading to bias
                 lat.init_potential_energy();
-                lat.rotate_imag_time();
                 integrated_pot_energy = total_integrated_pot_energy(
                     lat, runtime_h, runtime_mu, runtime_J, runtime_lmbda
                 );
@@ -4092,6 +4087,7 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
         }
         finish_acceptance_block();
 
+        lat.rotate_imag_time();
         for (size_t k = 0; k < config.sim_spec.observables.size(); k++) {
             observable_vector[k].emplace_back(
                 obs_func_vec[k](lat, runtime_h, runtime_lmbda, runtime_mu, runtime_J)
@@ -4470,7 +4466,6 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_hysteresis(
             if (reset_potential_energy_count > 0 && total_metropolis_step_count % reset_potential_energy_count == 0) [[unlikely]] {
                 // avoid accumulation of small numerical errors leading to bias
                 lat.init_potential_energy();
-                lat.rotate_imag_time();
                 integrated_pot_energy = total_integrated_pot_energy(
                     lat, h, config.param_spec.mu, 
                     config.param_spec.J, lmbda
@@ -4488,7 +4483,6 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_hysteresis(
                 if (reset_potential_energy_count > 0 && total_metropolis_step_count % reset_potential_energy_count == 0) [[unlikely]] {
                     // avoid accumulation of small numerical errors leading to bias
                     lat.init_potential_energy();
-                    lat.rotate_imag_time();
                     integrated_pot_energy = total_integrated_pot_energy(
                         lat, h, config.param_spec.mu, 
                         config.param_spec.J, lmbda
@@ -4496,6 +4490,7 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_hysteresis(
                 }
             }
 
+            lat.rotate_imag_time();
             for (size_t k = 0; k < config.sim_spec.observables.size(); k++)
                 observable_vector[k].emplace_back(obs_func_vec[k](lat, h, lmbda, config.param_spec.mu, config.param_spec.J));
 

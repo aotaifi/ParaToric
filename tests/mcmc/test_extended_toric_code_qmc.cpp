@@ -8,6 +8,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <array>
+#include <cstdint>
 #include <filesystem>
 #include <vector>
 #include <string>
@@ -33,6 +35,51 @@ double lmbda_therm_top = 0.2;
 std::vector<double> lmbda_hys_top {0.05, 0.1, 0.15};
 double mu_top = 0.9; 
 double J_top = 1.1; 
+
+class RotationRecordingLattice : public Lattice {
+public:
+    inline static std::uint64_t rotation_index = 0;
+    inline static std::vector<std::uint64_t> percolation_probability_indices{};
+    inline static std::vector<std::uint64_t> percolation_strength_indices{};
+    inline static std::vector<std::uint64_t> plaquette_percolation_probability_indices{};
+    inline static std::vector<std::uint64_t> plaquette_percolation_strength_indices{};
+
+    RotationRecordingLattice(const LatSpec& lat_spec, std::shared_ptr<RNG> rng = nullptr)
+        : Lattice(lat_spec, std::move(rng)) {}
+
+    void rotate_imag_time() {
+        ++rotation_index;
+        Lattice::rotate_imag_time();
+    }
+
+    double percolation_probability() {
+        percolation_probability_indices.emplace_back(rotation_index);
+        return Lattice::percolation_probability();
+    }
+
+    double percolation_strength() {
+        percolation_strength_indices.emplace_back(rotation_index);
+        return Lattice::percolation_strength();
+    }
+
+    double plaquette_percolation_probability() {
+        plaquette_percolation_probability_indices.emplace_back(rotation_index);
+        return Lattice::plaquette_percolation_probability();
+    }
+
+    double plaquette_percolation_strength() {
+        plaquette_percolation_strength_indices.emplace_back(rotation_index);
+        return Lattice::plaquette_percolation_strength();
+    }
+
+    static void reset_rotation_audit() {
+        rotation_index = 0;
+        percolation_probability_indices.clear();
+        percolation_strength_indices.clear();
+        plaquette_percolation_probability_indices.clear();
+        plaquette_percolation_strength_indices.clear();
+    }
+};
 
 // Negative J parameter set
 double h_neg = 0.1;  
@@ -207,6 +254,46 @@ BOOST_AUTO_TEST_CASE(get_sample_test_1) {
     auto result = mc.get_sample(
         Config{sim_spec, param_spec, lat_spec, out_spec}
     );
+}
+
+BOOST_AUTO_TEST_CASE(percolation_observables_share_one_post_rotation_slice_per_sample) {
+    RotationRecordingLattice::reset_rotation_audit();
+    auto mc = ExtendedToricCodeQMC<'x', RotationRecordingLattice>();
+    LatSpec lat_spec = {
+        'x', "square", 4, 4., "periodic", 1
+    };
+    ParamSpec param_spec = {
+        .mu = 0.9, .h = 0.4, .J = 1.1, .lmbda = 0.3
+    };
+    SimSpec sim_spec = {
+        .N_samples = 3,
+        .N_thermalization = 2,
+        .N_between_samples = 2,
+        .N_resamples = 8,
+        .seed = 20260712,
+        .observables = {
+            "percolation_probability", "percolation_strength",
+            "plaquette_percolation_probability", "plaquette_percolation_strength"
+        }
+    };
+
+    mc.get_sample(Config{sim_spec, param_spec, lat_spec, OutSpec{}});
+
+    const std::array<std::vector<std::uint64_t>*, 4> indices = {
+        &RotationRecordingLattice::percolation_probability_indices,
+        &RotationRecordingLattice::percolation_strength_indices,
+        &RotationRecordingLattice::plaquette_percolation_probability_indices,
+        &RotationRecordingLattice::plaquette_percolation_strength_indices
+    };
+    for (const auto* index : indices) {
+        BOOST_REQUIRE_EQUAL(index->size(), static_cast<size_t>(sim_spec.N_samples));
+    }
+    for (size_t sample = 0; sample < static_cast<size_t>(sim_spec.N_samples); ++sample) {
+        const auto expected_index = static_cast<std::uint64_t>(sample + 1);
+        for (const auto* index : indices) {
+            BOOST_CHECK_EQUAL(index->at(sample), expected_index);
+        }
+    }
 }
 
 BOOST_AUTO_TEST_CASE(get_sample_test_2) {
