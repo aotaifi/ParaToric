@@ -460,6 +460,66 @@ STATUS: topological/MCP e-vs-m sub-step PAUSED on this convergence study. The
 single-z-sector Linsel benchmark, the rotate fix (bug f08fd9d — real cross-
 observable same-slice fix), and D4 all proceed independently.
 
+### UPDATE 2026-07-12f: convergence study is DECISIVE — the "cross-basis wiring issue" is a WRONG-PAIR comparison (my instruction was under-specified)
+
+Jarvis convergence study (s=0.22, L=8, cold/hot both bases to 1M sweeps):
+WITHIN each basis cold/hot CONVERGE (z gap 0.010, x gap 0.004) => under-
+thermalization AND sector-trapping both RULED OUT. ACROSS bases z-perc~0.29 vs
+x-perc~0.75 flat, ~0.45 apart, no closing => a wiring/mapping question, not physics.
+
+ROOT CAUSE (my error to own): "check z-e == x-m" (UPDATE 2026-07-12d) was
+under-specified. The em-duality swaps NOT ONLY sigma_z<->sigma_x (z<->x basis)
+BUT ALSO the LATTICE direct<->dual (VERTICES<->PLAQUETTES: electric charges on
+vertices, magnetic fluxes on plaquettes). Jarvis compared same-GRAPH channels
+(z-percolation clusters vertices vs x-percolation clusters vertices) — those are
+NOT a dual pair. Four channels:
+  z-percolation_* = E (electric, vertices, sigma_z)
+  z-plaquette_percolation_* = E' (plaquettes, sigma_z)
+  x-percolation_* = M (vertices, sigma_x)
+  x-plaquette_percolation_* = M' (plaquettes, sigma_x)
+CORRECT self-dual pairs (duality swaps vertices<->plaquettes AND z<->x):
+  E  <-> M'  i.e.  z-percolation_*  ==  x-plaquette_percolation_*
+  E' <-> M   i.e.  z-plaquette_*    ==  x-percolation_*
+Jarvis compared E(0.29) to M(0.75); E pairs with M', not M — gap EXPECTED, NOT a bug.
+Consistent with prior data: dual-graph channel >> direct-graph channel, so
+z-perc(0.29,small)~x-plaq(predict small) and z-plaq(predict large)~x-perc(0.75).
+
+CONFIRMATORY TEST (cheap; s=0.22 chains already equilibrated at 1M sweeps):
+measure ALL FOUR channels at s=0.22 both bases; check z-perc==x-plaq AND
+z-plaq==x-perc. Match (with E!=M) => confirmed, no code bug. Correct pairs STILL
+disagree => genuine mapping/observable bug, audit deeper.
+
+### UPDATE 2026-07-12g: dual pairing CONFIRMED via probability; strength mismatch is NORMALIZATION, not a bug
+
+4-channel test at s=0.22 (Jarvis): PROBABILITY components MATCH — z-perc
+0.2863(32) vs x-plaq 0.2938(44) = 1.37 sigma; z-plaq 0.7451(32) vs x-perc
+0.7420(33) = 0.66 sigma. => dual pairing CORRECT, percolation DETECTION
+dual-consistent, e/m duality CONFIRMED. The topological/MCP e/m sub-step is
+UNBLOCKED (use PROBABILITY for the duality/I2 check).
+
+STRENGTH components disagree BUT it is a NORMALIZATION/DEFINITION difference, NOT
+a bug (verified in code lattice.cpp:3729,3782):
+ - percolation_strength (vertex) = (#-1 EDGES in largest cluster) / edge_count(2L^2)
+ - plaquette_percolation_strength = (#PLAQUETTES in largest cluster) / plaq_count(L^2)
+ Different objects (edges vs plaquettes) + different denominators. Proof it is
+ definitional not physics: BOTH dual pairs off by the SAME basis-independent
+ factor ~1.80 (plaquette-channel/vertex-channel: 0.142/0.079=1.80,
+ 0.548/0.305=1.80). A mapping/compute bug would not give an identical factor.
+ EXPONENT-SAFE: both scale as P~L^(-beta/nu) (cluster ~L^(d-beta/nu) counting
+ edges OR plaquettes; total ~L^d either way) — the constant prefactor cancels in
+ beta/nu. So neither channel's exponent is affected.
+
+DIRECTIVE (do NOT rush a fix):
+ - Do NOT force the two strengths equal (neither definition is wrong; forcing it
+   risks a real error).
+ - Duality/I2 check: use PROBABILITY (passes). e/m sub-step proceeds.
+ - Use each strength channel ONLY for its OWN FSS (beta/nu); never cross-compare
+   absolute strengths between vertex and plaquette channels.
+ - DOCUMENT the normalization difference so ~1.80 is not re-flagged as a bug.
+ - Optional low-pri: check if ~1.80 is L-independent (L=8/16/24). Constant =>
+   trivial geometric normalization; L-dependent => channels have different
+   geometric content, keep separate (fine — one POP used for the campaign anyway).
+
 ## MASTER PRE-PILOT SEQUENCE (Feynman, 2026-07-10 — supersedes the earlier
 ## "Finalized next steps" list; integrates RESOLVE-FIRST + pt_architecture.md)
 

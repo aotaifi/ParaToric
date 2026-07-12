@@ -21,3 +21,7 @@ adding new one-off analysis code.
   at L=16,24,32. Each independent task thermalizes to one candidate depth, then
   records 100 samples at 25-sweep spacing; base -1-edge density is derived from
   `sigma_z` as `(1-sigma_z)/2`.
+- `submit_linsel_percolation_benchmark_20260712.sbatch`: fixed-observable-pipeline
+  rerun of the Linsel off-self-dual benchmark. It maps one L/h/cold-hot
+  combination per array task, applies the validated per-L thermalization depth,
+  and records 1000 plaquette POP/POS samples at 25-sweep spacing plus `sigma_z`.
