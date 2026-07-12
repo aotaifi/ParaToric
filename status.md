@@ -211,13 +211,21 @@ Consequences (Feynman, unchanged/new):
   self-dual point. Added to Next action below.
 
 ## Next action
-1. Codex access confirmed restored by PI (2026-07-12). Martina's D4 review:
-   PASS on all 7 spec points, no defect found (commit `e42914d` clean). James's
-   thermalization-convergence scan staged + submitted under danger-full-access
-   (Codex sandbox's known intermittent Slurm-DNS issue recurred, standing
-   workaround applied): job `15038690`, array `[0-17]` (L={16,24,32} x
-   h={0.15,0.335,0.50} x default_spin{+1,-1}), 30 min walltime/task, queued.
-   Readout pending job completion (a later FRESH dispatch, not polled now).
+1. Job `15038690` (L={16,24,32} x h={0.15,0.335,0.50} x default_spin{+1,-1}
+   thermalization checkpoint scan): all 18/18 COMPLETED. Readout done, but
+   INCONCLUSIVE by design, not a negative result: the checkpoint scan
+   (reusing the decisive-experiment single-snapshot pattern) records ONE
+   configuration per checkpoint, not a sampling window with mean/error — so
+   "cold/hot differ" cannot be distinguished from ordinary sampling noise at
+   any of the 9 (L,h) points (Jones's readout: closest was L=32,h=0.15,
+   final density/strength diffs 0.0005/0.0225, but noisy en route — not a
+   clean plateau-together or plateau-apart signal anywhere). This is a
+   MEASUREMENT-DESIGN gap (single snapshot vs proper statistics), not a
+   physics question — fixing directly rather than routing to Feynman, same
+   class of fix as the earlier G2 sector-rate scan v1->v2 redesign.
+   NEXT: redispatch with a proper sampling-window design (mean+stderr over
+   real N_samples per candidate depth, cold vs hot) at a bounded subset of
+   depths (not all 7 checkpoints) to actually establish convergence.
 2. X-BASIS self-duality check: FIRST PASS was uncontrolled for thermalization
    (Feynman UPDATE 2026-07-12e retracted the "duality failure" reading;
    flagged a specific alternative — WINDING-SECTOR TRAPPING, since all
