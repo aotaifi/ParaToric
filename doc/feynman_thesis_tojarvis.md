@@ -396,6 +396,43 @@ FINALIZED NEXT STEP (closes Step 1):
     scan h, check for the h_c~0.335 / nu~0.65 crossing. The earlier "no clean
     crossing + start-sensitivity" is fully explained by steps 2+3.
 
+### UPDATE 2026-07-12d: CORRECTION — the two z-channels are BOTH electric-sector
+### (PI physics catch: topological phase needs BOTH e and m)
+
+CORRECTS 2026-07-12c framing ("plaquette = the POP, electric = its dual"): that
+captured only the ELECTRIC sector and mislabeled it. Code fact (verified):
+is_winding_percolating (lattice.cpp:3334) clusters VERTICES via sigma_z=-1 edges;
+is_winding_plaquette_percolating (:3597) clusters PLAQUETTES via sigma_z=-1 edges.
+BOTH cluster the SAME sigma_z=-1 edge set (direct vs dual graph). => they are two
+VIEWS OF THE ELECTRIC (sigma_z) STRING SECTOR, NOT independent e and m order
+parameters.
+
+PHYSICS (PI point, correct): the topological/deconfined phase is BOTH e- and
+m-deconfined, so its honest signature is BOTH electric-string AND magnetic-string
+percolation positive.
+ - e (electric) = sigma_z-string percolation -> z-basis (both current channels here).
+ - m (magnetic) = flux / sigma_x-string percolation -> x-basis by em self-duality;
+   NOT measured by either z-basis percolation channel.
+ => "both POPs positive" (topological signature) requires running BOTH BASES
+    (z->e, x->m). At the SELF-DUAL point e and m are symmetric, so z-basis-e and
+    x-basis-m percolation should be EQUAL — a real MCP signature and an independent
+    duality cross-check (beyond I2).
+
+NOT CLAIMED: the exact percolation-theory reason the dual (plaquette) channel
+lights up at ~40% density while the direct (electric) does not. The empirical fact
+(dual percolates at lower -1 density) stands; the p_c=0.5 "planar duality" story
+from 2026-07-12c is NOT rigorously derived and is withdrawn as an assertion.
+
+CONSEQUENCES:
+ - Linsel benchmark (unchanged): Linsel measure ONE electric POP; validate
+   whichever z-channel reproduces h_c~0.335. Single-sector check, fine.
+ - Topological/MCP characterization (NEW): needs BOTH bases — z-basis e-percolation
+   AND x-basis m-percolation — with equality at the self-dual point as a signature.
+   Cheap at small L, no PT. Add as an explicit benchmark sub-step.
+ - VERIFY BEFORE LOCKING: run the same benchmark point in the X-BASIS, confirm its
+   electric channel gives the complementary/magnetic behavior, and that at a
+   self-dual point (h=lmbda) z-basis-e percolation == x-basis-m percolation.
+
 ## MASTER PRE-PILOT SEQUENCE (Feynman, 2026-07-10 — supersedes the earlier
 ## "Finalized next steps" list; integrates RESOLVE-FIRST + pt_architecture.md)
 
