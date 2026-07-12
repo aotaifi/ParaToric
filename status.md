@@ -20,42 +20,41 @@ caught and fixed along the way (see tracker CORRECTION row + `12ebdb8`).
 checkpoint composition is implemented** — not needed for the pilot (which fits in one
 2-day block), but mandatory before any M2 production (L=192 needs 46-91 days/chain).
 
-## G2 pilot — Feynman's finalized ordered plan (2026-07-10), step 1 needs REDESIGN
-1. **Wide-s sector-rate scan — RAN, BUT CANNOT ANSWER ITS OWN QUESTION. Needs
-   redesign before resubmitting.** Slurm array `15012336_[0-7]` finished: only
-   tasks 0 (s=0.10, 15h29m) and 1 (s=0.16, 18h03m) COMPLETED; tasks 2-7
-   (s=0.22-0.50) all hit the 20h walltime and TIMED OUT with ZERO output (this
-   code only writes `obs.h5` once, at the very end — no partial/incremental
-   output exists for the 6 timed-out points). Real, empirically-observed cost
-   INCREASES with s (55768s at s=0.10 -> 65012s at s=0.16, +16.6% for a modest
-   s step) — the uniform N_samples/N_between_samples across all 8 points was
-   not a safe assumption; higher-s points need either more walltime or fewer
-   samples/attempts.
-   **More important finding (Martina code-trace, this session)**: the scan's
-   entire premise — infer winding/cut-sector-change RATE from
-   `accepted_by_update` — is not achievable with what was actually measured.
-   `global_single_spin_flip` (index 2, exactly zero accepts in both completed
-   runs over ~7.14e9 attempts each) is just an ordinary single-edge global flip,
-   NOT a dedicated cut-changing move (contradicts an earlier, wrong assumption
-   from this same session). The TRUE cut/winding-relevant behavior is a rare
-   "wrap-around" special case buried inside the ordinary accept logic of update
-   types 1/3/5, and **no diagnostic anywhere separates that sub-case from their
-   ordinary (common, high-acceptance) behavior** — so indices 1/3/5's reported
-   11-98% acceptance rates are uninformative for this question, dominated by
-   their ordinary non-wrap behavior. Worse: this run used `--full_time_series 0`,
-   so the one thing that COULD reveal sector changes directly (a per-sample
-   `anyon_count`/`percolation_probability` series) was never even recorded.
-   **Net result: ~34 core-hours of real compute (2 completed points) plus 6
-   timeouts produced move-acceptance statistics, but NOT the winding-sector-
-   mixing-rate-vs-s answer the scan exists to produce.**
-   REDESIGN NEEDED before resubmitting: rerun with `--full_time_series 1` and
-   analyze the `anyon_count`/`percolation_probability` per-sample series for
-   sector changes (or add a dedicated wrap/cut-accept counter to the code —
-   more invasive, would need its own review cycle); also re-size N_samples/
-   N_between_samples per-s given the observed cost increase with s, rather
-   than reusing one size across the whole [0.10,0.50] range. NOT YET
-   REDESIGNED OR RESUBMITTED — flagging to PI/Feynman before spending another
-   ~20h wall-clock cycle on this.
+## G2 pilot — Feynman's finalized ordered plan (2026-07-10), step 1 gives a NULL result
+1. **Wide-s sector-rate scan — v1 failed to measure anything (redesigned as v2),
+   v2 ran cleanly but returned a NULL result across the entire tested range.
+   Needs Feynman/PI physics read before proceeding — NOT an engineering fix.**
+
+   v1 (`15012336`): only 2/8 points completed (20h walltime too short for
+   higher s, cost increases with s), and — bigger problem — used
+   `--full_time_series 0` so it structurally could not measure sector changes
+   at all; its move-acceptance-based proxy (`accepted_by_update` index 2) was
+   also confirmed by code trace to be the wrong quantity (an ordinary move,
+   not a dedicated cut-changing one).
+
+   v2 (`15034719`, 2026-07-11/12): redesigned as 8 s-values x 8 parallel
+   independent chains (64 tasks, embarrassingly parallel, no MPI needed),
+   1500 samples/chain, `--full_time_series 1`, `percolation_probability`/
+   `percolation_strength`/`anyon_count` all recorded per-sample this time.
+   Ran cleanly — 57/64 done within ~9h (no timeouts, redesign worked for
+   wall-clock efficiency), remaining 6 (all s=0.50, the highest/slowest point)
+   still running with headroom on their 8h cap.
+
+   **Result: `percolation_probability`/`percolation_strength` is EXACTLY 0.0
+   for every completed chain at every s-value tested (0.10 through 0.46, plus
+   2 partial chains at 0.50) — zero percolation anywhere across the entire
+   [0.10, 0.50] range, 84000+ samples analyzed. `anyon_count` confirmed NOT
+   usable as a sector-change proxy either (91-97% of adjacent samples differ
+   — ordinary local noise, not discrete topological jumps).**
+
+   Two live interpretations, NOT distinguished yet (a physics call, not an
+   engineering one): (a) the system is confined/non-percolating throughout
+   this entire s-range and the actual multicritical/deconfinement region on
+   the self-dual line lies OUTSIDE [0.10,0.50] — the scan never got near the
+   transition; or (b) a measurement issue (percolation observable needs far
+   more than 1500 samples/chain to see even one percolating cluster at this
+   L, or a convention/threshold issue in how it's computed). Flagged to
+   PI/Feynman — NOT proceeding to step 2 on this data pending that read.
 2. Ladder spacing by DIRECT per-link acceptance (NOT snapshot variance — that was
    the resolved methodology error, see below): pick a trial ladder between the
    scan's endpoints, run one short real PT trial, read `swap_accepted_by_link`/
