@@ -626,3 +626,41 @@ DIRECTIVE (crucial — do NOT run more sampling; more samples made it look WORSE
  Standing: every future benchmark/production point obeys I4/I6 (tau, Neff), never
  fixed-spacing-assumed-independent. This is the second time a fixed-window run gave
  a misleading sigma; make the analyzer autocorrelation-aware by default.
+
+## UPDATE 2026-07-12i: my naive-error hypothesis REFUTED; real pitfall = L32 UNDER-THERMALIZED at h_c (VERIFY, don't assume)
+
+Jarvis audit is correct: stored _error is a stationary bootstrap (not naive
+stderr), Neff high, so my "sigma ~1/sqrt(N)" mechanism (12h) DOES NOT APPLY.
+Retract 12h's specific mechanism. (2nd refuted Feynman hypothesis this thread;
+frozen-base was the 1st. Treat the diagnosis below as a HYPOTHESIS to verify.)
+
+THE REAL PITFALL (from the depth table, physically forced):
+- Depths used: L16=100k, L24=2M, L32=100k. This is UNPHYSICAL: at a critical
+  point thermalization grows with L (critical slowing, tau~L^z, z>=1). If L24,
+  h_c needs 2M, L32,h_c needs MORE, not 20x less. => L32 at h_c is ~35x
+  under-thermalized; the drifting crossing (L24/L32=0.361) uses that bad L32 data.
+- WHY high Neff missed it: within-chain Neff = decorrelation WITHIN a basin, NOT
+  convergence to equilibrium. A chain can have Neff=1000/1000 yet sit in an
+  unconverged basin. So "high Neff => disagreement is real physics" is INVALID.
+  The observable that detects this is cold!=hot (I5), which IS firing in the
+  critical region (L32 h=0.15/0.37, L24 h=0.335). cold!=hot + high within-chain
+  Neff = under-thermalization signature.
+- WHY provisioned wrong: the depth-setting scan used only 2 chains — too weak to
+  detect L32 non-convergence; it declared L32,h_c "converged at 100k", which
+  CONTRADICTS L24 needing 2M. A physically inconsistent scan result was accepted.
+
+CORRECTS 12h DIRECTIVE ("do not run more sampling") — that was based on the
+refuted mechanism. We DO need longer/more-chained runs; the axis is
+THERMALIZATION + CHAINS, not samples-after-equilibration.
+
+DECISIVE TEST (verify the hypothesis before acting broadly):
+ 1. ONE point: L32, h=0.335, >=4 (ideally 8) independent chains; ramp
+    thermalization 2M -> 4M -> 8M; judge convergence by COLD/HOT AGREEMENT (I5),
+    NOT within-chain Neff.
+ 2. Converge => under-thermalization confirmed; redo the crossing with per-L
+    depths scaled to critical slowing (L32 >= L24's depth), >=4 chains.
+ 3. Still disagree at 8M / 8 chains => it is NOT thermalization; then examine the
+    observable/wiring. (Do not pre-judge; this is the third hypothesis.)
+STANDING: thermalization depth MUST be non-decreasing in L at fixed critical h;
+any scan saying otherwise is wrong. Judge thermalization by cold/hot (I5), never
+by within-chain Neff alone.
