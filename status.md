@@ -1,121 +1,127 @@
 # Jarvis status — ParaToric (rewrite in place, no diary)
 
-Updated: 2026-07-10.
+Updated: 2026-07-12.
 
 ## Milestone
 - milestone: T1-P1 (M0 infra + G2 pilot GO/NO-GO).
-- Feynman reviewed all of M0 (2026-07-09/10), confirmed the swap-weight formula
-  correct by hand (not just cache==recompute), resolved the energy_lmbda-frozen
-  finding (see below), and gave GO for steps 1-3 + staging the pilot. The actual
-  pilot `sbatch` (step 4) stays PI-gated (harness G2 hard stop) — separate check-in
-  needed before that specific submission, per Feynman's own explicit carve-out.
-- PI said go on 2026-07-10 confirming Feynman's review.
+- **Feynman's earlier "finalized next steps" (2026-07-10) is SUPERSEDED** by the
+  "MASTER PRE-PILOT SEQUENCE" in `doc/feynman_thesis_tojarvis.md` (2026-07-10,
+  authored after reading `doc/pt_architecture.md`) — triggered by the sector-rate
+  scan's null percolation result plus a separately-discovered blocking bug
+  (swap_period defined in moves, not sweeps — quantitatively broken at L=120).
+  PI reviewed and gave go-ahead 2026-07-12 to execute the full master sequence.
 
-## M0 gates — all PASS (see doc/run_tracker_multicritical.md for full detail)
+## M0 gates — all PASS, but "M0 complete" still premature (see tracker for detail)
 G0, G1.1 (checkpoint/restart, `e461686`), G1.2 (PT swap-weight + real multi-rank,
 `b29ff1c`+fix `12ebdb8`), G1.3 (PT-on/off, z<1) all independently verified on real
-cluster hardware. Ensemble-diagnostics tool done (`8b6fd05`). One real regression was
-caught and fixed along the way (see tracker CORRECTION row + `12ebdb8`).
-**Caveat carried from Feynman's audit: "M0 complete" remains premature until PT+
-checkpoint composition is implemented** — not needed for the pilot (which fits in one
-2-day block), but mandatory before any M2 production (L=192 needs 46-91 days/chain).
+cluster hardware — but G1.2/G1.3's "round-trips look fine" result is now understood
+to be an L=8-only artifact (swap_period bug, see below) that does NOT transfer to
+L=120. Ensemble-diagnostics tool done (`8b6fd05`). "M0 complete" premature until
+PT+checkpoint composition exists (M2 blocker) AND the master sequence below clears.
 
-## G2 pilot — Feynman's finalized ordered plan (2026-07-10), step 1 gives a NULL result
-1. **Wide-s sector-rate scan — v1 failed to measure anything (redesigned as v2),
-   v2 ran cleanly but returned a NULL result across the entire tested range.
-   Needs Feynman/PI physics read before proceeding — NOT an engineering fix.**
+## THE MASTER PRE-PILOT SEQUENCE (Feynman 2026-07-10, PI-authorized 2026-07-12)
+Full spec: `doc/feynman_thesis_tojarvis.md` ("MASTER PRE-PILOT SEQUENCE" +
+"RESOLVE FIRST" sections) and `doc/pt_architecture.md` (full D1-D4 rationale +
+H1-H6 ladder-health invariants). Order matters — each step depends on the one
+before it. Pilot sbatch stays PI-gated regardless of how this sequence resolves.
 
-   v1 (`15012336`): only 2/8 points completed (20h walltime too short for
-   higher s, cost increases with s), and — bigger problem — used
-   `--full_time_series 0` so it structurally could not measure sector changes
-   at all; its move-acceptance-based proxy (`accepted_by_update` index 2) was
-   also confirmed by code trace to be the wrong quantity (an ordinary move,
-   not a dedicated cut-changing one).
+0. **D1 [BLOCKING, IN PROGRESS]**: `swap_period` is currently defined in raw
+   Metropolis MOVES, not sweeps (types.hpp:118 default 1000 moves). At L=8 that's
+   ~7.8 sweeps (healthy — why G1.2/G1.3's "6/4 round-trips" looked fine). At L=120
+   that's ~0.035 sweeps (~29 swaps PER sweep) — replicas barely evolve between
+   swaps, so round-trips would be LABEL TRAVEL, not genuine decorrelation. No PT
+   run at L>8 is valid until this is fixed. Fix: swap_period_moves = k*(2*L^2),
+   k=O(1-5) sweeps. This invalidates trusting the L=8 G1.2/G1.3 round-trip counts
+   as evidence for anything at L=120 — they were never wrong, just not
+   transferable (pt_architecture.md Sec 3).
+1. Validate the percolation OBSERVABLE against Linsel arXiv:2401.08770's published
+   benchmark (no PT, small L=10-30, beta=L): lmbda=0.3 fixed (OFF the self-dual
+   line, mu=J=1), scan h across the known 3D Ising critical point h_c=0.335(2),
+   nu=0.65. Run BOTH percolation_* and plaquette_percolation_* channels to
+   identify which one is the electric-string POP (the one reproducing the 0.33
+   crossing). Decides: is the sector-rate scan's all-zero POP result (a) a real
+   phase-placement issue (ladder entirely confined, s* elsewhere) or (b) an
+   observable/basis bug? Convention (PI-corrected 2026-07-10): POP>0 <=>
+   DECONFINED, POP=0 <=> CONFINED (Linsel Fig.3; an earlier note had this
+   backwards, retracted). percolation_probability = is_winding_percolating()
+   (binary, locates crossing s*); percolation_strength = largest_cluster/#links
+   (order-parameter magnitude, for beta/nu) — both gated together, both read 0
+   in the confined phase.
+2. Confirm the DECONFINED RESERVOIR on the self-dual line: at small s (e.g.
+   0.05/0.10/0.20) confirm POP>0 AND percolation_strength>0, AND directly measure
+   tau(percolation) at a small-s rung to verify it decorrelates the slow
+   (percolation/winding) mode, not just fast local modes — if it doesn't, PT has
+   nothing to borrow from (H3 in pt_architecture.md).
+3. LOCATE s*: wide-s scan on the self-dual line, BOTH directions, no
+   pre-committed direction (an earlier "s*<0.22, scan down" guess was retracted
+   as unverified) — cross-check against Linsel Fradkin-Shenker / BPV self-dual
+   MCP. This repeats/extends the earlier sector-rate scan but now informed by a
+   validated observable.
+4. **D2**: build an OFFLINE PT diagnostics analyzer over `ladder_index_by_sample`
+   producing: strict round-trips (visited_both_ranks, not just endpoint
+   touches), tau_ergodic (round-trip time, in SWEEPS), up/down flow f(rung)
+   (non-monotonic = bottleneck). Pilot prerequisite — without this, "PT works"
+   is unfalsifiable (H2/H3 need to be measurable, not assumed from round-trip
+   counts alone).
+5. **D4**: generalize PT from the hardwired self-dual line (s:=h=lmbda) to
+   independent (h, lmbda) ladders — mostly plumbing (the swap weight already has
+   both terms: kink-fugacity in h, integrated-edge in lmbda). Purpose: run PT
+   ACROSS Linsel's KNOWN 3D Ising line (lmbda=0.3 fixed, vary h) at L=20-30 and
+   confirm it recovers h_c=0.335, nu=0.65 WITH PT on. This is a
+   correctness-AT-SCALE check against ground truth, NOT an acceleration
+   benchmark (the Ising line is easy/uninformative about the hard MCP) — our
+   only current PT-correctness check (G1.3) is an L=8 EASY-point comparison;
+   we've never validated PT near a real critical point at moderate L, and the
+   self-dual line has no independent known answer to check against (its
+   transition IS the unknown MCP), hence the need to go off-line.
+6. **D3**: port the PM (acceptance-rate) adaptive ladder builder from
+   `code_ruby_duy_pinning_lab` (cross-project reference, PI-authorized),
+   adapted to s/(h,lmbda), with robustness guards (windowed/smoothed
+   acceptance, alpha-blend with previous ladder, enforce_min_spacing,
+   fixed-iteration cutoff — raw PM is noise-sensitive with few swaps/rank).
+   PM chosen over LOGR (PI empirical finding: acceptance mode refines grids
+   better here). Do NOT port the beta-tempering time-rescaling logic from the
+   reference project — ParaToric tempers s with beta FIXED, no rescaling needed.
+7. **THEN** stage the actual G2 pilot (PI-gated sbatch, harness hard stop
+   regardless of outcome): GO requires BOTH (a) mechanism: per-link acceptance
+   in the 20-40% band, no dead link (<1e-4), strict round-trips, AND (b)
+   physics: per-replica sector change confirmed + tau(percolation_strength)
+   drops >=5x vs the L120 baseline. (a) without (b) = NO-GO.
 
-   v2 (`15034719`, 2026-07-11/12): redesigned as 8 s-values x 8 parallel
-   independent chains (64 tasks, embarrassingly parallel, no MPI needed),
-   1500 samples/chain, `--full_time_series 1`, `percolation_probability`/
-   `percolation_strength`/`anyon_count` all recorded per-sample this time.
-   Ran cleanly — 57/64 done within ~9h (no timeouts, redesign worked for
-   wall-clock efficiency), remaining 6 (all s=0.50, the highest/slowest point)
-   still running with headroom on their 8h cap.
+## STANDING RULE (Feynman 2026-07-10): every future PT run report must include
+swap_period in SWEEPS (not moves), per-link edge acceptance (all links, flag any
+<1e-4 dead link), STRICT round-trips (visited_both_ranks), up/down flow f(rung)
+per replica, tau_ergodic in sweeps, and tau(percolation_strength) at the s* rung.
+A PT run report without all of these is incomplete and must not gate a decision.
 
-   **Result: `percolation_probability`/`percolation_strength` is EXACTLY 0.0
-   for every completed chain at every s-value tested (0.10 through 0.46, plus
-   2 partial chains at 0.50) — zero percolation anywhere across the entire
-   [0.10, 0.50] range, 84000+ samples analyzed. `anyon_count` confirmed NOT
-   usable as a sector-change proxy either (91-97% of adjacent samples differ
-   — ordinary local noise, not discrete topological jumps).**
+## Explicitly ON HOLD (do not scope/start without a new explicit PI decision)
+- WORM algorithm — correct fallback IF the pilot is MARGINAL/NO-GO, but stays on
+  hold until the pilot actually reports. NOT the R5 winding-loop move (which
+  stays permanently out) — a worm adds open worldline ends (head/tail) that
+  change winding number at polynomial cost; ParaToric has no such machinery
+  currently (verified: all current moves are closed pair-create/destroy +
+  local/global flips). A bespoke directed-loop design for this constrained
+  (A_s,B_p) model, real research/engineering scope — a PI call, not something
+  to pre-build.
+- PT+checkpoint composition — M2 production blocker, not a pilot item, not now.
 
-   Two live interpretations, NOT distinguished yet (a physics call, not an
-   engineering one): (a) the system is confined/non-percolating throughout
-   this entire s-range and the actual multicritical/deconfinement region on
-   the self-dual line lies OUTSIDE [0.10,0.50] — the scan never got near the
-   transition; or (b) a measurement issue (percolation observable needs far
-   more than 1500 samples/chain to see even one percolating cluster at this
-   L, or a convention/threshold issue in how it's computed). Flagged to
-   PI/Feynman — NOT proceeding to step 2 on this data pending that read.
-2. Ladder spacing by DIRECT per-link acceptance (NOT snapshot variance — that was
-   the resolved methodology error, see below): pick a trial ladder between the
-   scan's endpoints, run one short real PT trial, read `swap_accepted_by_link`/
-   `swap_attempted_by_link` from HDF5 (io.cpp:307-313), refine toward ~30%/link.
-   Cap N_replicas<=30. NOT STARTED (waits on step 1).
-3. Ensemble launch path: build a minimal driver OR stage >=4 seeded jobs by hand;
-   confirm `scripts/ensemble_diagnostics.py` ingests them correctly (R-hat,
-   cross-chain tau, cold/hot). NOT STARTED.
-4. G2 pilot sbatch (PI-gated, separate explicit go needed): L=120 beta=120, <=2
-   days, 1 node, retuned ladder from step 2, >=4 chains. GO requires BOTH (a)
-   mechanism: per-link acceptance in band + >=3 replica round-trips, AND (b)
-   physics: replicas demonstrably change winding/cut sector during the run AND
-   tau(percolation_strength) drops >=5x vs the L120 baseline. (a) without (b) =
-   NO-GO. NOT STARTED.
-
-### Resolved this session: the energy_lmbda-frozen ladder-design question
-Snapshot `energy_lmbda` (`diag_single_energy_cache_`) is the frozen net/cut-sector
-proxy — moved only by rare cut-changing moves, NOT what the swap weight actually
-uses (that's `cached_total_integrated_edge_energy()` + kink count, both of which
-thermalize fine via ordinary kink create/delete). Feynman's verdict: design the
-ladder from direct per-link acceptance (step 2), not snapshot variance — my
-original 3-option framing was a false choice, both "use energy_h alone" and
-"run a long snapshot-variance probe" were solving the wrong problem. Separately,
-Feynman flagged (then self-corrected after a PI challenge) that no O(1) move
-changes the winding sector — but confirmed this accumulation is SLOW, not ZERO
-(tau~1e4 baseline means it does flip), so PT is a legitimate, fair test of a
-coexistence-limited slow mode, not a long shot to be pre-judged NO-GO. The wide-s
-scan (step 1, running now) is the honest test of whether the ladder can actually
-reach the fast-mixing window. If it can't, the fallback is the WORM algorithm
-(polynomial-cost winding change) — explicitly ON HOLD pending a new PI decision,
-not the R5 winding-loop move (still permanently out), and not to be pre-built.
-
-### Infra note: Codex sandbox has intermittent Slurm-controller DNS failures
-Same root cause as the earlier concise-alert wrapper failures (both hit
-`kng-sv-slurm23.hpc.physik.uni-muenchen.de` DNS resolution). Confirmed NOT a real
-cluster outage (Jarvis's own shell reaches Slurm fine throughout). Workaround used
-successfully once: escalate the Codex dispatch to `danger-full-access` sandbox,
-which is JARVIS.md's own narrow pre-authorized exception ("restore network
-reachability for an already-authorized action"). Use this if a future dispatch
-hits the same DNS error twice in workspace-write.
+## Known non-blocking items carried forward
+- `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
+  this campaign) — flagged, not fixed.
+- Codex sandbox has intermittent Slurm-controller DNS failures (same root cause
+  as earlier concise-alert wrapper failures). Confirmed not a real cluster
+  outage. Workaround: escalate the Codex dispatch to `danger-full-access`
+  sandbox (JARVIS.md's narrow pre-authorized exception) if it recurs.
+- Concise-alert Slurm notifier still has an unresolved DNS issue of its own
+  (separate from the above) — monitoring jobs directly via squeue/sacct instead.
 
 ## Active workers
-None currently running. **v2 sector-rate scan submitted and running**: Slurm array
-`15034719_[0-63]` (43 RUNNING, 1 PENDING at last check), redesigned per PI decision
-after v1 (`15012336`) only completed 2/8 points and lacked `full_time_series`.
-v2 design: 8 s-values x 8 independent parallel chains each (64 tasks total,
-embarrassingly parallel — no MPI/node constraints, unlike the actual pilot),
-1500 samples/chain (12k aggregate/s-value, more depth than v1's 10k), same
-N_between_samples=5e6, `--full_time_series 1` + `percolation_probability`/
-`percolation_strength` added to `--observables` (the actual fix — v1 couldn't
-see sector changes at all without this). 8h walltime/task, generous margin
-vs the measured 5.6-6.5s/sample from v1's 2 completed points; losing one of 64
-short tasks to a timeout is cheap, unlike losing one of 8 long ones. Output root:
-`/scratch/a/A.Otaifi/paratoric_g2_sector_rate_scan_v2_20260711`. Launcher:
-`scripts/submit_g2_sector_rate_scan_v2_20260711.sbatch` (commit `3a0294d`).
-Expect most tasks done within a few hours given the sizing.
+None currently running.
 
 ## Next action
-When v2 completes: analyze the per-sample `anyon_count`/`percolation_probability`
-series (aggregated across each s-value's 8 chains) for actual sector-change
-events — this is the real measurement step 1 was always supposed to produce.
-Then proceed to step 2 (direct-acceptance ladder tuning, NOT snapshot variance)
-and step 3 (ensemble launch path). Step 4 (actual pilot sbatch) still needs a
-separate explicit PI go after that, per the harness G2 hard stop.
+Start D1 (swap_period-in-sweeps fix) — blocking, do first, before touching
+anything else in the sequence. Dispatch Clark for the code change + Martina
+review, clean-rebuild verification per the standing process rule from earlier
+this session (no incremental-build "tests pass" claims accepted as gate
+evidence). Then proceed to step 1 (observable validation vs Linsel) — this can
+run in parallel with or immediately after D1 since it needs NO PT at all.
