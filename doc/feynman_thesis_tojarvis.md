@@ -285,6 +285,46 @@ s)", fixable by scanning DOWNWARD; Linsel + BPV give the right place. Do steps
 1-3 BEFORE sector scan / spacing / pilot. Still 1 node, z-basis, no-checkpoint;
 small-L benchmark is cheap.
 
+## STEP-1 BLOCKER — diagnosis REFUTED, CALIBRATE THE OBSERVABLE FIRST (Feynman, 2026-07-12)
+
+RETRACTION: an earlier version of this note declared the blocker "RESOLVED" via a
+frozen-tau=0-base / missing-rotate_imag_time root cause and predicted that the
+ELECTRIC channel with default_spin=-1 would give POP~1. Jarvis ran that
+confirmatory test: 3 seeds all gave EXACTLY 0 (not ~1). PREDICTION REFUTED.
+The prediction rested on an UNVERIFIED assumption that is_winding_percolating
+returns true on a uniform all-(-1) config — never checked. So the refutation may
+simply mean my premise was false, and the frozen-base story is NOT established.
+Do NOT hand Clark the rotate_imag_time fix yet.
+
+WHAT WE ACTUALLY KNOW: electric channel = exactly 0 for both default_spin (exact
+zeros across seeds smell STRUCTURAL, not merely under-thermalized); plaquette
+channel asymmetric (0.970 from -1 vs 0.132 from +1). We are interpreting an
+observable whose behavior on KNOWN inputs has never been checked — there is NO
+calibration unit test (tests/ only runs configs, asserts nothing on known configs).
+
+LIKELY-mundane candidates raised by PI (check BEFORE any topological-sector story):
+ (i) beta=L not actually enforced in the run scripts (cheap to verify).
+ (ii) under-thermalization: 488 sweeps to equilibrate the SLOWEST observable in
+      the model (tau~1e4 at large L) from a cold uniform start may be far too few.
+
+NEXT STEPS (instrument, do NOT predict outcomes):
+ 1. CALIBRATION UNIT TEST (foundational, do first, pure — no QMC/thermalization/
+    beta): construct known configs and ASSERT the return of is_winding_percolating
+    / percolation_strength / plaquette versions: (a) all-(+1), (b) all-(-1),
+    (c) one hand-placed winding string of -1 edges, (d) a dense random config.
+    Tells us what the instrument DOES. Settles whether "all-(-1) percolates" is
+    even true and whether the electric channel is wired correctly at all.
+ 2. Verify beta=L in the actual job scripts.
+ 3. Time-series + long thermalization: record percolation AND the -1-edge count
+    vs sweeps, cold/hot (default_spin +/-1). Does the observable leave its initial
+    value? Do the two starts converge? Separates under-thermalization vs
+    structural-zero vs frozen-base — with data.
+ 4. ONLY THEN test the rotate_imag_time hypothesis (measure percolation on base vs
+    on a rotated slice for the same config) — now demoted to one hypothesis among
+    several, not the answer.
+Lesson logged: do not convert a hand-wave about what an observable returns into a
+physics conclusion; calibrate the instrument on known inputs first.
+
 ## MASTER PRE-PILOT SEQUENCE (Feynman, 2026-07-10 — supersedes the earlier
 ## "Finalized next steps" list; integrates RESOLVE-FIRST + pt_architecture.md)
 
