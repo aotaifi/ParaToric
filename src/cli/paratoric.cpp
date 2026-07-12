@@ -60,6 +60,8 @@ int main(int argc, char **argv) {
         double pt_ladder_start;
         double pt_ladder_end;
         int pt_ladder_count;
+        double pt_ladder_lmbda_start;
+        double pt_ladder_lmbda_end;
         double pt_swap_period_sweeps;
         int pt_swap_period = 0;
         bool pt_validate_swap_weight;
@@ -94,10 +96,12 @@ int main(int argc, char **argv) {
         ("restart_from", po::value(&restart_from)->default_value({}), "Resume etc_sample from a checkpoint file.")
         ("checkpoint_every_samples", po::value(&checkpoint_every_samples)->default_value(0), "Write an etc_sample checkpoint every N completed samples.")
         ("checkpoint_every_seconds", po::value(&checkpoint_every_seconds)->default_value(0), "Write an etc_sample checkpoint every N seconds, checked at sample boundaries.")
-        ("pt_ladder", po::value(&pt_ladder)->multitoken(), "Enable PT with explicit self-dual s ladder values; sets h=lambda=s and requires mu=J=1.")
-        ("pt_ladder_start", po::value(&pt_ladder_start)->default_value(std::numeric_limits<double>::quiet_NaN()), "Start of an evenly spaced PT self-dual s ladder.")
-        ("pt_ladder_end", po::value(&pt_ladder_end)->default_value(std::numeric_limits<double>::quiet_NaN()), "End of an evenly spaced PT self-dual s ladder.")
-        ("pt_ladder_count", po::value(&pt_ladder_count)->default_value(0), "Number of points in an evenly spaced PT self-dual s ladder.")
+        ("pt_ladder", po::value(&pt_ladder)->multitoken(), "Enable PT with explicit h ladder values; with no lambda ladder, uses the self-dual h=lambda ladder. Requires mu=J=1.")
+        ("pt_ladder_start", po::value(&pt_ladder_start)->default_value(std::numeric_limits<double>::quiet_NaN()), "Start of an evenly spaced PT h ladder.")
+        ("pt_ladder_end", po::value(&pt_ladder_end)->default_value(std::numeric_limits<double>::quiet_NaN()), "End of an evenly spaced PT h ladder.")
+        ("pt_ladder_count", po::value(&pt_ladder_count)->default_value(0), "Number of points in evenly spaced PT h and optional lambda ladders.")
+        ("pt_ladder_lmbda_start", po::value(&pt_ladder_lmbda_start)->default_value(std::numeric_limits<double>::quiet_NaN()), "Start of an evenly spaced PT lambda ladder.")
+        ("pt_ladder_lmbda_end", po::value(&pt_ladder_lmbda_end)->default_value(std::numeric_limits<double>::quiet_NaN()), "End of an evenly spaced PT lambda ladder.")
         ("pt_swap_period_sweeps", po::value(&pt_swap_period_sweeps)->default_value(2.0), "PT neighbor-swap attempt period in sweeps; one sweep is 2*L^2 Metropolis updates.")
         ("pt_swap_period", po::value(&pt_swap_period), "Legacy PT neighbor-swap attempt period in raw Metropolis updates. Do not combine with pt_swap_period_sweeps.")
         ("pt_validate_swap_weight", po::value(&pt_validate_swap_weight)->default_value(false), "Recompute PT swap weights at every swap attempt and record max deviation.")
@@ -191,6 +195,38 @@ int main(int argc, char **argv) {
                 throw std::invalid_argument("pt_ladder values must be strictly increasing.");
             }
         }
+        const bool has_pt_ladder_lmbda_start = std::isfinite(pt_ladder_lmbda_start);
+        const bool has_pt_ladder_lmbda_end = std::isfinite(pt_ladder_lmbda_end);
+        if (has_pt_ladder_lmbda_start != has_pt_ladder_lmbda_end) {
+            throw std::invalid_argument("pt_ladder_lmbda_start and pt_ladder_lmbda_end must be supplied together.");
+        }
+        std::vector<double> pt_ladder_lmbda;
+        if (has_pt_ladder_lmbda_start) {
+            if (pt_ladder_count <= 0) {
+                throw std::invalid_argument("pt_ladder_count must be positive with pt_ladder_lmbda_start and pt_ladder_lmbda_end.");
+            }
+            pt_ladder_lmbda.reserve(static_cast<size_t>(pt_ladder_count));
+            if (pt_ladder_count == 1) {
+                pt_ladder_lmbda.push_back(pt_ladder_lmbda_start);
+            } else {
+                for (int i = 0; i < pt_ladder_count; ++i) {
+                    const double t = static_cast<double>(i) / static_cast<double>(pt_ladder_count - 1);
+                    pt_ladder_lmbda.push_back(
+                        pt_ladder_lmbda_start + t * (pt_ladder_lmbda_end - pt_ladder_lmbda_start));
+                }
+            }
+            if (std::any_of(pt_ladder_lmbda.begin(), pt_ladder_lmbda.end(), [](double lmbda) {
+                    return !std::isfinite(lmbda) || lmbda <= 0.0;
+                })) {
+                throw std::invalid_argument("pt_ladder_lmbda values must be finite and positive.");
+            }
+            if (pt_ladder.empty()) {
+                throw std::invalid_argument("pt_ladder h values are required with a pt_ladder_lmbda range.");
+            }
+            if (pt_ladder_lmbda.size() != pt_ladder.size()) {
+                throw std::invalid_argument("pt_ladder_lmbda and pt_ladder must have the same number of values.");
+            }
+        }
         const bool explicit_pt_swap_period_sweeps = vm.count("pt_swap_period_sweeps") > 0
             && !vm["pt_swap_period_sweeps"].defaulted();
         if (vm.count("pt_swap_period") > 0 && explicit_pt_swap_period_sweeps) {
@@ -205,6 +241,7 @@ int main(int argc, char **argv) {
         paratoric::ParallelTemperingSpec pt_spec = {
             .enabled = !pt_ladder.empty(),
             .ladder_s = pt_ladder,
+            .ladder_lmbda = pt_ladder_lmbda,
             .swap_period_sweeps = pt_swap_period_sweeps,
             .swap_period = pt_swap_period,
             .validate_swap_weight = pt_validate_swap_weight

@@ -114,7 +114,8 @@ struct OutSpec {
 
 struct ParallelTemperingSpec {
     bool enabled = false;
-    std::vector<double> ladder_s{};
+    std::vector<double> ladder_s{}; // h ladder; retained for backwards compatibility.
+    std::vector<double> ladder_lmbda{}; // Empty means use ladder_s (self-dual ladder).
     double swap_period_sweeps = 2.0;
     int swap_period = 0; // Legacy raw Metropolis-move period; 0 means use sweeps.
     bool validate_swap_weight = false;

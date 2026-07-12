@@ -401,7 +401,10 @@ class ExtendedToricCodeQMC {
             const Config& config
         );
 
-        double validate_parallel_tempering_swap_weight_debug(const Config& config);
+        double validate_parallel_tempering_swap_weight_debug(
+            const Config& config,
+            std::vector<double>* log_weight_trace = nullptr
+        );
 
         std::int64_t load_sample_checkpoint_lattice_debug(
             const std::filesystem::path& path,
@@ -835,11 +838,13 @@ class ExtendedToricCodeQMC {
          */
         static double total_integrated_pot_energy(LatticeT& lat, double h, double mu, double J, double lmbda);
 
-        static double self_dual_pt_log_weight_ratio(
+        static double parallel_tempering_log_weight_ratio(
             LatticeT& local_lat,
             LatticeT& partner_lat,
-            double local_s,
-            double partner_s,
+            double local_h,
+            double partner_h,
+            double local_lmbda,
+            double partner_lmbda,
             bool use_cached
         );
 
@@ -1594,11 +1599,13 @@ double ExtendedToricCodeQMC<Basis, LatticeT>::total_integrated_pot_energy(
 
 template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-double ExtendedToricCodeQMC<Basis, LatticeT>::self_dual_pt_log_weight_ratio(
+double ExtendedToricCodeQMC<Basis, LatticeT>::parallel_tempering_log_weight_ratio(
     LatticeT& local_lat,
     LatticeT& partner_lat,
-    double local_s,
-    double partner_s,
+    double local_h,
+    double partner_h,
+    double local_lmbda,
+    double partner_lmbda,
     bool use_cached
 ) {
     if constexpr (!std::same_as<LatticeT, Lattice>) {
@@ -1621,14 +1628,16 @@ double ExtendedToricCodeQMC<Basis, LatticeT>::self_dual_pt_log_weight_ratio(
                 : partner_lat.recompute_total_integrated_edge_energy();
 
             double log_ratio = 0.;
-            if (local_s != partner_s) {
-                if (local_s <= 0. || partner_s <= 0.) {
+            if (local_h != partner_h) {
+                if (local_h <= 0. || partner_h <= 0.) {
                     throw std::invalid_argument("PT ladder values must be positive for kink-count exchange weights.");
                 }
                 log_ratio += local_lat.get_beta()
                     * (local_single - partner_single)
-                    * std::log(partner_s / local_s);
-                log_ratio += (partner_s - local_s) * (local_edge - partner_edge);
+                    * std::log(partner_h / local_h);
+            }
+            if (local_lmbda != partner_lmbda) {
+                log_ratio += (partner_lmbda - local_lmbda) * (local_edge - partner_edge);
             }
             return log_ratio;
         }
@@ -1638,7 +1647,8 @@ double ExtendedToricCodeQMC<Basis, LatticeT>::self_dual_pt_log_weight_ratio(
 template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
 double ExtendedToricCodeQMC<Basis, LatticeT>::validate_parallel_tempering_swap_weight_debug(
-    const Config& config
+    const Config& config,
+    std::vector<double>* log_weight_trace
 ) {
     if constexpr (!std::same_as<LatticeT, Lattice>) {
         throw std::invalid_argument("PT swap-weight validation is implemented only for the Boost Lattice backend.");
@@ -1649,6 +1659,10 @@ double ExtendedToricCodeQMC<Basis, LatticeT>::validate_parallel_tempering_swap_w
             if (config.pt_spec.ladder_s.size() < 2) {
                 throw std::invalid_argument("PT swap-weight validation requires at least two ladder values.");
             }
+            if (!config.pt_spec.ladder_lmbda.empty()
+                && config.pt_spec.ladder_lmbda.size() != config.pt_spec.ladder_s.size()) {
+                throw std::invalid_argument("PT lambda ladder size must match the h ladder size.");
+            }
             if (config.param_spec.mu != 1.0 || config.param_spec.J != 1.0) {
                 throw std::invalid_argument("PT ladder requires mu=J=1.");
             }
@@ -1657,13 +1671,18 @@ double ExtendedToricCodeQMC<Basis, LatticeT>::validate_parallel_tempering_swap_w
             auto rng_b = std::make_shared<RNG>();
             rng_a->set_seed(config.sim_spec.seed == 0 ? 17 : config.sim_spec.seed);
             rng_b->set_seed(config.sim_spec.seed == 0 ? 29 : config.sim_spec.seed + 1);
+            rng->set_seed(config.sim_spec.seed == 0 ? 43 : config.sim_spec.seed + 2);
             LatticeT local_lat(config.lat_spec, rng_a);
             LatticeT partner_lat(config.lat_spec, rng_b);
 
-            double local_s = config.pt_spec.ladder_s[0];
-            double partner_s = config.pt_spec.ladder_s[1];
-            double local_energy = total_integrated_pot_energy(local_lat, local_s, 1.0, 1.0, local_s);
-            double partner_energy = total_integrated_pot_energy(partner_lat, partner_s, 1.0, 1.0, partner_s);
+            const auto& ladder_lmbda = config.pt_spec.ladder_lmbda.empty()
+                ? config.pt_spec.ladder_s : config.pt_spec.ladder_lmbda;
+            const double local_h = config.pt_spec.ladder_s[0];
+            const double partner_h = config.pt_spec.ladder_s[1];
+            const double local_lmbda = ladder_lmbda[0];
+            const double partner_lmbda = ladder_lmbda[1];
+            double local_energy = total_integrated_pot_energy(local_lat, local_h, 1.0, 1.0, local_lmbda);
+            double partner_energy = total_integrated_pot_energy(partner_lat, partner_h, 1.0, 1.0, partner_lmbda);
             double acc_ratio = 1.;
             double max_deviation = 0.;
             const std::int64_t steps =
@@ -1672,13 +1691,16 @@ double ExtendedToricCodeQMC<Basis, LatticeT>::validate_parallel_tempering_swap_w
                     * static_cast<std::int64_t>(std::max(config.sim_spec.N_between_samples, 1));
             const std::int64_t swap_period = parallel_tempering_swap_period_moves(config.pt_spec, config.lat_spec);
             for (std::int64_t step = 1; step <= steps; ++step) {
-                metropolis_step(local_lat, local_energy, acc_ratio, config.lat_spec.beta, local_s, 1.0, 1.0, local_s);
-                metropolis_step(partner_lat, partner_energy, acc_ratio, config.lat_spec.beta, partner_s, 1.0, 1.0, partner_s);
+                metropolis_step(local_lat, local_energy, acc_ratio, config.lat_spec.beta, local_h, 1.0, 1.0, local_lmbda);
+                metropolis_step(partner_lat, partner_energy, acc_ratio, config.lat_spec.beta, partner_h, 1.0, 1.0, partner_lmbda);
                 if (step % swap_period == 0) {
-                    const double cached = self_dual_pt_log_weight_ratio(
-                        local_lat, partner_lat, local_s, partner_s, true);
-                    const double brute = self_dual_pt_log_weight_ratio(
-                        local_lat, partner_lat, local_s, partner_s, false);
+                    const double cached = parallel_tempering_log_weight_ratio(
+                        local_lat, partner_lat, local_h, partner_h, local_lmbda, partner_lmbda, true);
+                    const double brute = parallel_tempering_log_weight_ratio(
+                        local_lat, partner_lat, local_h, partner_h, local_lmbda, partner_lmbda, false);
+                    if (log_weight_trace != nullptr) {
+                        log_weight_trace->emplace_back(cached);
+                    }
                     max_deviation = std::max(max_deviation, std::abs(cached - brute));
                 }
             }
@@ -3711,10 +3733,12 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
             throw std::invalid_argument("Parallel tempering checkpoint/restart is not implemented yet.");
         }
         if (config.param_spec.mu != 1.0 || config.param_spec.J != 1.0) {
-            throw std::invalid_argument("Parallel tempering self-dual ladder requires mu=J=1.");
+            throw std::invalid_argument("Parallel tempering ladder requires mu=J=1.");
         }
-        if (config.pt_spec.ladder_s.size() != static_cast<size_t>(pt_world_size)) {
-            throw std::invalid_argument("PT ladder size must equal the MPI world size.");
+        if (config.pt_spec.ladder_s.size() != static_cast<size_t>(pt_world_size)
+            || (!config.pt_spec.ladder_lmbda.empty()
+                && config.pt_spec.ladder_lmbda.size() != static_cast<size_t>(pt_world_size))) {
+            throw std::invalid_argument("PT h and optional lambda ladder sizes must equal the MPI world size.");
         }
     }
     const std::int64_t pt_swap_period_moves =
@@ -3748,7 +3772,10 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
 
     int pt_ladder_index = pt_enabled ? pt_rank : 0;
     double runtime_h = pt_enabled ? config.pt_spec.ladder_s[static_cast<size_t>(pt_ladder_index)] : config.param_spec.h;
-    double runtime_lmbda = pt_enabled ? runtime_h : config.param_spec.lmbda;
+    double runtime_lmbda = pt_enabled
+        ? (config.pt_spec.ladder_lmbda.empty()
+            ? runtime_h : config.pt_spec.ladder_lmbda[static_cast<size_t>(pt_ladder_index)])
+        : config.param_spec.lmbda;
     double runtime_mu = config.param_spec.mu;
     double runtime_J = config.param_spec.J;
     ParallelTemperingDiagnostics pt_diagnostics{
@@ -3851,15 +3878,23 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                     const int partner = (pt_rank % 2 == phase) ? pt_rank + 1 : pt_rank - 1;
                     if (partner >= 0 && partner < pt_world_size) {
                         ++pt_diagnostics.swap_attempted;
-                        double partner_s = 0.;
+                        double partner_h = 0.;
+                        double partner_lmbda = 0.;
                         int partner_index = -1;
-                        const double local_s = runtime_h;
+                        const double local_h = runtime_h;
+                        const double local_lmbda = runtime_lmbda;
                         const int local_index = pt_ladder_index;
                         mpi_detail::fail_on_mpi_error(
-                            MPI_Sendrecv(&local_s, 1, MPI_DOUBLE, partner, 7101,
-                                         &partner_s, 1, MPI_DOUBLE, partner, 7101,
+                            MPI_Sendrecv(&local_h, 1, MPI_DOUBLE, partner, 7101,
+                                         &partner_h, 1, MPI_DOUBLE, partner, 7101,
                                          MPI_COMM_WORLD, MPI_STATUS_IGNORE),
-                            "MPI_Sendrecv(local_s)"
+                            "MPI_Sendrecv(local_h)"
+                        );
+                        mpi_detail::fail_on_mpi_error(
+                            MPI_Sendrecv(&local_lmbda, 1, MPI_DOUBLE, partner, 7105,
+                                         &partner_lmbda, 1, MPI_DOUBLE, partner, 7105,
+                                         MPI_COMM_WORLD, MPI_STATUS_IGNORE),
+                            "MPI_Sendrecv(local_lmbda)"
                         );
                         mpi_detail::fail_on_mpi_error(
                             MPI_Sendrecv(&local_index, 1, MPI_INT, partner, 7102,
@@ -3888,8 +3923,8 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                             "MPI_Sendrecv(local_edge)"
                         );
                         const double log_r = config.lat_spec.beta
-                            * (local_single - partner_single) * std::log(partner_s / local_s)
-                            + (partner_s - local_s) * (local_edge - partner_edge);
+                            * (local_single - partner_single) * std::log(partner_h / local_h)
+                            + (partner_lmbda - local_lmbda) * (local_edge - partner_edge);
                         int accepted = 0;
                         if (pt_rank < partner) {
                             const double u = std::max(uniform_dist(*rng), std::numeric_limits<double>::min());
@@ -3904,8 +3939,8 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                             if (link_index >= 0 && link_index < pt_world_size - 1) {
                                 ++pt_diagnostics.swap_accepted_by_link[static_cast<size_t>(link_index)];
                             }
-                            runtime_h = partner_s;
-                            runtime_lmbda = partner_s;
+                            runtime_h = partner_h;
+                            runtime_lmbda = partner_lmbda;
                             pt_ladder_index = partner_index;
                             integrated_pot_energy = total_integrated_pot_energy(
                                 lat, runtime_h, runtime_mu, runtime_J, runtime_lmbda);
@@ -3949,15 +3984,23 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                 const int partner = (pt_rank % 2 == phase) ? pt_rank + 1 : pt_rank - 1;
                 if (partner >= 0 && partner < pt_world_size) {
                     ++pt_diagnostics.swap_attempted;
-                    double partner_s = 0.;
+                    double partner_h = 0.;
+                    double partner_lmbda = 0.;
                     int partner_index = -1;
-                    const double local_s = runtime_h;
+                    const double local_h = runtime_h;
+                    const double local_lmbda = runtime_lmbda;
                     const int local_index = pt_ladder_index;
                     mpi_detail::fail_on_mpi_error(
-                        MPI_Sendrecv(&local_s, 1, MPI_DOUBLE, partner, 7201,
-                                     &partner_s, 1, MPI_DOUBLE, partner, 7201,
+                        MPI_Sendrecv(&local_h, 1, MPI_DOUBLE, partner, 7201,
+                                     &partner_h, 1, MPI_DOUBLE, partner, 7201,
                                      MPI_COMM_WORLD, MPI_STATUS_IGNORE),
-                        "MPI_Sendrecv(local_s)"
+                        "MPI_Sendrecv(local_h)"
+                    );
+                    mpi_detail::fail_on_mpi_error(
+                        MPI_Sendrecv(&local_lmbda, 1, MPI_DOUBLE, partner, 7207,
+                                     &partner_lmbda, 1, MPI_DOUBLE, partner, 7207,
+                                     MPI_COMM_WORLD, MPI_STATUS_IGNORE),
+                        "MPI_Sendrecv(local_lmbda)"
                     );
                     mpi_detail::fail_on_mpi_error(
                         MPI_Sendrecv(&local_index, 1, MPI_INT, partner, 7202,
@@ -3986,8 +4029,8 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                         "MPI_Sendrecv(local_edge)"
                     );
                     const double log_r = config.lat_spec.beta
-                        * (local_single - partner_single) * std::log(partner_s / local_s)
-                        + (partner_s - local_s) * (local_edge - partner_edge);
+                        * (local_single - partner_single) * std::log(partner_h / local_h)
+                        + (partner_lmbda - local_lmbda) * (local_edge - partner_edge);
                     if (config.pt_spec.validate_swap_weight) {
                         const double brute_local_single = lat.recompute_non_diag_single_energy_z();
                         const double brute_local_edge = lat.recompute_total_integrated_edge_energy();
@@ -4006,8 +4049,8 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                             "MPI_Sendrecv(brute_local_edge)"
                         );
                         const double brute_log_r = config.lat_spec.beta
-                            * (brute_local_single - brute_partner_single) * std::log(partner_s / local_s)
-                            + (partner_s - local_s) * (brute_local_edge - brute_partner_edge);
+                            * (brute_local_single - brute_partner_single) * std::log(partner_h / local_h)
+                            + (partner_lmbda - local_lmbda) * (brute_local_edge - brute_partner_edge);
                         pt_diagnostics.max_swap_log_weight_deviation = std::max(
                             pt_diagnostics.max_swap_log_weight_deviation,
                             std::abs(log_r - brute_log_r));
@@ -4026,8 +4069,8 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                         if (link_index >= 0 && link_index < pt_world_size - 1) {
                             ++pt_diagnostics.swap_accepted_by_link[static_cast<size_t>(link_index)];
                         }
-                        runtime_h = partner_s;
-                        runtime_lmbda = partner_s;
+                        runtime_h = partner_h;
+                        runtime_lmbda = partner_lmbda;
                         pt_ladder_index = partner_index;
                         integrated_pot_energy = total_integrated_pot_energy(
                             lat, runtime_h, runtime_mu, runtime_J, runtime_lmbda);

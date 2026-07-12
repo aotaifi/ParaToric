@@ -1292,4 +1292,65 @@ BOOST_AUTO_TEST_CASE(boost_pt_swap_weight_matches_bruteforce_l8_alt_seed_ladder)
     BOOST_TEST(max_deviation < 1e-8);
 }
 
+BOOST_AUTO_TEST_CASE(boost_pt_independent_h_lmbda_swap_weight_matches_bruteforce_l8) {
+    paratoric::LatSpec lat_spec = {
+        .basis = 'z', .lattice_type = "square", .system_size = 8, .beta = 8.0,
+        .boundaries = "periodic", .default_spin = 1, .lattice_backend = "boost"
+    };
+    paratoric::ParamSpec param_spec = {.mu = 1.0, .h = 0.15, .J = 1.0, .lmbda = 0.30};
+    paratoric::SimSpec sim_spec = {
+        .N_samples = 8, .N_thermalization = 16, .N_between_samples = 8,
+        .N_resamples = 8, .seed = 31415, .observables = {"energy", "sigma_x", "star_x"}
+    };
+    paratoric::ParallelTemperingSpec pt_spec = {
+        .enabled = true,
+        .ladder_s = {0.15, 0.25},
+        .ladder_lmbda = {0.30, 0.30},
+        .swap_period = 4,
+        .validate_swap_weight = true
+    };
+
+    const double max_deviation = paratoric::ExtendedToricCodeQMC<'z'>()
+        .validate_parallel_tempering_swap_weight_debug(
+            paratoric::Config{sim_spec, param_spec, lat_spec, paratoric::OutSpec{}, pt_spec});
+    BOOST_TEST_MESSAGE("L=8 independent h/lambda PT cached-vs-bruteforce max log-weight deviation: " << max_deviation);
+    BOOST_TEST(max_deviation < 1e-8);
+}
+
+BOOST_AUTO_TEST_CASE(boost_pt_explicit_self_dual_ladders_match_empty_lmbda_fallback_l8) {
+    paratoric::LatSpec lat_spec = {
+        .basis = 'z', .lattice_type = "square", .system_size = 8, .beta = 8.0,
+        .boundaries = "periodic", .default_spin = 1, .lattice_backend = "boost"
+    };
+    paratoric::ParamSpec param_spec = {.mu = 1.0, .h = 0.22, .J = 1.0, .lmbda = 0.22};
+    paratoric::SimSpec sim_spec = {
+        .N_samples = 8, .N_thermalization = 16, .N_between_samples = 8,
+        .N_resamples = 8, .seed = 86420, .observables = {"energy", "sigma_x", "star_x"}
+    };
+    paratoric::ParallelTemperingSpec fallback_pt_spec = {
+        .enabled = true, .ladder_s = {0.22, 0.30}, .swap_period = 4, .validate_swap_weight = true
+    };
+    paratoric::ParallelTemperingSpec explicit_pt_spec = fallback_pt_spec;
+    explicit_pt_spec.ladder_lmbda = {0.22, 0.30};
+
+    std::vector<double> fallback_trace;
+    std::vector<double> explicit_trace;
+    const double fallback_deviation = paratoric::ExtendedToricCodeQMC<'z'>()
+        .validate_parallel_tempering_swap_weight_debug(
+        paratoric::Config{sim_spec, param_spec, lat_spec, paratoric::OutSpec{}, fallback_pt_spec},
+        &fallback_trace);
+    const double explicit_deviation = paratoric::ExtendedToricCodeQMC<'z'>()
+        .validate_parallel_tempering_swap_weight_debug(
+        paratoric::Config{sim_spec, param_spec, lat_spec, paratoric::OutSpec{}, explicit_pt_spec},
+        &explicit_trace);
+    BOOST_TEST_MESSAGE("L=8 explicit-self-dual PT max log-weight deviations: fallback="
+        << fallback_deviation << ", explicit=" << explicit_deviation);
+    BOOST_REQUIRE(!fallback_trace.empty());
+    BOOST_REQUIRE_EQUAL(fallback_trace.size(), explicit_trace.size());
+    BOOST_CHECK_EQUAL(fallback_deviation, explicit_deviation);
+    for (size_t i = 0; i < fallback_trace.size(); ++i) {
+        BOOST_CHECK_EQUAL(fallback_trace[i], explicit_trace[i]);
+    }
+}
+
 } // namespace paratoric
