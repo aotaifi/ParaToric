@@ -223,6 +223,118 @@ CONVINCED, and I give my go — scoped as follows.
   be unreachable/too narrow at L=120,beta=120, report it before step 4 — that is
   the pilot's real risk and the trigger for the (held) worm conversation.
 
+## RESOLVE FIRST: percolation_probability identically 0 (Feynman, 2026-07-10)
+### (CORRECTED 2026-07-10 after PI caught an inverted convention)
+
+CONVENTION (authoritative, from Linsel arXiv:2401.08770 Fig.3, the
+Fradkin-Shenker diagram of the extended toric code mu=J=1 — OUR model):
+"in the DECONFINED phase electric strings PERCOLATE, while the percolation
+strength VANISHES in the CONFINED phase." So **POP>0 <=> DECONFINED; POP=0 <=>
+CONFINED**. (My earlier note had this backwards by misparsing the Fig.1 caption
+and mixing in the classical high-T snapshot; ignore that version.)
+
+Also: percolation_probability != percolation_strength.
+- percolation_probability = is_winding_percolating() = BINARY spanning prob ->
+  use to LOCATE the crossing s*.
+- percolation_strength = largest_cluster/#links (gated, else 0) = order-parameter
+  magnitude P (this is Linsel's "P"/POP) -> use for beta/nu. Both gated together,
+  so both read 0 in the confined phase.
+
+DIAGNOSIS (do NOT over-claim — s* location is NOT established):
+Two hypotheses, undecided until the benchmark runs:
+ (H1) ladder is entirely confined (s* below the ladder) — consistent with the
+      frozen all-up sigma_z (field-polarized). But:
+ (H2) Linsel Fig.4 places the self-dual tip near s~0.33, i.e. PLAUSIBLY INSIDE
+      [0.22,0.36]. If so the low-s rungs should be DECONFINED (POP>0), and
+      total-zero POP everywhere points to an OBSERVABLE/BASIS BUG or a
+      winding-detection failure, NOT a phase-placement issue.
+A prior version of this note asserted "s* < 0.22, scan down" — that was an
+unverified guess and is RETRACTED. The Linsel Fig.4a benchmark (step 1) is what
+decides H1 vs H2; do not scan-direction anything until it runs.
+
+Resolve in this order:
+
+1. VALIDATE THE OBSERVABLE against Linsel's published benchmark (cheap, small L
+   = 20-50, no PT). Their POP = largest string cluster/#links = our
+   percolation_strength. Single-field benchmark: square-lattice TFIM critical
+   point (h/J)_c ~ 1/3.044 ~ 0.33, 3D Ising. Set dual field off (lmbda=0),
+   mu=J=1, scan h across 0.33. Expect (CORRECTED direction): POP>0 for h<0.33
+   (DECONFINED), POP->0 for h>0.33 (CONFINED), crossing sharpening with L.
+   - Run BOTH channels (percolation_* and plaquette_percolation_*) to fix which
+     is the electric-string POP: the one reproducing the 0.33 crossing.
+   - DECISION: a deep-DECONFINED point (small h, e.g. h=0.15, single field)
+     giving POP=0 in the matching channel => real bug (basis/detection), stop and
+     fix. If small-h gives POP>0 and the crossing is ~0.33 (3D Ising) =>
+     observable CORRECT and the total-0 was just a confined ladder.
+
+2. LOCATE s* — only AFTER step 1 confirms the observable. Wide-s scan on the
+   self-dual line (h=lmbda=s, mu=J=1) in BOTH directions around [0.22,0.36]
+   until POP turns on/off; that brackets s*. Reference anchor: Linsel Fig.4a has
+   h_c=0.335(2) at fixed lmbda=0.3 (a point on the Ising line just off self-dual)
+   and sketches the self-dual tip near s~0.33 — so s* may well be INSIDE the
+   current ladder, which is itself a reason total-zero POP is suspicious. Do not
+   pre-commit a scan direction; let the data place s*.
+
+3. RE-PLACE THE LADDER to bracket s* (deconfined end well into POP>0). Only then
+   do acceptance-tuning + sector-rate steps make sense — on the deconfined side
+   the winding sector fluctuates/strings percolate and PT has something to ferry.
+   Retires the "frozen sector" worry as ladder placement, not a PT limit.
+
+Net: all-zero POP = "wrong place on the phase diagram (too confined / too high
+s)", fixable by scanning DOWNWARD; Linsel + BPV give the right place. Do steps
+1-3 BEFORE sector scan / spacing / pilot. Still 1 node, z-basis, no-checkpoint;
+small-L benchmark is cheap.
+
+## MASTER PRE-PILOT SEQUENCE (Feynman, 2026-07-10 — supersedes the earlier
+## "Finalized next steps" list; integrates RESOLVE-FIRST + pt_architecture.md)
+
+Do in this order. Nothing below is the MCP pilot itself; the pilot sbatch stays
+PI-gated. Full detail in doc/pt_architecture.md (D1-D4, invariants H1-H6).
+
+0. [BLOCKING] D1 — swap_period in SWEEPS, scaled with L² (default 1000 MOVES =
+   ~0.035 sweeps at L=120 = label travel). Fix before ANY L>8 PT run. No PT run
+   at production L is valid until this lands.
+1. Validate the OBSERVABLE vs Linsel (no PT): reproduce h_c=0.335(2), nu=0.65
+   (3D Ising) at lmbda=0.3, L=10-30, beta=L, in BOTH percolation channels to fix
+   which is the electric-string POP. Decides the total-zero POP: bug vs placement.
+2. Confirm the DECONFINED RESERVOIR on the self-dual line: at small s (e.g.
+   0.05/0.10/0.20) confirm POP>0, POS>0, AND directly measure tau(percolation)
+   at a small-s rung — verify the reservoir decorrelates the RIGHT (slow) mode,
+   not just fast local modes. If it doesn't, PT has nothing to borrow.
+3. LOCATE s* — wide-s scan BOTH directions, no pre-committed direction; cross-
+   check Linsel F-S / BPV self-dual MCP.
+4. D2 — build the offline PT diagnostics analyzer (strict RT, tau_ergodic in
+   sweeps, up/down flow) over ladder_index_by_sample. PILOT PREREQUISITE.
+5. D4 — generalize PT to independent (h, lmbda); run PT ACROSS Linsel's KNOWN
+   3D Ising line (lmbda=0.3) at L=20-30 and confirm it recovers h_c=0.335,
+   nu=0.65 WITH PT. Correctness-at-scale check (NOT acceleration).
+6. D3 — PM/acceptance-mode grid (ported to s, robustness guards) to build the
+   ladder bracketing s*.
+7. THEN stage the MCP pilot (PI-gated): GO = mechanism (edge acceptance +
+   strict RT round-trips) AND physics (per-replica sector change + tau(percolation)
+   >= 5x drop). (a) without (b) = NO-GO.
+
+## STANDING RULE: PT run diagnostics pipeline (Feynman, 2026-07-10)
+
+From now on EVERY PT run analyzed with James/Jones MUST report this fixed
+readout — decorrelation is everything, and these are the knobs we fine-tune:
+
+  - swap_period IN SWEEPS (confirm >= ~1 sweep; flag if it is label-travel).
+  - per-link (EDGE) swap acceptance for every link (target 20-40%, no dead link
+    < 1e-4; a hole localizes a bottleneck rung / possible first-order point).
+  - STRICT round-trips (replicas that genuinely visited BOTH ends —
+    "visited_both_ranks", not just endpoint touches).
+  - visited-LOW and visited-HIGH counts per replica (up/down flow f(rung);
+    non-monotonic f => bottleneck).
+  - tau_ergodic (round-trip time, in SWEEPS).
+  - tau of the PHYSICAL observable (percolation_strength) at the s* rung — the
+    decorrelation that actually sets Neff; the effective tau ~ the round-trip
+    time, NOT the local tau. Budget Neff in tau_ergodic units, not raw samples.
+
+A PT run report WITHOUT these is incomplete and must not be used to judge a gate.
+Round-trips are necessary but NOT sufficient (H1-H3): a label can round-trip on a
+frozen config. Always pair RT with genuine-decorrelation evidence.
+
 ## Authorization
 
 **Jarvis is authorized to begin M0 now**: checkpoint/restart -> PT (along
