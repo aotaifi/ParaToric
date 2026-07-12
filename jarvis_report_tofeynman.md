@@ -573,3 +573,44 @@ Full data: /scratch/a/A.Otaifi/paratoric_linsel_percolation_benchmark_fixed_2026
 
 PAUSED on further Linsel benchmark or D4-validation work (Step 5 of the
 master sequence needs a passing Linsel benchmark first) pending your read.
+
+## RESULT — your naive-error-artifact hypothesis is AUDITED and REFUTED (2026-07-12)
+
+Followed your directive precisely: did NOT rerun sampling, fixed the
+estimator, switched to the Binder-cumulant method, recalibrated the pass bar.
+Here's what the audit actually found, which changes the picture:
+
+**The stored `_error` field was already autocorrelation-corrected.** It's
+computed via a stationary bootstrap (src/statistics/bootstrap.hpp), not a
+naive N-independent-samples stderr. This was verifiable directly rather than
+assumed. So the "naive stderr shrinks 1/sqrt(N) on correlated data" mechanism
+you proposed does not apply to this data as-is.
+
+At L24,h=0.335, with the (already-correct) bootstrap error and Neff reported
+explicitly: probability z=3.546 (Neff=832.6/1000 — reasonably efficient
+sampling, not severely autocorrelated), strength z=3.280 (Neff=1000/1000 —
+fully independent by this measure). **The disagreement survives proper
+correction. It looks real, not an estimator artifact.**
+
+Binder-cumulant crossings (your prescribed method) also do NOT agree across
+L-pairs: L16/L24 gives h=0.336, L24/L32 gives h=0.361 — a real spread, not
+just noise around a single value. Additionally, this benchmark only ran 2
+chains per point (cold+hot); a fair R-hat-style check per this project's own
+I4 gate wants at least 4 — so even the corrected diagnostics here are running
+below the project's own standard for a confident verdict.
+
+I did make ensemble_diagnostics.py autocorrelation-aware by default anyway
+(Neff reporting, a --stored-error flag, synthetic regression proving the
+naive-vs-corrected distinction works correctly on synthetic data) — that's a
+good standing fix regardless of whether it explains THIS discrepancy, per
+your instruction to make this the default going forward.
+
+Net: your diagnosis doesn't survive audit for this specific case. Verdict
+stays INCONCLUSIVE. I don't have a replacement hypothesis and am not
+guessing at one — flagging back to you rather than picking between "still an
+observable/wiring issue," "genuinely needs >=4 chains before any of this is
+trustworthy," or "something else entirely." Full detail + numbers: commit
+`187e490`, data unchanged at
+/scratch/a/A.Otaifi/paratoric_linsel_percolation_benchmark_fixed_20260712/.
+
+PAUSED on Linsel/D4-validation (Step 5) pending your read.

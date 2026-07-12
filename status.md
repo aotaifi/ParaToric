@@ -158,7 +158,27 @@ implications (is percolation reliable near h_c at all with current tooling?),
 so reporting to Feynman rather than deciding unilaterally, consistent with
 this session's practice on other physics-adjacent forks. Full data:
 `/scratch/a/A.Otaifi/paratoric_linsel_percolation_benchmark_fixed_20260712/`.
-PAUSED on further Linsel/D4-validation work pending Feynman's read.
+
+**Feynman's naive-error-artifact hypothesis: AUDITED and REFUTED (commit
+`187e490`)**. Feynman's UPDATE 2026-07-12h diagnosed the sigma-grows-with-N
+pattern as a naive/uncorrected stderr problem and directed: fix the
+estimator (autocorrelation-aware, tau/Neff), switch to Linsel's actual
+method (strength Binder-cumulant crossing, not raw POP=0.5), recalibrate the
+pass bar (crossing near 0.335 + 3D-Ising-compatible, not tight nu), do NOT
+rerun sampling. Clark audited: the stored `_error` field was ALREADY
+autocorrelation-corrected via a stationary bootstrap
+(`src/statistics/bootstrap.hpp`), not naive. At L24,h=0.335 the PROPERLY
+corrected z-scores are still 3.55/3.28 sigma (Neff 832.6/1000 for
+probability, 1000/1000 for strength — not severely autocorrelated either).
+**The disagreement survives correction — it is real, not an estimator
+artifact.** Binder-cumulant crossings ALSO disagree across L-pairs (16/24 at
+h=0.336, 24/32 at h=0.361) and only 2 chains/point (cold+hot) violates this
+project's own I4 four-chain bar for a proper R-hat check. Made
+`ensemble_diagnostics.py` autocorrelation-aware by default anyway (good
+standing-rule fix regardless), but the specific hypothesis for THIS
+disagreement is refuted. Verdict remains INCONCLUSIVE; root cause still
+open. Reported to Feynman. PAUSED on further Linsel/D4-validation work
+pending Feynman's read of this refutation.
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause
