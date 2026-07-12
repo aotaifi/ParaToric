@@ -106,6 +106,17 @@ A PT run report without all of these is incomplete and must not gate a decision.
 - PT+checkpoint composition — M2 production blocker, not a pilot item, not now.
 
 ## Known non-blocking items carried forward
+- Job `15038796` (sampling-window thermalization scan): 12/54 tasks FAILED
+  with `Exception caught: the argument ('2304000000') for option
+  '--N_thermalization' is invalid` — an INT32 OVERFLOW: the CLI's
+  `--N_thermalization` (raw moves = sweeps * 2*L^2) exceeds ~2.147e9 for the
+  2,000,000-sweep depth at L=24 (2.304e9 moves) and L=32 (4.096e9 moves); L=16
+  at the same depth (1.024e9 moves) fits and succeeded. All 12 failures are
+  exactly {L=24,L=32} x {3 h-values} x {2 starts}. Not blocking: 100k/500k
+  depths (well under the int32 limit at every L tested) succeeded for all 9
+  (L,h) points; only the extra/optional 2M depth is missing for L>=24. Fix
+  (not urgent, logging for later): widen the CLI's N_thermalization arg type
+  to int64/long, or cap requested depths below ~2e9/(2*L^2) moves for large L.
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause
