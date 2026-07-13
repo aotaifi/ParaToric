@@ -193,3 +193,107 @@ scheduling, and diagnostic logic transfer; the swap payload is different.
   Linsel lmbda=0.3 benchmark point, before the MCP pilot. If PT+FSS recovers
   h_c=0.335 and nu=0.65 there, PT is trustworthy for the MCP; if not, we found a
   PT bug where we know the answer.
+
+--------------------------------------------------------------------------------
+## 7. CRITICAL BUG: swap-partner selection by RANK (must fix before any PT) — 2026-07-13
+
+STATUS: confirmed in code; PT mechanism at N>2 ranks is BROKEN. Found by Jarvis
+(15-rank D4 benchmark: 0/N strict round-trips, crossing links <1e-3, isolated
+healthy spikes). Swap-WEIGHT formula is fine; the PARTNER SELECTION is wrong.
+
+THE BUG (qmc.hpp swap loop): partner = (pt_rank%2==phase)?pt_rank+1:pt_rank-1 —
+pairs by MPI RANK — while on accept the rank adopts partner's h/lmbda/ladder_index
+(labels MIGRATE, config stays). After one accepted swap, adjacent RANKS hold
+non-adjacent LADDER POSITIONS, so odd-phase swaps try to exchange the extreme-low
+and extreme-high labels (huge s-gap -> rejected). The ladder SEVERS at every
+odd-phase boundary: labels trapped in {0,1},{2,3},... -> 0 round-trips. Invisible
+at 2 ranks (one pair, no gap forms); first exposed at N>=3.
+
+RETRACTION: G1.2/G1.3's multi-rank "round-trips" (job 14982619, 6-rank: "6 and 4")
+are SPURIOUS under this bug (6 ranks => severed => 0). PT was never validated at
+N>2. Re-validate after the fix.
+
+CORRECT ALGORITHM (port from code_ruby_duy_pinning_lab/worm.update.cpp ~L375-410,
+the tested reference). Before EACH swap phase, on all ranks:
+  MPI_Allgather(my ladder_index) -> ladder_index_by_rank[0..N-1]
+  build rank_of_ladder_index[pos]=r ; ABORT on duplicate/invalid (permutation
+    integrity — coupled-pinning MPI_Aborts here)
+  i = my ladder_index          (NOT my rank)
+  j = (phase==0) ? (i even? i+1:i-1) : (i odd? i+1:i-1)   // pair by POSITION
+  if j not in [0,N-1]: no partner this phase (endpoint)
+  partner_rank = rank_of_ladder_index[j]
+  ...then Sendrecv (h,lmbda,index,energies) + log_r + migrate label, AS NOW.
+Only the partner-resolution changes; keep the weight/migration. (Alternative =
+Approach A: fix labels per rank, migrate the CONFIG — rejected: needs sending the
+full lattice each accept; config-stays + Allgather is cheaper and is what the
+reference does.)
+
+SMOKE SUITE (ALL at N>=3 ranks; 2 ranks can NEVER expose this; equal-s ladders
+also hide it since every swap then accepts — use a SPREAD ladder):
+  S1 Permutation integrity: ladder positions across ranks == {0..N-1} every phase.
+  S2 Partner correctness (unit): hand-built scrambled permutation => partner is the
+     holder of position i+/-1, not rank i+/-1.
+  S3 Full traversal (killer): spread 4-8 rung ladder; every replica visits BOTH
+     ends and accumulates strict round-trips. Buggy severs; fixed passes.
+  S4 Detailed balance (G1.3 at N>2): PT-on marginal per rung == PT-off single chain
+     at that s, z<3.
+  S5 Acceptance shape: healthy band on ALL links; the near-zero-crossing +
+     isolated-spike pattern (bug fingerprint) must be gone.
+  S6 RT consistency: strict round-trips from ladder_index_by_sample == independent
+     recompute.
+GATE: fix + S1-S6 pass + G1.2/G1.3 re-run at N>=3 BEFORE any further PT (D4, pilot).
+
+## 7b. Smoke suite — CONCRETE specs (hand to Clark) — 2026-07-13
+
+Each test: setup / procedure / PASS. Unit tests need no MPI; integration tests
+need N>=3 ranks and a SPREAD ladder (equal-s hides the bug; N=2 cannot expose it).
+Reference ladder for L=8, N=4: s = {0.22, 0.26, 0.30, 0.34} (moderate spread,
+~decent per-link overlap; retune if any link <5%). Diagnostics used:
+ladder_index_by_sample (per rank), swap_{attempted,accepted}_by_link (keyed by
+ladder position link_index=min(local_index,partner_index) — already correct).
+
+S0 REGRESSION (guard the fix): 2-rank G1.2 (swap-weight <1e-8) and G1.3 (PT-on==
+   PT-off, z<3) still PASS unchanged. PASS: both still pass.
+
+S1 PERMUTATION INTEGRITY.
+   (a) Unit/fault-injection: call the validator on ladder_index_by_rank =
+       [0,1,1,3] (dup) and [0,1,5,3] (out-of-range) => MUST throw/abort; on
+       [0,1,2,3] and [2,0,3,1] => MUST pass.
+   (b) Integration: N=4 spread, >=2000 swap attempts => NO false abort.
+   PASS: (a) aborts iff invalid; (b) healthy run never aborts.
+
+S2 PARTNER CORRECTNESS (pure unit; extract partner_rank(my_rank,
+   ladder_index_by_rank, phase) as a testable free function).
+   Cases (assert exact):
+     [0,1,2,3] phase0: partner(0)=1, partner(2)=3.
+     [0,1,2,3] phase1: partner(1)=2; partner(0)=NONE, partner(3)=NONE (endpoints).
+     [1,0,3,2] phase1 (THE bug case): partner(0)=3, partner(3)=0;
+        partner(1)=NONE, partner(2)=NONE.  (rank0 holds pos1, needs pos2's holder
+        = rank3. The OLD rank+/-1 logic returns 1 here => must FAIL old, PASS new.)
+     [2,3,0,1] phase0: partner(2)=3, partner(0)=1.
+   PASS: all match; include an xfail/assert documenting the old logic fails
+   [1,0,3,2] phase1.
+
+S3 FULL TRAVERSAL (killer integration; N=4 AND N=8, spread ladder, ~5000 swap
+   attempts). Record ladder_index_by_sample per rank.
+   PASS: for EVERY rank, (max_index_visited - min_index_visited) == N-1 (full
+   span) AND total strict round-trips >= N over the run.
+   FAILS on buggy code: each rank's span == 1 (confined to its pair), 0 round-trips.
+
+S4 DETAILED BALANCE / PHYSICS (integration, N=4 spread). Reorganize PT-on samples
+   by ladder_index; compare each position's marginal (energy + one more obs) to an
+   independent PT-OFF single chain run at that s (4 chains).
+   PASS: z<3 for every position and observable.
+
+S5 ACCEPTANCE SHAPE (from the S3 run). Per-link acceptance (by ladder position)
+   for all N-1 links.
+   PASS: min link acceptance > 5% (target 20-40%); NO near-zero-link-amid-healthy
+   pattern (the bug fingerprint).
+
+S6 RT-ANALYSIS CONSISTENCY. strict round-trip count from scripts/pt_diagnostics.py
+   == an independent recompute on the same ladder_index_by_sample.
+   PASS: exact match. (Guards against the analyzer miscount that made the old
+   6-rank "round-trips" look fine.)
+
+GATE (unchanged): S0-S6 all PASS on a CLEAN rebuild + independent review, AND
+G1.2/G1.3 re-run at N>=3, BEFORE any further PT (D4, D3, pilot).

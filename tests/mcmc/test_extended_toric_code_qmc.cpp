@@ -1289,6 +1289,49 @@ BOOST_AUTO_TEST_CASE(boost_pt_swap_weight_matches_bruteforce_l8) {
     BOOST_TEST(max_deviation < 1e-8);
 }
 
+BOOST_AUTO_TEST_CASE(pt_ladder_index_permutation_validation) {
+    BOOST_CHECK_NO_THROW(paratoric::parallel_tempering_rank_of_ladder_index(
+        std::vector<int>{0, 1, 2, 3}));
+    BOOST_CHECK_NO_THROW(paratoric::parallel_tempering_rank_of_ladder_index(
+        std::vector<int>{2, 0, 3, 1}));
+    BOOST_CHECK_THROW(paratoric::parallel_tempering_rank_of_ladder_index(
+        std::vector<int>{0, 1, 1, 3}), std::invalid_argument);
+    BOOST_CHECK_THROW(paratoric::parallel_tempering_rank_of_ladder_index(
+        std::vector<int>{0, 1, 5, 3}), std::invalid_argument);
+}
+
+BOOST_AUTO_TEST_CASE(pt_partner_rank_uses_ladder_position) {
+    const auto partner = [](int rank, const std::vector<int>& permutation, int phase) {
+        return paratoric::parallel_tempering_partner_rank(rank, permutation, phase);
+    };
+
+    const std::vector<int> identity{0, 1, 2, 3};
+    BOOST_REQUIRE(partner(0, identity, 0));
+    BOOST_CHECK_EQUAL(*partner(0, identity, 0), 1);
+    BOOST_REQUIRE(partner(2, identity, 0));
+    BOOST_CHECK_EQUAL(*partner(2, identity, 0), 3);
+    BOOST_REQUIRE(partner(1, identity, 1));
+    BOOST_CHECK_EQUAL(*partner(1, identity, 1), 2);
+    BOOST_CHECK(!partner(0, identity, 1));
+    BOOST_CHECK(!partner(3, identity, 1));
+
+    const std::vector<int> accepted_pair_scramble{1, 0, 3, 2};
+    BOOST_REQUIRE(partner(0, accepted_pair_scramble, 1));
+    BOOST_CHECK_EQUAL(*partner(0, accepted_pair_scramble, 1), 3);
+    BOOST_REQUIRE(partner(3, accepted_pair_scramble, 1));
+    BOOST_CHECK_EQUAL(*partner(3, accepted_pair_scramble, 1), 0);
+    BOOST_CHECK(!partner(1, accepted_pair_scramble, 1));
+    BOOST_CHECK(!partner(2, accepted_pair_scramble, 1));
+    const int old_buggy_rank_partner = 0 + 1;
+    BOOST_CHECK_NE(old_buggy_rank_partner, *partner(0, accepted_pair_scramble, 1));
+
+    const std::vector<int> two_pair_scramble{2, 3, 0, 1};
+    BOOST_REQUIRE(partner(2, two_pair_scramble, 0));
+    BOOST_CHECK_EQUAL(*partner(2, two_pair_scramble, 0), 3);
+    BOOST_REQUIRE(partner(0, two_pair_scramble, 0));
+    BOOST_CHECK_EQUAL(*partner(0, two_pair_scramble, 0), 1);
+}
+
 BOOST_AUTO_TEST_CASE(pt_swap_period_sweeps_resolves_to_l2_scaled_moves) {
     paratoric::LatSpec l8_lat_spec = {
         .basis = 'z',

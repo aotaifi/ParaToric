@@ -26,6 +26,7 @@
 #include <iterator>
 #include <limits>
 #include <numeric>
+#include <optional>
 #include <random>
 #include <span>
 #include <string>
@@ -277,6 +278,55 @@ inline std::int64_t parallel_tempering_swap_period_moves(
         throw std::overflow_error("pt_swap_period_sweeps is too large.");
     }
     return std::max<std::int64_t>(1, std::llround(moves));
+}
+
+inline std::vector<int> parallel_tempering_rank_of_ladder_index(
+    std::span<const int> ladder_index_by_rank
+) {
+    const auto world_size = static_cast<int>(ladder_index_by_rank.size());
+    std::vector<int> rank_of_ladder_index(ladder_index_by_rank.size(), -1);
+    for (int rank = 0; rank < world_size; ++rank) {
+        const int ladder_index = ladder_index_by_rank[static_cast<size_t>(rank)];
+        if (ladder_index < 0 || ladder_index >= world_size) {
+            throw std::invalid_argument(std::format(
+                "PT ladder index {} from rank {} is outside [0, {}).",
+                ladder_index, rank, world_size));
+        }
+        if (rank_of_ladder_index[static_cast<size_t>(ladder_index)] != -1) {
+            throw std::invalid_argument(std::format(
+                "PT ladder index {} is reported by both rank {} and rank {}.",
+                ladder_index,
+                rank_of_ladder_index[static_cast<size_t>(ladder_index)],
+                rank));
+        }
+        rank_of_ladder_index[static_cast<size_t>(ladder_index)] = rank;
+    }
+    return rank_of_ladder_index;
+}
+
+inline std::optional<int> parallel_tempering_partner_rank(
+    int my_rank,
+    std::span<const int> ladder_index_by_rank,
+    int phase
+) {
+    const auto world_size = static_cast<int>(ladder_index_by_rank.size());
+    if (my_rank < 0 || my_rank >= world_size) {
+        throw std::invalid_argument("PT rank is outside the gathered rank range.");
+    }
+    if (phase != 0 && phase != 1) {
+        throw std::invalid_argument("PT swap phase must be 0 or 1.");
+    }
+
+    const auto rank_of_ladder_index =
+        parallel_tempering_rank_of_ladder_index(ladder_index_by_rank);
+    const int my_ladder_index = ladder_index_by_rank[static_cast<size_t>(my_rank)];
+    const int partner_ladder_index = phase == 0
+        ? (my_ladder_index % 2 == 0 ? my_ladder_index + 1 : my_ladder_index - 1)
+        : (my_ladder_index % 2 == 1 ? my_ladder_index + 1 : my_ladder_index - 1);
+    if (partner_ladder_index < 0 || partner_ladder_index >= world_size) {
+        return std::nullopt;
+    }
+    return rank_of_ladder_index[static_cast<size_t>(partner_ladder_index)];
 }
 
 template<char Basis, typename LatticeT = Lattice>
@@ -3871,8 +3921,17 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
 #ifdef PARATORIC_HAS_MPI
                 if (pt_enabled && ((i + 1) % pt_swap_period_moves) == 0) {
                     const int phase = static_cast<int>(((i + 1) / pt_swap_period_moves) & 1);
-                    const int partner = (pt_rank % 2 == phase) ? pt_rank + 1 : pt_rank - 1;
-                    if (partner >= 0 && partner < pt_world_size) {
+                    std::vector<int> ladder_index_by_rank(static_cast<size_t>(pt_world_size), -1);
+                    mpi_detail::fail_on_mpi_error(
+                        MPI_Allgather(&pt_ladder_index, 1, MPI_INT,
+                                      ladder_index_by_rank.data(), 1, MPI_INT,
+                                      MPI_COMM_WORLD),
+                        "MPI_Allgather(pt_ladder_index)"
+                    );
+                    const auto partner_rank = parallel_tempering_partner_rank(
+                        pt_rank, ladder_index_by_rank, phase);
+                    if (partner_rank) {
+                        const int partner = *partner_rank;
                         ++pt_diagnostics.swap_attempted;
                         double partner_h = 0.;
                         double partner_lmbda = 0.;
@@ -3977,8 +4036,17 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
 #ifdef PARATORIC_HAS_MPI
             if (pt_enabled && (total_metropolis_step_count % pt_swap_period_moves) == 0) {
                 const int phase = static_cast<int>((total_metropolis_step_count / pt_swap_period_moves) & 1);
-                const int partner = (pt_rank % 2 == phase) ? pt_rank + 1 : pt_rank - 1;
-                if (partner >= 0 && partner < pt_world_size) {
+                std::vector<int> ladder_index_by_rank(static_cast<size_t>(pt_world_size), -1);
+                mpi_detail::fail_on_mpi_error(
+                    MPI_Allgather(&pt_ladder_index, 1, MPI_INT,
+                                  ladder_index_by_rank.data(), 1, MPI_INT,
+                                  MPI_COMM_WORLD),
+                    "MPI_Allgather(pt_ladder_index)"
+                );
+                const auto partner_rank = parallel_tempering_partner_rank(
+                    pt_rank, ladder_index_by_rank, phase);
+                if (partner_rank) {
+                    const int partner = *partner_rank;
                     ++pt_diagnostics.swap_attempted;
                     double partner_h = 0.;
                     double partner_lmbda = 0.;
