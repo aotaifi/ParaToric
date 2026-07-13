@@ -353,10 +353,15 @@ issue as before), so this is confirmed by static code analysis (by two
 independent readers: Clark and Jarvis) rather than an observed instrumented
 trace — still solid given the exact code-level match to MPI's documented
 collective semantics, but flagging that caveat.
-Fix (Clark's proposal, not yet applied): replace the world-communicator
-Bcast with pair-scoped point-to-point communication (Send/Recv between
-just the two ranks in the pair, using the existing Sendrecv-tag pattern
-already used elsewhere in this same swap block) — dispatching this now.
+Fix implemented and committed (`0e51978`): world-communicator Bcast
+replaced with pair-scoped Send/Recv (deciding rank sends `accepted`
+directly to its exact partner via new tags 7106/7208, distinct from
+existing 7101-7104/7201-7207). Martina's independent review: PASS on all
+6 spec points (tags distinct, no self-partner/deadlock case, no leftover
+Bcast anywhere, swap-weight/migration untouched, partner-selection fix
+from `0289b6c` untouched). Resubmitted the real integration tests against
+this new commit: `15053792` (N=4), `15053793` (N=8) — queued cleanly.
+Awaiting readout.
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause
