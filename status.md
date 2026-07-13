@@ -249,8 +249,53 @@ persisted Feynman's new `doc/paratoric_run_manual.md` (consolidates this
 whole session's G1-G5 golden rules, B1-B6 validity checklist, C1-C8 pitfall
 catalog, minimal recipe, and F1-F8 PT diagnosis checklist) — now mandatory
 bootstrap reading per AGENTS.md.
-Readout pending: per-link acceptance, strict round-trips, tau_ergodic
-(standing PT diagnostics rule) + Binder-cumulant h_c crossing check.
+Readout: jobs `15041840/41/42` OOM'd (6G/15 ranks too little), fixed to 32G,
+resubmitted as `15048478/79/80` (L20/24/28), all 3 COMPLETED cleanly.
+
+## PT-based Linsel benchmark verdict: NO-GO — plus a CRITICAL, verified code bug
+Mechanism: F3 strict round-trips = 0/15 at ALL THREE L values (ladder is not
+mixing at all). Per-link acceptance overwhelmingly near-zero (many links
+<1e-3, isolated spikes at 0.16-1.0) — far below the 20-40% healthy target.
+Physics: Binder-cumulant crossing NOT stationary within the sampling window
+(z=1.6-3.5 first-half vs second-half at several h) and drifts across L-pairs
+(0.332/0.331 for L20/24 -> 0.327/0.330 for L24/28 -> not converging on
+0.335(2)).
+
+**CRITICAL FINDING (independently verified by Jarvis via direct code read,
+not just relayed from the worker): the swap-partner-selection logic has a
+real bug.** `extended_toric_code_qmc.hpp` (~line 3976): partner is chosen by
+FIXED MPI RANK (`partner = (pt_rank%2==phase) ? pt_rank+1 : pt_rank-1`), but
+on every ACCEPTED swap, `pt_ladder_index` (and h/lmbda) MIGRATE between
+ranks (`pt_ladder_index = partner_index` on accept). Traced through
+concretely: after even ONE accepted swap between ranks R,R+1, rank R ends
+up holding a LARGER ladder_index than rank R+1 — the rank-axis is no longer
+sorted by ladder position. Every subsequent "adjacent-RANK" swap attempt
+thereafter can end up pairing ranks holding FAR-APART ladder indices (huge
+h-gap => near-zero acceptance almost always, with rare spikes when rank
+adjacency happens to coincide with index adjacency again) — this exactly
+matches the observed near-total mechanism failure. **Invisible with only 2
+ranks** (every prior PT test this session — G1.2/G1.3, D1, D4's own unit
+tests — used exactly 2-rank ladders, where rank-adjacency and
+index-adjacency are trivially the same single pair regardless of
+migration). This is the FIRST run this session to exercise 3+ ranks at
+scale, and it appears to have caught a real, previously-invisible bug in
+the core swap mechanism — not a physics problem, not a resource/sizing
+issue, and not something more thermalization or more chains would fix.
+
+**This calls into question PT-mechanism trust for every run that used
+2-rank ladders as "validated" evidence of correctness at scale** (the
+2-rank tests remain valid for what they actually tested — the swap-WEIGHT
+formula itself — but say nothing about whether the swap-PARTNER selection
+generalizes correctly to N>2 ranks, which is precisely what production runs
+at L=120 will need).
+
+STOPPING here rather than either quietly accepting this or unilaterally
+starting a large fix to the core swap-partner logic — this is consequential
+enough (re-litigates trust in prior PT validation, touches the core
+production mechanism) to report clearly and pause for explicit
+Feynman/PI direction before proceeding, rather than autonomously
+re-architecting the swap mechanism. Full diagnostic data:
+`/scratch/a/A.Otaifi/paratoric_pt_linsel_benchmark_20260713/results/`.
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause

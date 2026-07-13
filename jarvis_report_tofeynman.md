@@ -678,3 +678,61 @@ ladder across Linsel's fixed-lmbda=0.3 line, L=20-30, confirm PT recovers
 h_c=0.335(2)/nu=0.65 WITH PT on) — D4 itself is already implemented, tested,
 and independently reviewed (commit e42914d), so this is ready to run. Will
 report the result once staged.
+
+## URGENT RESULT — PT-based Linsel benchmark: NO-GO, and I independently verified a real bug in the swap-partner-selection logic (2026-07-13)
+
+The D4/Step-5 PT validation run (L={20,24,28}, 15-rank ladders, h in
+[0.15,0.50] bracketing h_c=0.335, lmbda=0.3 constant, mu=J=1, z-basis)
+completed after fixing an unrelated OOM (6G/15-ranks was too little,
+resubmitted at 32G). The readout is NO-GO on both mechanism and physics:
+
+- Mechanism: 0/15 strict round-trips at ALL THREE L values. Per-link
+  acceptance is overwhelmingly near-zero (most links <1e-3), with isolated
+  spikes at 0.16-1.0 — nowhere close to the 20-40% healthy target.
+- Physics: the Binder-cumulant crossing is not stationary within the
+  sampling window (first/second-half z up to 3.5 at several h) and drifts
+  across L-pairs, not converging on 0.335(2).
+
+I did not just relay the worker's read here — given how consequential this
+is, I read the actual swap code myself
+(src/mcmc/extended_toric_code_qmc.hpp, ~line 3976) before writing this. The
+worker's flag holds up: `partner = (pt_rank%2==phase) ? pt_rank+1 : pt_rank-1`
+selects the swap partner by FIXED MPI RANK NUMBER. But on every ACCEPTED
+swap, `pt_ladder_index` (and the h/lmbda values themselves) MIGRATE between
+ranks (`pt_ladder_index = partner_index` on accept — this is the documented
+"config-stays, label migrates" scheme). I traced a concrete 4-rank example:
+starting sorted (rank R holds ladder_index R for all R), after ONE accepted
+swap between ranks R and R+1, rank R now holds R+1's OLD (larger) index and
+vice versa — the rank axis is no longer sorted by ladder position. Every
+subsequent "adjacent-RANK" swap attempt after that can end up comparing
+ranks holding FAR-APART ladder indices (a large h-gap, which the physics
+correctly almost never accepts) — this is a self-consistent, mechanistic
+explanation for the near-total mechanism failure observed, not just a
+coincidence.
+
+Why this was invisible until now: every prior PT correctness test this
+session (G1.2/G1.3, D1's swap_period fix, D4's own unit tests) used exactly
+2-rank ladders. With only 2 ranks, "adjacent rank" and "adjacent ladder
+index" are trivially the SAME single pair regardless of any migration — the
+bug has no way to manifest. This is the first run this session to actually
+exercise 3+ ranks, and it appears to have surfaced a real, previously
+untested gap between the swap-WEIGHT formula (verified correct at 2 ranks,
+still correct in isolation) and the swap-PARTNER-selection mechanism (never
+exercised at N>2 ranks until now).
+
+Implication I want to flag explicitly: this means the swap-weight physics
+being right does NOT mean the overall N-rank ladder mechanism is right —
+those are separable claims, and only the first was actually tested before
+today. Production runs (L=120, presumably many more than 2 ladder rungs)
+would inherit this same problem if it's real.
+
+I am NOT proposing a fix myself yet (this would mean redesigning how a rank
+finds its "current ladder-index neighbor" — likely needs an MPI_Allgather of
+(rank, ladder_index) pairs before each swap phase, then routing swap
+requests to whichever rank currently holds ladder_index±1, not
+pt_rank±1 — a real architectural change to the core exchange loop, not a
+small patch). Given how much prior PT work this potentially calls into
+question, I'm stopping to report rather than unilaterally redesigning the
+core swap mechanism — flagging for your (and the PI's) explicit direction
+on how to proceed. Full data:
+/scratch/a/A.Otaifi/paratoric_pt_linsel_benchmark_20260713/results/.
