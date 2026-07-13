@@ -331,6 +331,32 @@ N=8 run (15052943) still in progress; PT-off references (15052944)
 completed cleanly (unaffected, as expected — no swap logic involved).
 NOT resubmitting blindly — dispatching a focused root-cause investigation
 before any further integration attempts. Reported to Feynman.
+
+## SECOND bug found and independently confirmed: MPI_Bcast misuse on MPI_COMM_WORLD
+Root cause (Clark's static hypothesis, INDEPENDENTLY VERIFIED by Jarvis via
+direct code read, `extended_toric_code_qmc.hpp:4044,4201`):
+`MPI_Bcast(&accepted, 1, MPI_INT, std::min(pt_rank, partner), MPI_COMM_WORLD)`
+is called PER SWAP PAIR, but targets the FULL world communicator. Whenever
+a phase has MULTIPLE simultaneous disjoint pairs (any N>=4 — e.g. (0,1) and
+(2,3) in the same phase), each pair's Bcast call declares a DIFFERENT root
+(0 vs 2) on the SAME communicator — a genuine MPI-standard violation
+(collective calls on a communicator must agree on the root across ALL
+participants). This is undefined behavior: some ranks can receive the
+WRONG pair's "accepted" value, causing asymmetric/incorrect migration —
+exactly the mechanism that would produce a duplicate ladder index. This is
+a SEPARATE bug from the already-fixed partner-selection issue, likely
+PRE-EXISTING (would have affected the ORIGINAL code too, at any N>=4,
+independent of the partner-selection bug) — meaning the G1.2/G1.3 6-rank
+retraction (job 14982619) may have TWO independent root causes, not one.
+Instrumented local-MPI reproduction was blocked (same PMIx/socket sandbox
+issue as before), so this is confirmed by static code analysis (by two
+independent readers: Clark and Jarvis) rather than an observed instrumented
+trace — still solid given the exact code-level match to MPI's documented
+collective semantics, but flagging that caveat.
+Fix (Clark's proposal, not yet applied): replace the world-communicator
+Bcast with pair-scoped point-to-point communication (Send/Recv between
+just the two ranks in the pair, using the existing Sendrecv-tag pattern
+already used elsewhere in this same swap block) — dispatching this now.
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause
