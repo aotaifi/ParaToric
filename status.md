@@ -236,7 +236,15 @@ scaled ~L^2 (500k/720k/980k sweeps, first diagnostic pass not a final
 answer). Jobs `15041840` (L20), `15041841` (L24), `15041842` (L28) —
 confirmed genuinely RUNNING (an initial squeue snapshot suggested a
 July-17 start, which was a stale scheduler estimate at submission instant,
-not real; sacct confirms all 3 running normally). Hard cap 3h. Also
+not real; sacct confirms all 3 running normally). Hard cap 3h.
+**ALL 3 FAILED with OUT_OF_MEMORY** shortly after starting: `--mem=6G` was
+requested for the WHOLE node but shared across 15 MPI ranks (~400MB/rank,
+clearly insufficient). Simple resource-sizing bug, not a physics/code issue
+— fixed the sbatch script's `--mem` to 32G and resubmitted directly
+(Jarvis, not a worker dispatch, since this was a one-line mechanical fix):
+`15048478` (L20), `15048479` (L24), `15048480` (L28), same
+ladder/thermalization params, fresh seeds. Queued (PENDING/Priority, not
+stuck). Also
 persisted Feynman's new `doc/paratoric_run_manual.md` (consolidates this
 whole session's G1-G5 golden rules, B1-B6 validity checklist, C1-C8 pitfall
 catalog, minimal recipe, and F1-F8 PT diagnosis checklist) — now mandatory
