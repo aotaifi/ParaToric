@@ -360,8 +360,24 @@ existing 7101-7104/7201-7207). Martina's independent review: PASS on all
 6 spec points (tags distinct, no self-partner/deadlock case, no leftover
 Bcast anywhere, swap-weight/migration untouched, partner-selection fix
 from `0289b6c` untouched). Resubmitted the real integration tests against
-this new commit: `15053792` (N=4), `15053793` (N=8) — queued cleanly.
-Awaiting readout.
+this new commit: `15053792` (N=4), `15053793` (N=8) — BOTH COMPLETED
+cleanly (no permutation-validator exception this time).
+
+**Independent second-opinion review (James, gpt-5.6-sol, PI-requested):**
+PASS, independently confirms Martina's PASS on both `0289b6c` and
+`0e51978`. Traced an N=5 (odd) case by hand and found the algorithm holds
+(unmatched endpoint safely skips pair traffic, permutation preserved).
+Confirmed no other latent MPI collective-misuse patterns in the PT code
+path. Confirmed `validate_swap_weight`'s brute-force cross-check still
+works correctly given the accept-decision timing change. Confirmed
+MPI_Allgather overhead is negligible at production scale (60 bytes/rank/
+phase at N=15 vs 57,600 local updates between swaps at L=120). Two minor,
+non-blocking hardening suggestions for later: (a) add an explicit odd-N
+test case, (b) the permutation-integrity failure path throws collectively
+rather than using `MPI_Abort` per the spec's literal wording — currently
+safe since all ranks see identical gathered data and would throw
+identically, but worth tightening for defense-in-depth.
+Next: full S1b/S3-S6 readout on the completed N=4/N=8 runs.
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause
