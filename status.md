@@ -397,7 +397,8 @@ everywhere and 0 round-trips). Extending the N=8 run's sweep budget and
 rerunning that one check, rather than reopening the code investigation.
 Two independent reviewers (Martina, James/gpt-5.6-sol) have already
 cleared both fixes; this is a sampling-budget gap in the smoke test, not
-new evidence of a bug.
+new evidence of a bug. Resubmitted N=8 with 3x production sweeps
+(N_SAMPLES 8000->24000): job `15054939`, running.
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause
