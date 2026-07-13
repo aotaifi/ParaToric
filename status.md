@@ -377,7 +377,27 @@ test case, (b) the permutation-integrity failure path throws collectively
 rather than using `MPI_Abort` per the spec's literal wording — currently
 safe since all ranks see identical gathered data and would throw
 identically, but worth tightening for defense-in-depth.
-Next: full S1b/S3-S6 readout on the completed N=4/N=8 runs.
+## S1b/S3/S4/S5/S6 readout: N=4 FULL PASS, N=8 PARTIAL (S3 traversal short)
+| Check | N=4 | N=8 |
+|---|---|---|
+| S1b | PASS (0/8000 invalid permutations) | PASS (0/8000 invalid) |
+| S3  | PASS (4/4 ranks span 3, 32 strict RT >=4) | **FAIL**: 6/8 ranks span 7 (rank1 span5, rank6 span6); total RT=16 >=8 (RT bar itself PASSES) |
+| S4  | PASS (energy z=[0.80,1.73,1.72,0.15], sigma_z z=[0.62,2.35,0.26,0.41], all <3) | N/A (S4 spec is N=4 only) |
+| S5  | PASS (21.4%/14.3%/10.6%, healthy) | PASS (23.9-48.1% across all 7 links, old near-zero+spike fingerprint ABSENT) |
+| S6  | PASS (canonical=independent=32) | PASS (canonical=independent=16) |
+
+**Verdict: N=4 is a clean GO. N=8 is NO-GO on the LETTER of S3's strict
+full-span bar, but the failure mode is qualitatively benign**: acceptance
+is healthy on every link (23-48%, no dead links, the old bug's fingerprint
+completely absent) and round-trips already exceed N (16>=8) — this reads
+as a finite-smoke-test-budget shortfall (2 of 8 ranks hadn't yet visited
+both ladder ends within this run's modest sweep count), NOT a recurrence
+of the severed-ladder mechanism failure (which showed near-zero acceptance
+everywhere and 0 round-trips). Extending the N=8 run's sweep budget and
+rerunning that one check, rather than reopening the code investigation.
+Two independent reviewers (Martina, James/gpt-5.6-sol) have already
+cleared both fixes; this is a sampling-budget gap in the smoke test, not
+new evidence of a bug.
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause
