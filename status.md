@@ -227,7 +227,22 @@ benchmark (D4's validation run: PT ladder across Linsel's fixed-lmbda=0.3
 line, confirm h_c=0.335/nu=0.65 recovery WITH PT) rather than continuing to
 push the no-PT single-chain approach deeper. D4 (independent h,lmbda PT) is
 already implemented, tested, and Martina-reviewed (`e42914d`) — ready to use.
-Next: stage the D4/Step-5 PT validation run.
+
+## D4/Step-5 PT-based Linsel benchmark: STAGED and RUNNING (commit `1b2d674`)
+3 Slurm/MPI jobs, one per L in {20,24,28}, 15-rank ladders, h in [0.15,0.50]
+(dh=0.025) bracketing h_c=0.335, lmbda=0.3 CONSTANT across all ranks (D4's
+generalization), mu=J=1, z-basis, swap_period=2.0 sweeps, thermalization
+scaled ~L^2 (500k/720k/980k sweeps, first diagnostic pass not a final
+answer). Jobs `15041840` (L20), `15041841` (L24), `15041842` (L28) —
+confirmed genuinely RUNNING (an initial squeue snapshot suggested a
+July-17 start, which was a stale scheduler estimate at submission instant,
+not real; sacct confirms all 3 running normally). Hard cap 3h. Also
+persisted Feynman's new `doc/paratoric_run_manual.md` (consolidates this
+whole session's G1-G5 golden rules, B1-B6 validity checklist, C1-C8 pitfall
+catalog, minimal recipe, and F1-F8 PT diagnosis checklist) — now mandatory
+bootstrap reading per AGENTS.md.
+Readout pending: per-link acceptance, strict round-trips, tau_ergodic
+(standing PT diagnostics rule) + Binder-cumulant h_c crossing check.
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause
