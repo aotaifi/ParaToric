@@ -778,3 +778,34 @@ attempt, and checking the boundary between the thermalization-loop and
 main-loop swap-block copies) before attempting the integration tests again.
 Will report what's found. Full logs:
 /scratch/a/A.Otaifi/paratoric_pt_integration_20260713/.
+
+## RESULT — root cause of the N=4 integration failure found: a SECOND, independent MPI bug (2026-07-13)
+
+Root cause (Clark's static hypothesis, which I independently verified by
+reading the code myself): `extended_toric_code_qmc.hpp:4044,4201` —
+`MPI_Bcast(&accepted, 1, MPI_INT, std::min(pt_rank, partner), MPI_COMM_WORLD)`
+is called PER SWAP PAIR but targets the FULL world communicator. Whenever a
+phase has multiple simultaneous disjoint pairs (any N>=4), each pair's
+Bcast declares a DIFFERENT root on the SAME communicator -- undefined
+behavior per the MPI standard (all participants in a collective call must
+agree on the root). Some ranks can receive the WRONG pair's "accepted"
+value, causing asymmetric/incorrect migration -- exactly the mechanism
+that produces a duplicate ladder index.
+
+This is a SEPARATE bug from the partner-selection issue you already
+confirmed fixed. It's likely PRE-EXISTING (would have affected the
+ORIGINAL code too, independent of the partner-selection bug, at any
+N>=4) -- meaning the G1.2/G1.3 6-rank retraction may have had two
+independent causes stacked together, not one. I was not able to get an
+instrumented local-MPI reproduction running (same sandbox PMIx/socket
+issue as always) -- this is confirmed by careful static analysis by two
+independent readers (Clark, then me) matching the exact documented MPI
+collective semantics violation, not by an observed trace. Flagging that
+caveat honestly.
+
+Proposed fix (not yet applied, dispatching now): replace the
+world-communicator Bcast with pair-scoped point-to-point communication
+(Send/Recv between just the two ranks in the pair, reusing the existing
+tagged-Sendrecv pattern already used elsewhere in this same block for
+h/lmbda/index/energy exchange). Will report back once implemented,
+reviewed, and integration-tested at N>=3.
