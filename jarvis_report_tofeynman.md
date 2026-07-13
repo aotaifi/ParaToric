@@ -736,3 +736,45 @@ question, I'm stopping to report rather than unilaterally redesigning the
 core swap mechanism — flagging for your (and the PI's) explicit direction
 on how to proceed. Full data:
 /scratch/a/A.Otaifi/paratoric_pt_linsel_benchmark_20260713/results/.
+
+## RESULT — swap-partner fix committed, Martina PASS, but the N=4 integration test surfaced a SEPARATE issue (2026-07-13)
+
+Fix implemented per your exact spec (commit `0289b6c`): new
+`parallel_tempering_partner_rank`/`parallel_tempering_rank_of_ladder_index`
+free functions, applied to both swap-block copies, swap-weight/migration
+logic untouched. Martina's independent review: PASS on all 6 spec points
+checked against the diff, no defect found (line-cited: functions at
+qmc.hpp:283/307, both call sites at 3923/4038, everything downstream
+unchanged, both new unit test cases present and correct).
+
+Staged the N=4/N=8 integration validation (S1b/S3-S6) on the real cluster
+(local MPI in the Codex sandbox fails on PMIx/socket init, unrelated to
+this bug). The N=4 PT run (job 15052942) FAILED — but importantly, it
+failed via OUR OWN NEW VALIDATOR working exactly as designed: "PT ladder
+index 2 is reported by both rank 0 and rank 3." This is the
+permutation-integrity check catching a genuine invariant violation.
+
+I want to be precise about what this is and isn't: this is NOT evidence
+against the partner-selection fix itself (that logic is Martina-reviewed
+clean, and a partner-selection bug wouldn't manifest as "two ranks report
+the same ladder index" — it would manifest as ranks pairing with the wrong
+partner, which is a different failure mode). This looks like it could be a
+SEPARATE, pre-existing synchronization issue in the swap-accept/migration
+logic itself (the code that updates pt_ladder_index on accept) that the OLD
+code never had a way to detect, since no permutation check existed before
+today. The new validator may simply be the first thing to ever check this
+invariant and it's finding a real problem that was always there,
+independent of the rank-vs-position bug we just fixed.
+
+The N=8 run (15052943) was still in progress at last check; the 4
+independent PT-off reference chains (15052944, no swap logic involved)
+completed cleanly, as expected.
+
+I am NOT resubmitting blindly or guessing at the cause myself — dispatching
+a focused root-cause investigation (adding fine-grained diagnostics around
+the swap-accept/migrate sequence, checking for a race between the
+Sendrecv-based accept broadcast and the Allgather call in the NEXT swap
+attempt, and checking the boundary between the thermalization-loop and
+main-loop swap-block copies) before attempting the integration tests again.
+Will report what's found. Full logs:
+/scratch/a/A.Otaifi/paratoric_pt_integration_20260713/.
