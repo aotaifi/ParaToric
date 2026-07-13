@@ -9,7 +9,13 @@ ParaToric scope lock. Do not mix sibling-project notes/scripts.
 2. `doc/multicritical_universality_plan.md` — milestones, observables, literature.
 3. `doc/multicritical_execution_harness.md` — HARD gates/invariants; no
    production submission without the relevant gate PASSED in the tracker.
-4. Only then task-specific evidence: `performance_report.md`,
+4. `doc/paratoric_run_manual.md` — MANDATORY before designing/judging ANY run:
+   how to pick parameters (L, beta=L, thermalization depth, chains, spacing,
+   observable/channel) and how to validate a run (thermalization by cold/hot I5
+   NOT within-chain Neff; sampling by Neff of the worst observable; the pitfall
+   catalog). Every rule there was paid for by a real mistake — running ParaToric
+   is delicate, especially at the MCP.
+5. Only then task-specific evidence: `performance_report.md`,
    `doc/performance_notes_2026-06.md`, `doc/performance_deep_dive_plan.md`.
 
 ## Fixed facts (verified 2026-07, commit d085509)

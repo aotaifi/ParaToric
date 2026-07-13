@@ -1,8 +1,27 @@
 # Multicritical Campaign Tracker — current-state card
 
-Updated: 2026-07-12 (rewrite this card in place; durable results -> plan/report).
+Updated: 2026-07-13 (rewrite this card in place; durable results -> plan/report).
 
 ## Status
+- PT-based Linsel D4 diagnostic jobs submitted 2026-07-13 from
+  `/scratch/a/A.Otaifi/paratoric_pt_linsel_benchmark_20260713/submit_pt_linsel.sbatch`:
+  L20=`15041840`, L24=`15041841`, L28=`15041842`. Each is one node, 15 MPI
+  ranks/tasks, 1 CPU/rank, 6G, 3h, using the job-14982619-proven Spack OpenMPI
+  5/GCC 13 toolchain and `srun --mpi=pmix`; source commit `771ada3` includes D4
+  commit `e42914d`. All sizes use beta=L, mu=J=1, z basis, fixed lmbda=0.3,
+  evenly spaced h={0.150,0.175,...,0.500}, and swap period 2 sweeps.
+  First-pass thermalization is 500k/720k/980k sweeps for L=20/24/28 (scaled
+  approximately as L^2), followed by 100k full-series samples every 2 sweeps.
+  Outputs retain percolation/plaquette strength and probability, energy,
+  sigma_z, largest_cluster, per-link swap counts, and aligned
+  ladder_index_by_sample. Fresh dispatch must aggregate observables by ladder
+  index before `ensemble_diagnostics.py` Binder/tau readout, then run
+  `pt_diagnostics.py`; do not treat per-process mixed-h summaries as rung
+  marginals. Expected runtimes after scheduling are roughly 0.5/1.0/1.5h
+  (hard cap 3h); dry-run predicted a priority-delayed start near 2026-07-17
+  06:49 CEST. The single combined squeue snapshot and concise alerts failed on
+  transient Slurm-controller DNS and were not retried; primary submissions had
+  already returned the job IDs above.
 - Decisive L32,h=0.335 thermalization array `15039919` submitted 2026-07-12
   using `scripts/submit_thermalization_decisive_l32_20260712.sbatch`: 8
   independent one-core tasks (4 default_spin=+1 cold, 4 default_spin=-1 hot),
@@ -64,6 +83,12 @@ Updated: 2026-07-12 (rewrite this card in place; durable results -> plan/report)
   round-trips (visited_both_ranks), up/down flow per replica, tau_ergodic in
   sweeps, tau(percolation_strength) at the s* rung. Incomplete reports don't
   gate decisions.
+- RUN MANUAL (mandatory before designing/judging any run): doc/paratoric_run_manual.md
+  — parameter picking + post-run validation checklist + pitfall catalog. Golden
+  rules: (G1) thermalization judged by cold/hot (I5) NOT within-chain Neff;
+  (G2) thermalization depth non-decreasing in L at fixed critical h; (G3) >=4
+  chains; (G4) Neff of the worst observable not raw N; (G5) calibrate observables
+  on known static configs first. Added to AGENTS.md bootstrap order.
 - Next action: D1 (swap_period fix) — dispatched to Clark, Martina review,
   clean-rebuild verification per this session's standing process rule.
 
@@ -72,6 +97,7 @@ Updated: 2026-07-12 (rewrite this card in place; durable results -> plan/report)
 |---|---|---|---|---|
 | 2026-07-07 | pre | code review (chat) + performance_report.md | — | plan approved by user |
 | 2026-07-12 | D2/D3 done (parallel worktrees) | Jones (D2, `scripts/pt_diagnostics.py`) + James (D3, `scripts/adaptive_ladder_pm.py`), isolated git worktrees, merged commits `6aeee94`/`d158822`/`9a780ab` | DONE | D2: strict round-trip count on real job 14982619 data (6) is LOWER than the simple endpoint-touch count (10=6+4) - confirms H2's concern that touches overcount genuine round-trips; tau_ergodic strict mean 3.25 sweeps. D3: PM ladder builder ported from code_ruby_duy_pinning_lab, all 4 robustness guards tested; honestly reports PM alone does NOT solve a synthetic bottleneck case (matches H5's warning). |
+| 2026-07-13 | L32 decisive test: cold/hot AGREE but COMMON DRIFT — Jarvis improves G1 | Jarvis job 15039919 (8 chains, 2M/4M/8M R-hat PASS) + Feynman read — see doc/feynman_thesis_tojarvis.md "UPDATE 2026-07-13a" | REFINE + CHEAP CHECK | Cold/hot R-hat~1.00 at all depths BUT both groups drift together: plaquette POP 0.699->0.717->0.734, strength 0.427->0.449, density FLAT ~0.409. Jarvis correct: cold/hot & R-hat measure between-chain dispersion, BLIND to common drift => thermalization needs (a) cold/hot agree AND (b) observable STATIONARY vs depth. G1 fixed in run_manual. Drift is real (steps non-decelerating = algebraic/critical-slowing, NOT near plateau); density-flat+POP-drifting = GLOBAL winding structure is the slow mode (= campaign raison d'etre). DECISIVE CHEAP CHECK (before 16M/32M): compute BINDER cumulant of plaquette strength at L32,h=0.335 from EXISTING 2M/4M/8M data. Binder stationary while POP drifts => use Binder crossing (Linsel method), 8M viable, proceed. Binder also drifts => raw obs critically-slow without PT (= evidence campaign needs PT). Free, decides if 32M needed. |
 | 2026-07-12 | naive-error hypothesis REFUTED; real pitfall = L32 UNDER-THERMALIZED at h_c | Feynman (owning refutation) + Jarvis audit — see doc/feynman_thesis_tojarvis.md "UPDATE 2026-07-12i" | HYPOTHESIS (verify) | Jarvis correct: _error is stationary bootstrap not naive stderr; my 12h mechanism RETRACTED (2nd refuted Feynman hypothesis). REAL PITFALL (from depth table): L16=100k, L24=2M, L32=100k is UNPHYSICAL — critical slowing (tau~L^z) means L32 at h_c needs MORE than L24's 2M, not 20x less => L32 ~35x under-thermalized; the drifting L24/L32=0.361 crossing uses that bad data. High within-chain Neff MISSED it: Neff = decorrelation within a basin, NOT convergence to equilibrium; cold!=hot (I5) is the correct alarm and IS firing in the critical region. Depth-setting scan used only 2 chains (too weak). CORRECTS 12h "don't sample more" — we DO need longer thermalization + >=4 chains. DECISIVE TEST: L32,h=0.335, >=4-8 chains, ramp therm 2M->4M->8M, judge by cold/hot (I5) not Neff. Converge=>under-therm confirmed. Still disagree at 8M/8chains=>examine observable. STANDING: thermalization depth must be non-decreasing in L at fixed critical h. |
 | 2026-07-12 | Linsel benchmark "INCONCLUSIVE" = ERROR-BAR artifact (I4/I6 violation), NOT physics failure | Feynman teardown of Jarvis job 15039466 — see doc/feynman_thesis_tojarvis.md "UPDATE 2026-07-12h" | DIAGNOSIS / DO-NOT-FAIL-IT | PROOF it's the estimator: same point L24,h=0.335 gave 0.83 sigma @100 samples but 3.55 sigma @1000 samples — MORE samples => MORE sigma = definitive underestimated-error fingerprint (naive stderr ~1/sqrt(N) on CORRELATED samples; 3.55/0.83=4.3~sqrt(10)=3.2). Runs used FIXED 25-sweep spacing, no tau, no Neff = I4/I6 violation => ALL sigma claims (crossings, cold/hot) untrustworthy. BAR MISCALIBRATED: rejecting for "no credible nu=0.65" is unfair — Linsel got nu=0.65(27) (40% err) at L=10-30; job = confirm crossing at h_c~0.335 + Ising-COMPATIBLE, not nail nu. Crossings 0.336/0.343/0.363 ARE in-ballpark. METHOD: Linsel used strength-BINDER crossing, Jarvis used raw POP=0.5 (crossing value not universally 0.5). DIRECTIVE: do NOT run more sampling (made it look worse); (1) fix estimator — tau_int, blocked/bootstrap, Neff; (2) strength-Binder crossing; (3) recalibrate bar; (4) re-judge — crossing ~0.335 w/ honest errors => PASS => proceed to D4. Make the analyzer autocorrelation-aware by default (2nd fixed-window misleading-sigma this session). |
 | 2026-07-12 | Canonical phase-diagram sketch + s* units reconciliation (Tupitsyn classical vs Linsel quantum) | Feynman/PI, Tupitsyn PRB 82 085114 (arXiv:0804.3175) + Linsel arXiv:2401.08770 — see doc/multicritical_universality_plan.md "Phase-diagram sketch (reconciled)" | RECONCILED | 3-liner: (1) OFF self-dual line = two dual 2nd-order 3D-Ising lines bound deconfined phase; (2) ON self-dual line (h=lmbda) the Ising lines meet & transition becomes 1st-ORDER (bimodal energy, Tupitsyn/BPV) = the MCP; (3) MCP nature (1st-order vs XY-BPV vs new-class-SSN nu~0.67) = the project's core, decided by FSS on the self-dual s-line. UNITS TRAP: Tupitsyn/BPV MCP is CLASSICAL gauge-Higgs (lambda_bond*≈0.226, lambda_pl*≈0.752); Linsel = QUANTUM (our model) puts self-dual MCP s*≈0.33-0.35 (Fig 3; left precise value as future work = our target). OUR s*≈0.33-0.35 (measure it), NOT 0.226 (classical) and NOT my earlier thrashed 0.31/[0.15,0.25]/[0.22,0.30]. Reservoir just below s* ~[0.28,0.34]. |
