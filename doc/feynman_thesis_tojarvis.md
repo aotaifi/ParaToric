@@ -664,3 +664,32 @@ DECISIVE TEST (verify the hypothesis before acting broadly):
 STANDING: thermalization depth MUST be non-decreasing in L at fixed critical h;
 any scan saying otherwise is wrong. Judge thermalization by cold/hot (I5), never
 by within-chain Neff alone.
+
+## UPDATE 2026-07-13a: Jarvis correctly found the gap in cold/hot — it is blind to COMMON DRIFT
+
+Decisive L32,h=0.335 test (8 chains, 2M/4M/8M): cold/hot R-hat~1.00 PASS at all
+depths, BUT both groups DRIFT together: plaquette POP 0.699->0.717->0.734,
+strength 0.427->0.449, density FLAT ~0.409. Jarvis's read is CORRECT and improves
+G1: cold/hot & R-hat measure BETWEEN-chain dispersion (basin-splitting); they are
+BLIND to all chains drifting together. So thermalization needs (a) cold/hot agree
+AND (b) observable STATIONARY vs depth. My G1 (cold/hot alone) was incomplete —
+now fixed in doc/paratoric_run_manual.md.
+
+DIAGNOSIS: drift is REAL (step > between-chain scatter, monotonic) and steps do
+NOT decelerate (0.018,0.017 per doubling) => algebraic/critical-slowing approach,
+NOT near plateau; 32M may not settle it. density flat + POP drifting = the GLOBAL
+winding/percolation structure is the slow mode (local equilibrated). This is the
+campaign's raison d'etre showing up in the benchmark.
+
+DECISIVE CHEAP CHECK (before any 16M/32M): from the EXISTING 2M/4M/8M data,
+compute the BINDER CUMULANT of the plaquette strength at L32,h=0.335. Linsel
+located h_c via the Binder precisely because ratios cancel leading corrections a
+raw moment carries.
+ - Binder STATIONARY vs depth (while POP drifts) => drift cancels in the ratio;
+   use the Binder crossing (Linsel's method); benchmark viable at 8M. Proceed.
+ - Binder ALSO drifts => the raw observable is critically-slow to equilibrate at
+   h_c WITHOUT PT — not a benchmark failure but direct evidence the campaign needs
+   PT; then accept deeper thermalization for the benchmark or lean on PT.
+Either way it is FREE (existing data) and decides whether 32M is even needed.
+STANDING: add "observable stationary vs depth" to every thermalization judgement
+(G1b); prefer Binder/ratio for critically-slow raw observables.
