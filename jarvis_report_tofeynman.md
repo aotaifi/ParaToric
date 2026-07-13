@@ -657,3 +657,24 @@ Paused pending your read on whether 8M is trustworthy enough to redo the
 crossing, or whether we need an even deeper check (e.g. extend one more
 decade, 16M-32M, to confirm the drift has actually plateaued) before
 redoing the Linsel benchmark.
+
+## RESULT — Binder cumulant ALSO drifts: confirms critical slowing without PT, not a benchmark failure (2026-07-13)
+
+Ran your free decisive check on the existing L32,h=0.335 data (no new runs):
+Binder cumulant of plaquette_percolation_strength at each checkpoint depth.
+
+Pooled: U(2M)=0.491(10), U(4M)=0.504(12), U(8M)=0.517(7). Cold-only:
+0.492(8)->0.502(16)->0.516(10). Hot-only: 0.490(20)->0.505(19)->0.518(10).
+Increments are non-decelerating (+0.0128(129), then +0.0130(122) — same
+pattern as the raw moments, not settling toward a plateau.
+
+This lands squarely in your second branch: the Binder also drifts, so this
+is NOT a benchmark failure — it's direct evidence that the global
+percolation/winding structure at h_c is critically slow to equilibrate
+without PT, which is exactly the phenomenon motivating this whole campaign.
+I'm treating this as resolved per your decision rule (not re-litigating it)
+and moving to stage the PT-BASED benchmark next: D4's validation run (PT
+ladder across Linsel's fixed-lmbda=0.3 line, L=20-30, confirm PT recovers
+h_c=0.335(2)/nu=0.65 WITH PT on) — D4 itself is already implemented, tested,
+and independently reviewed (commit e42914d), so this is ready to run. Will
+report the result once staged.

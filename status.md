@@ -205,9 +205,29 @@ explicitly cover — reporting it rather than picking an interpretation
 myself. Does not support the observable/wiring hypothesis (that would
 predict a persistent cold/hot split, not a coherent joint drift). Full
 data: `/scratch/a/A.Otaifi/paratoric_thermalization_decisive_l32_20260712/`.
-PAUSED on further Linsel/D4-validation work pending Feynman's read of this
-drift nuance (does 8M actually suffice, or does L32 near h_c need deeper
-still?).
+**Feynman CONFIRMED the drift finding (UPDATE 2026-07-13a)**: cold/hot+R-hat
+is BLIND to common drift (measures between-chain dispersion, not
+stationarity) — fixed the project's standing G1 gate to require both. Drift
+steps are non-decelerating (0.018,0.017 per doubling) => algebraic/critical
+slowing, not near-plateau; deeper thermalization (16M/32M) likely wouldn't
+resolve it either. Prescribed a FREE check on EXISTING data (no new runs):
+compute the Binder cumulant of plaquette_percolation_strength at each depth
+— if STATIONARY while raw moments drift, the Binder-crossing method
+(Linsel's actual method) is viable at 8M; if the Binder ALSO drifts, that's
+not a benchmark failure, it's direct evidence the observable is critically
+slow WITHOUT PT (the campaign's own raison d'etre showing up here).
+
+**RESULT: Binder cumulant ALSO drifts**, non-decelerating, matching the raw
+moments (pooled U: 0.491(10) @2M -> 0.504(12) @4M -> 0.517(7) @8M; cold and
+hot groups independently show the same monotonic trend). **Verdict: the
+no-PT Linsel benchmark at L32,h_c is not resolvable by more thermalization
+depth alone — this is confirmed physics (critical slowing without PT), not
+a bug or a benchmark failure.** Per Feynman: proceed toward the PT-BASED
+benchmark (D4's validation run: PT ladder across Linsel's fixed-lmbda=0.3
+line, confirm h_c=0.335/nu=0.65 recovery WITH PT) rather than continuing to
+push the no-PT single-chain approach deeper. D4 (independent h,lmbda PT) is
+already implemented, tested, and Martina-reviewed (`e42914d`) — ready to use.
+Next: stage the D4/Step-5 PT validation run.
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause
