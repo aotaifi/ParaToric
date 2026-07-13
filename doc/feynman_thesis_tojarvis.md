@@ -693,3 +693,21 @@ raw moment carries.
 Either way it is FREE (existing data) and decides whether 32M is even needed.
 STANDING: add "observable stationary vs depth" to every thermalization judgement
 (G1b); prefer Binder/ratio for critically-slow raw observables.
+
+## UPDATE 2026-07-13b: CRITICAL PT swap-partner bug CONFIRMED — fix from coupled-pinning, re-validate at N>=3
+
+Jarvis's 15-rank D4 NO-GO exposed a real bug; verified in code both sides.
+BUG: qmc.hpp partner = pt_rank+/-1 (by RANK) while labels MIGRATE on accept =>
+after one accepted swap, adjacent RANKS hold non-adjacent LADDER POSITIONS =>
+odd-phase swaps exchange extreme-low/high labels (huge s-gap, rejected) => ladder
+SEVERS => 0 round-trips, crossing links <1e-3, isolated healthy spikes. Exactly
+Jarvis's data. Invisible at 2 ranks; first exposed at N>=3.
+RETRACTION: G1.2/G1.3 6-rank "round-trips" (job 14982619) were SPURIOUS; PT never
+validated at N>2. Swap-WEIGHT math is still fine (per-pair).
+FIX (port coupled-pinning worm.update.cpp ~L375-410): MPI_Allgather ladder_index
+-> rank_of_ladder_index (validate: exactly one rank per position, abort on
+dup/invalid) -> pair by POSITION (i+/-1) -> partner = rank_of_ladder_index[j].
+Keep weight + migration. Full spec + smoke suite S1-S6 in pt_architecture.md sec 7.
+GATE: fix + S1-S6 (all at N>=3; spread ladder, NOT equal-s which hides it) +
+re-run G1.2/G1.3 at N>=3 BEFORE any further PT (D4, pilot). Credit Jarvis: stopped,
+read the code, gave a mechanistic explanation, did not unilaterally redesign.
