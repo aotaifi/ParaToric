@@ -3984,11 +3984,17 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                         if (pt_rank < partner) {
                             const double u = std::max(uniform_dist(*rng), std::numeric_limits<double>::min());
                             accepted = (log_r >= 0. || std::log(u) < log_r) ? 1 : 0;
+                            mpi_detail::fail_on_mpi_error(
+                                MPI_Send(&accepted, 1, MPI_INT, partner, 7106, MPI_COMM_WORLD),
+                                "MPI_Send(accepted)"
+                            );
+                        } else {
+                            mpi_detail::fail_on_mpi_error(
+                                MPI_Recv(&accepted, 1, MPI_INT, partner, 7106,
+                                         MPI_COMM_WORLD, MPI_STATUS_IGNORE),
+                                "MPI_Recv(accepted)"
+                            );
                         }
-                        mpi_detail::fail_on_mpi_error(
-                            MPI_Bcast(&accepted, 1, MPI_INT, std::min(pt_rank, partner), MPI_COMM_WORLD),
-                            "MPI_Bcast(accepted)"
-                        );
                         if (accepted) {
                             ++pt_diagnostics.swap_accepted;
                             if (link_index >= 0 && link_index < pt_world_size - 1) {
@@ -4123,11 +4129,17 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                     if (pt_rank < partner) {
                         const double u = std::max(uniform_dist(*rng), std::numeric_limits<double>::min());
                         accepted = (log_r >= 0. || std::log(u) < log_r) ? 1 : 0;
+                        mpi_detail::fail_on_mpi_error(
+                            MPI_Send(&accepted, 1, MPI_INT, partner, 7208, MPI_COMM_WORLD),
+                            "MPI_Send(accepted)"
+                        );
+                    } else {
+                        mpi_detail::fail_on_mpi_error(
+                            MPI_Recv(&accepted, 1, MPI_INT, partner, 7208,
+                                     MPI_COMM_WORLD, MPI_STATUS_IGNORE),
+                            "MPI_Recv(accepted)"
+                        );
                     }
-                    mpi_detail::fail_on_mpi_error(
-                        MPI_Bcast(&accepted, 1, MPI_INT, std::min(pt_rank, partner), MPI_COMM_WORLD),
-                        "MPI_Bcast(accepted)"
-                    );
                     if (accepted) {
                         ++pt_diagnostics.swap_accepted;
                         if (link_index >= 0 && link_index < pt_world_size - 1) {
