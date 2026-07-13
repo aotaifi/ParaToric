@@ -308,8 +308,29 @@ cases incl. the explicit bug-regression assertion) PASS, clean rebuild,
 4/4 ctest. **Martina's independent review: PASS on all 6 spec points, no
 defect found.** MPI-dependent integration tests (S1b/S3-S6, need N=4/N=8
 ranks) could not run in the Codex sandbox (PMIx/socket init failure) —
-staging those on the real cluster next, per the gate: "S0-S6 all PASS +
-G1.2/G1.3 re-run at N>=3 BEFORE any further PT (D4, D3, pilot)."
+staged on the real cluster instead: jobs `15052942` (N=4 PT),
+`15052943` (N=8 PT), `15052944` (4 independent PT-off references, DONE
+cleanly).
+
+## N=4 integration run (15052942): FAILED — the NEW validator caught a
+## SEPARATE, real issue (not the partner-selection bug, which is fixed)
+Exception: `PT ladder index 2 is reported by both rank 0 and rank 3` —
+the permutation-integrity check (working exactly as designed, per spec:
+"ABORT on duplicate/invalid") correctly caught a genuine invariant
+violation. This is NOT the partner-selection bug (that's independently
+Martina-reviewed clean) — this is either (a) a pre-existing
+synchronization/race issue in the swap-accept/migration logic that the OLD
+code never checked for (no validator existed before today), now correctly
+surfaced by the new safety net, or (b) something subtly wrong in how the
+fix's Allgather call interacts with the two separate swap-block copies
+(thermalization loop vs main loop) at their boundary. Do NOT dismiss the
+"h=0.28 lambda=0.28 for all 4 ranks" line in the log as the same issue —
+that's the placeholder --h_constant/--lmbda_constant CLI value printed
+before PT initializes runtime_h from the ladder, expected and harmless.
+N=8 run (15052943) still in progress; PT-off references (15052944)
+completed cleanly (unaffected, as expected — no swap logic involved).
+NOT resubmitting blindly — dispatching a focused root-cause investigation
+before any further integration attempts. Reported to Feynman.
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause
