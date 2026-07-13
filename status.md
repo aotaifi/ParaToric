@@ -289,13 +289,27 @@ formula itself — but say nothing about whether the swap-PARTNER selection
 generalizes correctly to N>2 ranks, which is precisely what production runs
 at L=120 will need).
 
-STOPPING here rather than either quietly accepting this or unilaterally
-starting a large fix to the core swap-partner logic — this is consequential
-enough (re-litigates trust in prior PT validation, touches the core
-production mechanism) to report clearly and pause for explicit
-Feynman/PI direction before proceeding, rather than autonomously
-re-architecting the swap mechanism. Full diagnostic data:
+Full diagnostic data:
 `/scratch/a/A.Otaifi/paratoric_pt_linsel_benchmark_20260713/results/`.
+
+## Swap-partner bug: FIXED, unit-reviewed, integration validation pending
+Feynman confirmed the bug independently (UPDATE 2026-07-13b), RETRACTED
+G1.2/G1.3's 6-rank round-trip claim (job 14982619) as spurious (never
+actually validated PT at N>2), and gave an exact fix spec (port from
+code_ruby_duy_pinning_lab/worm.update.cpp: MPI_Allgather ladder_index,
+build+validate a rank_of_ladder_index permutation, pair by LADDER POSITION
+not rank) + a 6-part smoke suite S0-S6 (pt_architecture.md sec 7b). PI gave
+go-ahead. Fix implemented and committed (`0289b6c`): new
+`parallel_tempering_partner_rank`/`parallel_tempering_rank_of_ladder_index`
+free functions, applied identically to both swap-block copies
+(thermalization + main sampling loops), swap-weight/migration logic
+untouched. Unit-level tests (S1 validation cases, S2 exact partner-mapping
+cases incl. the explicit bug-regression assertion) PASS, clean rebuild,
+4/4 ctest. **Martina's independent review: PASS on all 6 spec points, no
+defect found.** MPI-dependent integration tests (S1b/S3-S6, need N=4/N=8
+ranks) could not run in the Codex sandbox (PMIx/socket init failure) —
+staging those on the real cluster next, per the gate: "S0-S6 all PASS +
+G1.2/G1.3 re-run at N>=3 BEFORE any further PT (D4, D3, pilot)."
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause
