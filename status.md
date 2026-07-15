@@ -424,8 +424,30 @@ Same design as the earlier NO-GO attempt (L={20,24,28}, 15-rank ladders,
 h in [0.15,0.50] bracketing h_c=0.335, lmbda=0.3 constant, swap_period=2
 sweeps, same thermalization depths for a controlled comparison), but built
 from the fixed+validated commit `331e37d`. Correct 32G memory sizing
-reused. Jobs `15101895` (L20), `15101896` (L24), `15101897` (L28) —
-confirmed genuinely RUNNING (~1.3h/2h/3h expected per L). Readout pending.
+reused. Jobs `15101895` (L20), `15101896` (L24), `15101897` (L28) — ALL COMPLETED
+(11/22/37 min respectively).
+
+## D4 Linsel benchmark redo readout: NO-GO, but for a DIFFERENT, benign reason
+**Bug fingerprint CONFIRMED GONE**: acceptance profiles are now smooth and
+monotonic across links (not the old jagged near-zero-with-random-spikes
+pattern) — proves the mechanism fix works. **But raw acceptance is
+uniformly too low for the fixed Δh=0.025 ladder spacing**: L20 declines
+1.9%->0.014% across links (0/14 formally dead but the tail is marginal);
+L24 0.24%->0.0066% (5/14 dead); L28 ALL 14/14 links dead (0.003-0.01%).
+0 strict round-trips at every L (need spacing dense enough for adjacent
+rungs to actually overlap in energy). Binder-cumulant crossings drift
+within the sampling window and don't land consistently on 0.335(2)
+(L20/24=0.350(1), L20/28=0.331(1), L24/28=0.327(1) — half-window drift
+z up to 6.8).
+**Diagnosis: this is a LADDER-DESIGN problem (spacing too coarse,
+uniform-in-h rather than adapted to where energy fluctuations actually
+require density), not a code bug** — physically expected since
+energy-fluctuation scale grows with system volume, so fixed Δh spacing
+gives exponentially collapsing acceptance as L grows (matches
+pt_architecture.md's own H4/H5 warnings and is exactly what D3, already
+built and tested this session, exists to fix). Reported to Feynman. Next:
+use D3 (scripts/adaptive_ladder_pm.py) to retune the ladder from this
+run's measured acceptance data before another PT-based Linsel attempt.
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause
