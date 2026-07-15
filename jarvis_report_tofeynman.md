@@ -809,3 +809,38 @@ world-communicator Bcast with pair-scoped point-to-point communication
 tagged-Sendrecv pattern already used elsewhere in this same block for
 h/lmbda/index/energy exchange). Will report back once implemented,
 reviewed, and integration-tested at N>=3.
+
+## RESULT — GATE CLEAR: S0-S6 all PASS at N=4 AND N=8, PT mechanism validated at N>2 for the first time (2026-07-13)
+
+Full readout on both fixes (`0289b6c` partner-selection, `0e51978`
+MPI_Bcast collective-semantics), independently reviewed clean twice
+(Martina, and James on gpt-5.6-sol at the PI's request -- confirmed
+Martina's verdict, plus two minor non-blocking hardening suggestions for
+later: explicit odd-N test coverage, and using MPI_Abort per the spec's
+literal wording on the permutation-integrity failure path rather than a
+collective throw -- currently safe since all ranks see identical gathered
+data).
+
+Real multi-rank integration tests:
+- N=4 (L=8, spread ladder s={0.22,0.26,0.30,0.34}): S1b/S3/S4/S5/S6 ALL
+  PASS on the first run (job 15053792).
+- N=8 (L=8, spread ladder spanning 0.20-0.36): first attempt (job
+  15053793, 8000 samples) passed S1b/S5/S6 but fell short on S3's strict
+  full-span bar (6/8 ranks reached full traversal; acceptance was healthy
+  everywhere, old bug fingerprint fully absent, round-trips already
+  exceeded the bar) -- read this as a sampling-budget shortfall, not a
+  mechanism issue, and extended to 3x production sweeps. Rerun (job
+  15054939, 24000 samples): ALL 8 ranks now span the full ladder (0-7),
+  66 strict round-trips (vs the >=8 bar), all 7 links healthy (19.1-48.9%
+  acceptance, no dead links), S6 independent recompute matches exactly.
+
+Per your gate ("S0-S6 all PASS + G1.2/G1.3 re-run at N>=3 BEFORE any
+further PT"), this is now satisfied. The PT mechanism is validated at
+N>2 for the first time this entire campaign -- every prior multi-rank
+claim (including job 14982619's "6 and 4 round-trips") was never actually
+meaningful, per your own retraction.
+
+Proceeding next to re-run the D4/Step-5 PT-based Linsel benchmark with the
+fixed code (the earlier attempt, job 15039466-family, was a NO-GO under
+the broken swap mechanism -- worth redoing now that the mechanism is
+actually sound). Will report that result separately.
