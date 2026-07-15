@@ -844,3 +844,37 @@ Proceeding next to re-run the D4/Step-5 PT-based Linsel benchmark with the
 fixed code (the earlier attempt, job 15039466-family, was a NO-GO under
 the broken swap mechanism -- worth redoing now that the mechanism is
 actually sound). Will report that result separately.
+
+## RESULT — D4 Linsel benchmark redo: NO-GO, but bug fingerprint confirmed gone; this is a ladder-design issue (2026-07-13)
+
+Re-ran the PT-based Linsel benchmark with the fixed code (jobs
+15101895/96/97, L={20,24,28}, same design as the original NO-GO attempt
+for a controlled comparison).
+
+Good news: the bug fingerprint is CONFIRMED GONE. Acceptance profiles are
+now smooth and monotonic across all links (not the jagged near-zero-with-
+random-spikes pattern the broken mechanism produced).
+
+Bad news: with the fixed Δh=0.025 uniform ladder spacing, raw acceptance
+is uniformly too low to give any mixing: L20 declines from 1.9% to 0.014%
+across links; L24 0.24% to 0.0066% (5/14 formally dead); L28 has ALL 14/14
+links dead (0.003-0.01%). Zero strict round-trips at every L. Binder-
+cumulant crossings drift within the sampling window and don't land
+consistently on 0.335(2) (L20/24=0.350(1), L20/28=0.331(1),
+L24/28=0.327(1), half-window drift z up to 6.8).
+
+My read: this is now a LADDER-DESIGN problem, not a mechanism bug. Uniform
+Δh spacing gives energy-fluctuation-scale-dependent acceptance that
+collapses as system volume (L^d) grows -- exactly the H4/H5 concern your
+own pt_architecture.md already flagged, and exactly what D3 (the PM
+adaptive ladder builder, already implemented and tested this session,
+scripts/adaptive_ladder_pm.py) exists to address: retune spacing from
+measured per-link acceptance rather than assuming uniform-in-h works at
+all L.
+
+Proposing to use D3 on this run's measured acceptance data to build a
+retuned ladder before the next PT-based Linsel attempt, rather than
+treating this as a new mystery requiring more code investigation. Will
+report the retuned ladder's result separately. Full data:
+/scratch/a/A.Otaifi/paratoric_pt_linsel_benchmark_20260713/ (jobs
+15101895/96/97).
