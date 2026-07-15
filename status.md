@@ -418,6 +418,14 @@ previously-invisible MPI correctness bugs to a validated fix) — but the PT
 mechanism is now on solid footing for the first time this campaign at
 N>2 ranks, which none of the prior G1.2/G1.3 claims (job 14982619)
 actually were.
+
+## D4 Linsel benchmark REDO with fixed code: STAGED and RUNNING
+Same design as the earlier NO-GO attempt (L={20,24,28}, 15-rank ladders,
+h in [0.15,0.50] bracketing h_c=0.335, lmbda=0.3 constant, swap_period=2
+sweeps, same thermalization depths for a controlled comparison), but built
+from the fixed+validated commit `331e37d`. Correct 32G memory sizing
+reused. Jobs `15101895` (L20), `15101896` (L24), `15101897` (L28) —
+confirmed genuinely RUNNING (~1.3h/2h/3h expected per L). Readout pending.
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause
