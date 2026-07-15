@@ -398,7 +398,26 @@ rerunning that one check, rather than reopening the code investigation.
 Two independent reviewers (Martina, James/gpt-5.6-sol) have already
 cleared both fixes; this is a sampling-budget gap in the smoke test, not
 new evidence of a bug. Resubmitted N=8 with 3x production sweeps
-(N_SAMPLES 8000->24000): job `15054939`, running.
+(N_SAMPLES 8000->24000): job `15054939`, COMPLETED, **N=8 now FULLY
+PASSES**: all 8 ranks span the full ladder (0-7), 66 strict round-trips
+(>>8 bar), all 7 links healthy (19.1-48.9% acceptance, no dead-link
+fingerprint). S6 independent recompute matches (66=66).
+
+## GATE CLEAR: S0-S6 all PASS at N=4 AND N=8 — PT mechanism validated at N>2
+Both bugs (partner-selection-by-rank, MPI_Bcast collective-semantics
+misuse) fixed, twice independently reviewed clean (Martina, James/
+gpt-5.6-sol), and now fully validated by real multi-rank integration tests
+at N=4 (full S0-S6 pass) and N=8 (full S0-S6 pass, after a sampling-budget
+extension). Per pt_architecture.md sec 7's gate ("S0-S6 all PASS on a
+CLEAN rebuild + independent review, AND G1.2/G1.3 re-run at N>=3, BEFORE
+any further PT"), the campaign can now proceed to D4 (re-run the PT-based
+Linsel benchmark with the fixed code), D3, and eventually the pilot.
+Reported to Feynman. This closes out what became a genuinely major,
+multi-hour detour (from a 15-rank benchmark's NO-GO through two real,
+previously-invisible MPI correctness bugs to a validated fix) — but the PT
+mechanism is now on solid footing for the first time this campaign at
+N>2 ranks, which none of the prior G1.2/G1.3 claims (job 14982619)
+actually were.
 - `--snapshots`/`sigma_x_tau_avg_obs` O(events) perf regression (not used by
   this campaign) — flagged, not fixed.
 - Codex sandbox has intermittent Slurm-controller DNS failures (same root cause
