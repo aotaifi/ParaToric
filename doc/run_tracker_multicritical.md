@@ -1,8 +1,34 @@
 # Multicritical Campaign Tracker — current-state card
 
-Updated: 2026-07-16 (rewrite this card in place; durable results -> plan/report).
+Updated: 2026-07-17 (rewrite this card in place; durable results -> plan/report).
 
 ## Status
+- Acceptance-informed expanded-ladder Linsel rerun submitted 2026-07-17:
+  L20=60 rungs/job `15126362`/120G, L24=72/job `15126364`/144G, and
+  L28=90/job `15126363`/180G. All are one-node, one-rank-per-physical-core MPI
+  jobs with 3h caps, beta=L, mu=J=1, z basis, fixed lmbda=0.3, h in
+  [0.15,0.50], swap period 2 sweeps, 100k samples every 2 sweeps, and unchanged
+  500k/720k/980k thermalization sweeps. The +50% rung budget is intentional:
+  it removes the fixed-count zero-sum tradeoff between the h_c and h~0.43
+  acceptance holes while remaining below the verified 128-physical-core node
+  ceiling. Registered `scripts/acceptance_informed_ladder.py` inferred the
+  whole-range physical-coordinate metric 2*erfcinv(acceptance)/dh from jobs
+  `15118635`/`15118636`/`15118637`, Gaussian-smoothed its log, and placed the
+  new rungs at equal integrated metric. Physical-coordinate verification versus
+  the ORIGINAL resourced ladder passed: gap ratios new/original at h=0.340 are
+  0.557243/0.537862/0.525092 and at h=0.435 are
+  0.434191/0.416324/0.420487 for L20/L24/L28. Evidence and the reused canonical
+  launcher are under
+  `/scratch/a/A.Otaifi/paratoric_pt_linsel_acceptance_informed_20260717/`.
+  Job-local portable MPI builds are pinned to submission-time HEAD
+  `e33f6b38f72ecc66dc24b0855f10f6907fbbca91`. The single allowed
+  `squeue --start` check showed all three PENDING (Priority), with no start
+  estimate; do not poll. Based on the previous 9m55s/20m03s/25m56s elapsed
+  times, expect about 15m/30m/40m after start (3h caps). Concise-alert submission
+  hit transient Slurm-controller DNS failure and was not retried. Fresh dispatch
+  must run `scripts/pt_diagnostics.py` and decide whether each L achieved >=3
+  strict round-trips; 0 strict round-trips remains possible because adding 50%
+  rungs increases the diffusive N^2 path cost even while healing bottlenecks.
 - Single-iteration PM redistribution was rerun on the measured per-link
   acceptances from resourced Linsel jobs `15118635`/`15118636`/`15118637`, using
   registered `scripts/adaptive_ladder_pm.py` defaults and only changing
@@ -135,14 +161,15 @@ Updated: 2026-07-16 (rewrite this card in place; durable results -> plan/report)
   (G2) thermalization depth non-decreasing in L at fixed critical h; (G3) >=4
   chains; (G4) Neff of the worst observable not raw N; (G5) calibrate observables
   on known static configs first. Added to AGENTS.md bootstrap order.
-- Next action: resolve the PM physical-coordinate mapping before another Linsel
-  benchmark submission; single-iteration index-space redistribution is not a
-  sufficient mitigation for the h_c window. Existing fresh-dispatch readout of
-  jobs `15052942`-`15052944` remains separate outstanding work.
+- Next action: fresh-dispatch readout of jobs `15126362`/`15126364`/`15126363`,
+  focused first on whether each L achieved >=3 strict round-trips; do not poll.
+  Existing fresh-dispatch readout of jobs `15052942`-`15052944` remains a
+  separate outstanding task.
 
 ## Gate log (append one line per gate decision)
 | date | gate | evidence | result | decision |
 |---|---|---|---|---|
+| 2026-07-17 | expanded acceptance-informed Linsel ladder | jobs `15126362`/`15126364`/`15126363`; `/scratch/a/A.Otaifi/paratoric_pt_linsel_acceptance_informed_20260717/spacing_check.tsv`; `/scratch/a/A.Otaifi/paratoric_pt_linsel_acceptance_informed_20260717/window_density_check.tsv` | SUBMITTED / READOUT PENDING | Increased 40/48/60 to 60/72/90 rungs; both h=0.340 and h=0.435 probe gaps and both full weak-region mean/max gap checks are strictly smaller than the original resourced ladder for every L; one-node memory is 120G/144G/180G; fresh dispatch tests the >=3 strict-round-trip bar. |
 | 2026-07-16 | D3 PM single-iteration mitigation | jobs `15118635`/`15118636`/`15118637`; `/scratch/a/A.Otaifi/paratoric_pt_linsel_pm1_20260716/spacing_check.tsv` | FAIL / STOP | h=0.340 spacing coarsened by factors 1.224226/1.253381/1.260187 for L20/L24/L28 although h=0.435 seam spacing improved by factors 0.560972/0.575019/0.574828; no benchmark jobs submitted. |
 | 2026-07-07 | pre | code review (chat) + performance_report.md | — | plan approved by user |
 | 2026-07-12 | D2/D3 done (parallel worktrees) | Jones (D2, `scripts/pt_diagnostics.py`) + James (D3, `scripts/adaptive_ladder_pm.py`), isolated git worktrees, merged commits `6aeee94`/`d158822`/`9a780ab` | DONE | D2: strict round-trip count on real job 14982619 data (6) is LOWER than the simple endpoint-touch count (10=6+4) - confirms H2's concern that touches overcount genuine round-trips; tau_ergodic strict mean 3.25 sweeps. D3: PM ladder builder ported from code_ruby_duy_pinning_lab, all 4 robustness guards tested; honestly reports PM alone does NOT solve a synthetic bottleneck case (matches H5's warning). |

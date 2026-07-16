@@ -24,6 +24,11 @@ adding new one-off analysis code.
   `temp_grid::adapt_betas` spacing logic to ParaToric's `s = h = lmbda`
   ladders, with smoothing, alpha blending, minimum spacing, and a fixed
   iteration cap.
+- `acceptance_informed_ladder.py`: Python CLI that infers a smooth physical-
+  coordinate thermodynamic-length density from a measured ladder's complete
+  per-link acceptance profile and builds a requested, potentially larger rung
+  count at equal integrated density. Use it when additional ranks must remove
+  multiple acceptance holes without PM's fixed-count zero-sum tradeoff.
 - `submit_thermalization_convergence_20260712.sbatch`: cold/hot production-CLI
   sampling-window convergence array for the adopted plaquette percolation gate
   at L=16,24,32. Each independent task thermalizes to one candidate depth, then
