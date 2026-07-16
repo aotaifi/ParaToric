@@ -297,3 +297,73 @@ S6 RT-ANALYSIS CONSISTENCY. strict round-trip count from scripts/pt_diagnostics.
 
 GATE (unchanged): S0-S6 all PASS on a CLEAN rebuild + independent review, AND
 G1.2/G1.3 re-run at N>=3, BEFORE any further PT (D4, D3, pilot).
+
+--------------------------------------------------------------------------------
+## 8. LADDER SIZING THEORY — N is pinned by physics, not a free knob (2026-07-13)
+
+Motivated by the D4 redo (bug fingerprint gone, S0-S6 PASS, PT validated at N>2 —
+but uniform dh=0.025 gave L20 1.9%->0.014%, L24 0.24%->0.0066%, L28 ALL 14/14 links
+dead 0.003-0.01%, 0 strict round-trips at every L).
+
+### 8.1 The acceptance law
+Swap acceptance is set by the OVERLAP of adjacent rungs' energy distributions:
+  sigma_Delta  ~  dh * sqrt(Var E),   Var E ~ V = L^2 * beta = L^3   (beta = L)
+  =>  sigma_Delta ~ dh * L^(3/2)
+At FIXED dh, sigma grows as L^(3/2) => acceptance COLLAPSES with L. Check: L20->L28
+is (28/20)^1.5 = 1.66x wider sigma, and measured acceptance fell 1.9% -> 0.005%.
+The data matches the law.
+To hold acceptance fixed:  dh ~ L^(-3/2)  =>  **N_rungs ~ L^(3/2)** for a fixed
+range. (Textbook PT: N ~ sqrt(C_V) ~ sqrt(V).)
+
+### 8.2 The optimum: MORE RANKS IS NOT BETTER
+A replica diffuses across the ladder; it moves with prob ~A per attempt:
+  tau_RT (attempts)  ~  N^2 / A(N),     sigma_Delta = c*Range*L^(3/2) / N
+Minimizing over N gives an INTERIOR optimum at
+  **sigma_Delta ~ 2.4  <=>  A ~ 23%**
+— which is exactly why the classic "20-40% acceptance" rule of thumb exists; it is
+the minimizer, not a convention.
+  - Overshoot x4 in N: A 0.23->0.76 (x3.3 better) but N^2 x16 => ~5x SLOWER.
+  - Undershoot x0.5 in N: N^2 x0.25 but A 0.23->0.016 (x14 worse) => ~3.5x worse.
+=> N is DETERMINED by (L, Range) via A~23%. You cannot buy performance with ranks.
+
+### 8.3 The irreducible walls
+  tau_RT ~ N^2 ~ L^3  (sweeps)
+  wallclock per round-trip = sweeps * t_sweep ~ L^3 * L^3 = **L^6**
+REAL LEVERS: Range (tau_RT ~ Range^2), L (~L^6), or a better algorithm (worm).
+NOT ranks. Multi-node is NECESSARY (N_opt already exceeds one node at L=120) but
+NOT SUFFICIENT (it does nothing about N^2).
+
+### 8.4 PM / grid mode — what it can and cannot do (settles a recurring confusion)
+scripts/adaptive_ladder_pm.py (D3) implements the reference PM update
+("new gap_i ~ old_gap_i * p_i/mean(p)", line 81) and then RESCALES TO PRESERVE THE
+SPAN; blend_ladders requires len(previous)==len(target). So PM has two hard
+conservation laws:
+  (i) it CONSERVES the number of rungs (one per rank);
+  (ii) it CONSERVES the endpoints/span.
+It only REDISTRIBUTES rungs to EQUALIZE acceptance. **It cannot raise the MEAN
+acceptance.** All links dead => equalizing gives equally-dead links. (Guard at
+line 87: mean_p <= 1e-12 => returns the previous ladder untouched. D3's own
+synthetic test already reported "PM alone does NOT solve a bottleneck case.")
+=> PM is a FINE-TUNER, not a rescuer. Use it ONLY AFTER acceptance is live
+everywhere (resource first, PM second). NEVER run PM on dead links.
+
+### 8.5 Calibrated ladder guess (from the D4-redo data; VERIFY by calibration)
+From L=20, dh=0.025: best link 1.9% => sigma~4.7; worst 0.014% => sigma~7.6.
+Target sigma~2.4:
+  | L  | dh needed                        | N for range 0.15-0.50 | used |
+  | 20 | ~0.008 (near h_c) - 0.013 (away) | ~35-40                | 15   |
+  | 28 | ~0.006                           | ~55-60                | 15   |
+  | 120| ~0.0007                          | ~500 (full) / ~140 (range 0.10) | - |
+=> ~3-4x more rungs than used, NON-UNIFORMLY spaced, DENSER NEAR h_c (Var E is
+largest there — that is exactly the 1.9% vs 0.014% spread). 40-60 ranks = 1-2
+nodes: benchmark is RESCUABLE. L=120 pilot is not (see 8.3).
+
+### 8.6 Prescription
+1. RESOURCE the ladder first: N sized for A~23% (8.5), non-uniform, denser near h_c.
+2. THEN PM to equalize the residual unevenness.
+3. CALIBRATE, do not trust the constant above: short acceptance-vs-dh scan at L=20
+   and L=28 => fit dh_good(L) ~ L^(-3/2) => extrapolate. Converts estimate into
+   measurement; ~1 hour.
+4. Check max ranks/node + internode viability (N_opt exceeds one node at L=120).
+5. The L=120 pilot needs a campaign-level decision (smaller L / tighter range /
+   better algorithm), NOT tuning. Defer until (3).

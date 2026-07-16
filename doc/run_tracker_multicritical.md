@@ -1,8 +1,40 @@
 # Multicritical Campaign Tracker — current-state card
 
-Updated: 2026-07-13 (rewrite this card in place; durable results -> plan/report).
+Updated: 2026-07-15 (rewrite this card in place; durable results -> plan/report).
 
 ## Status
+- Fixed-mechanism PT-based Linsel D4 rerun submitted 2026-07-15 from the reused
+  `/scratch/a/A.Otaifi/paratoric_pt_linsel_benchmark_20260713/submit_pt_linsel.sbatch`,
+  with isolated outputs under
+  `/scratch/a/A.Otaifi/paratoric_pt_linsel_benchmark_fixed_20260715/`: L20=`15101895`,
+  L24=`15101896`, L28=`15101897`. The job-local MPI build is pinned to current
+  main commit `331e37d4cc6f8c82f030fe568d17eb79db9488c5`, which descends from gate-clear
+  `7305dde` and contains both PT fixes `0289b6c` and `0e51978`. Each job uses one
+  node, 15 ranks, 1 CPU/rank, 32G, and a 3h cap. Design is unchanged for controlled
+  comparison: beta=L, mu=J=1, z basis, fixed lmbda=0.3, h=0.150:0.025:0.500,
+  swap period 2 sweeps, and 500k/720k/980k thermalization sweeps for L=20/24/28,
+  followed by 100k samples every 2 sweeps. Expected execution times remain roughly
+  0.5/1.0/1.5h after start (3h hard cap). The one permitted `squeue --start` check
+  per job returned no rows; do not poll. Fresh dispatch performs Part-F PT
+  diagnostics plus rung-reorganized Binder-cumulant crossing readout.
+- Swap-partner-fix integration validation submitted 2026-07-13 from
+  `/scratch/a/A.Otaifi/paratoric_pt_integration_20260713/`, using a clean
+  job-local portable MPI build of fix commit `0289b6c`: N=4 PT S1b/S3/S4-on/
+  S5/S6 job `15052942` (4 tasks, 4G, 30m), N=8 PT S3/S5/S6 job `15052943`
+  (8 tasks, 6G, 30m), and four independent N=4-rung PT-off S4 references job
+  `15052944` (4 tasks, 4G, 30m). N=4 uses the specified spread ladder
+  {0.22,0.26,0.30,0.34}; N=8 uses the modestly widened uniform ladder
+  {0.20,0.222857,0.245714,0.268571,0.291429,0.314286,0.337143,0.36}, preserving
+  overlap with finer 0.02286 spacing while testing a wider span. Each PT job
+  runs 4k thermalization + 16k recorded sweeps, swap period 2 sweeps, 8k aligned
+  energy/sigma_z/ladder samples: 10k total and 8k recorded swap phases. The
+  campaign-local independent S6 checker is staged beside `READOUT.md`; canonical
+  readout remains `scripts/pt_diagnostics.py` plus rung-reorganized
+  `scripts/ensemble_diagnostics.py`. The one allowed squeue snapshot hit a
+  transient Slurm-controller DNS failure; subsequent direct `sbatch` calls
+  returned the three IDs. Concise-alert submissions also failed on transient
+  controller DNS and were not retried. Do not poll; fresh dispatch performs the
+  complete S1b/S3-S6 readout.
 - PT-based Linsel D4 diagnostic jobs submitted 2026-07-13 from
   `/scratch/a/A.Otaifi/paratoric_pt_linsel_benchmark_20260713/submit_pt_linsel.sbatch`:
   L20=`15041840`, L24=`15041841`, L28=`15041842`. Each is one node, 15 MPI
@@ -89,14 +121,15 @@ Updated: 2026-07-13 (rewrite this card in place; durable results -> plan/report)
   (G2) thermalization depth non-decreasing in L at fixed critical h; (G3) >=4
   chains; (G4) Neff of the worst observable not raw N; (G5) calibrate observables
   on known static configs first. Added to AGENTS.md bootstrap order.
-- Next action: D1 (swap_period fix) — dispatched to Clark, Martina review,
-  clean-rebuild verification per this session's standing process rule.
+- Next action: fresh-dispatch readout of jobs `15052942`-`15052944`; no D4, D3,
+  pilot, or other PT work until S1b/S3-S6 are judged against section 7b.
 
 ## Gate log (append one line per gate decision)
 | date | gate | evidence | result | decision |
 |---|---|---|---|---|
 | 2026-07-07 | pre | code review (chat) + performance_report.md | — | plan approved by user |
 | 2026-07-12 | D2/D3 done (parallel worktrees) | Jones (D2, `scripts/pt_diagnostics.py`) + James (D3, `scripts/adaptive_ladder_pm.py`), isolated git worktrees, merged commits `6aeee94`/`d158822`/`9a780ab` | DONE | D2: strict round-trip count on real job 14982619 data (6) is LOWER than the simple endpoint-touch count (10=6+4) - confirms H2's concern that touches overcount genuine round-trips; tau_ergodic strict mean 3.25 sweeps. D3: PM ladder builder ported from code_ruby_duy_pinning_lab, all 4 robustness guards tested; honestly reports PM alone does NOT solve a synthetic bottleneck case (matches H5's warning). |
+| 2026-07-13 | D4 redo: PT VALIDATED at N>2 (fix works) but ladder UNDER-RESOURCED; PM cannot fix it | Jarvis jobs 15101895/96/97 + Feynman derivation — see doc/pt_architecture.md sec 8 + feynman_thesis_tojarvis.md 13c | REVISED ASSESSMENT | GOOD: swap-partner fix landed, S0-S6 PASS at N=4/N=8, bug fingerprint GONE (smooth monotonic acceptance) — PT validated at N>2 for the first time. BAD: uniform dh=0.025 => L20 1.9%->0.014%, L24 0.24%->0.0066%, L28 ALL 14/14 dead, 0 strict RT at every L. Jarvis's diagnosis (ladder-design, not mechanism) CORRECT; his fix (run D3/PM) WRONG: PM conserves rung-count AND span (adaptive_ladder_pm.py L81 + rescale; guard L87), so it only EQUALIZES — it CANNOT raise mean acceptance; all-dead => equally-dead. PM is a fine-tuner, never a rescuer; NEVER run on dead links. LAW: sigma~dh*L^(3/2) (Var E~V=L^3 at beta=L) => N~L^(3/2); and N is NOT free: tau_RT~N^2/A minimized at A~23% (= the 20-40% rule), overshoot x4 => ~5x slower. ACTION: (1) redo benchmark resourced N~40/50/60 (L=20/24/28), non-uniform denser near h_c, 1-2 nodes; (2) THEN PM; (3) calibrate dh_good(L) via acceptance-vs-dh scan at L20/28 (~1h); (4) resource check max ranks/node + internode (N_opt exceeds 1 node at L=120); (5) DEFER L=120 pilot — walls tau_RT~L^3 sweeps, wallclock/RT~L^6; needs N~150-200 => weeks; levers are Range(^2) and L(^6) or better algorithm, NOT ranks = campaign-level decision. Feynman note: earlier pilot budget sized cores from walltime, never from acceptance-driven rung count — that was the miss. |
 | 2026-07-13 | CRITICAL PT swap-partner bug (by RANK not ladder-position) — mechanism broken at N>2 | Jarvis 15-rank D4 NO-GO + Feynman code verify (qmc.hpp:3980 vs coupled-pinning worm.update.cpp) — see doc/pt_architecture.md sec 7 + feynman_thesis_tojarvis.md 13b | CONFIRMED BUG / GATE | partner=pt_rank+/-1 (by RANK) but labels MIGRATE on accept => adjacent ranks hold non-adjacent ladder positions => odd-phase swaps exchange extreme-low/high labels (huge gap, rejected) => ladder SEVERS => 0/15 round-trips, crossing links <1e-3, isolated spikes. Invisible at 2 ranks. RETRACTS G1.2/G1.3 6-rank round-trips (job 14982619 spurious); PT never validated at N>2. Swap-WEIGHT math OK. FIX=port coupled-pinning: MPI_Allgather ladder_index -> rank_of_ladder_index (abort on dup/invalid) -> pair by POSITION -> partner=rank_of_ladder_index[i+/-1]. Smoke suite S1-S6 (N>=3, SPREAD ladder). GATE: fix+S1-S6+re-run G1.2/G1.3 at N>=3 before ANY further PT. Jarvis correctly stopped+read code+did not unilaterally redesign. |
 | 2026-07-13 | L32 decisive test: cold/hot AGREE but COMMON DRIFT — Jarvis improves G1 | Jarvis job 15039919 (8 chains, 2M/4M/8M R-hat PASS) + Feynman read — see doc/feynman_thesis_tojarvis.md "UPDATE 2026-07-13a" | REFINE + CHEAP CHECK | Cold/hot R-hat~1.00 at all depths BUT both groups drift together: plaquette POP 0.699->0.717->0.734, strength 0.427->0.449, density FLAT ~0.409. Jarvis correct: cold/hot & R-hat measure between-chain dispersion, BLIND to common drift => thermalization needs (a) cold/hot agree AND (b) observable STATIONARY vs depth. G1 fixed in run_manual. Drift is real (steps non-decelerating = algebraic/critical-slowing, NOT near plateau); density-flat+POP-drifting = GLOBAL winding structure is the slow mode (= campaign raison d'etre). DECISIVE CHEAP CHECK (before 16M/32M): compute BINDER cumulant of plaquette strength at L32,h=0.335 from EXISTING 2M/4M/8M data. Binder stationary while POP drifts => use Binder crossing (Linsel method), 8M viable, proceed. Binder also drifts => raw obs critically-slow without PT (= evidence campaign needs PT). Free, decides if 32M needed. |
 | 2026-07-12 | naive-error hypothesis REFUTED; real pitfall = L32 UNDER-THERMALIZED at h_c | Feynman (owning refutation) + Jarvis audit — see doc/feynman_thesis_tojarvis.md "UPDATE 2026-07-12i" | HYPOTHESIS (verify) | Jarvis correct: _error is stationary bootstrap not naive stderr; my 12h mechanism RETRACTED (2nd refuted Feynman hypothesis). REAL PITFALL (from depth table): L16=100k, L24=2M, L32=100k is UNPHYSICAL — critical slowing (tau~L^z) means L32 at h_c needs MORE than L24's 2M, not 20x less => L32 ~35x under-thermalized; the drifting L24/L32=0.361 crossing uses that bad data. High within-chain Neff MISSED it: Neff = decorrelation within a basin, NOT convergence to equilibrium; cold!=hot (I5) is the correct alarm and IS firing in the critical region. Depth-setting scan used only 2 chains (too weak). CORRECTS 12h "don't sample more" — we DO need longer thermalization + >=4 chains. DECISIVE TEST: L32,h=0.335, >=4-8 chains, ramp therm 2M->4M->8M, judge by cold/hot (I5) not Neff. Converge=>under-therm confirmed. Still disagree at 8M/8chains=>examine observable. STANDING: thermalization depth must be non-decreasing in L at fixed critical h. |
