@@ -8,6 +8,7 @@
 /log/
 !/scripts/job_script_creator.ipynb
 !/scripts/adaptive_ladder_pm.py
+!/scripts/acceptance_informed_ladder.py
 command.txt
 .DS_Store
 /Testing/
