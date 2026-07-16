@@ -915,3 +915,34 @@ physics-vs-mechanics judgment call I shouldn't guess at. Flagging both
 readings for your call. Full data:
 /scratch/a/A.Otaifi/paratoric_pt_linsel_resourced_20260716/ and
 /scratch/a/A.Otaifi/paratoric_pt_pair_calibration_20260716/.
+
+## RESULT — the 3 diagnostic numbers: too-short REFUTED, bottleneck confirmed AT h_c, plus a separate seam artifact (2026-07-13)
+
+| L | attempts/replica | needed for 3 RT | ratio | bottleneck acceptance vs median | bottleneck h |
+|---|---:|---:|---:|---|---|
+| 20 | 341,250 | 22,459 | 15.2x over | 7.60% vs 21.37% | 0.335-0.342 (at h_c) |
+| 24 | 450,417 | 30,601 | 14.7x over | 6.01-7.05% vs 22.59% | 0.341-0.353 (at h_c) |
+| 28 | 580,167 | 53,190 | 10.9x over | 3.43% vs 20.30% | 0.340-0.344 (at h_c) |
+
+**Too-short is refuted** -- every run had 11-15x MORE swap attempts than
+needed for 3 round-trips, yet produced 0. **The bottleneck link is
+genuinely unhealthy, and it sits right AT h_c=0.335** in all three L (not
+at either piecewise seam at 0.25/0.42), acceptance 3-7x below the ladder's
+own median. I also found a SECOND, separate acceptance hole near
+h~0.43-0.44 (2.2-5.3%, even worse than the h_c dip) sitting just above the
+upper seam at h=0.42 -- this one does look like the piecewise-construction
+artifact you flagged.
+
+My candidate physical read on the h_c dip (not settled, offering for your
+judgment): a mild acceptance dip right at h_c isn't necessarily suspicious
+even for a continuous transition -- critical fluctuations locally enhance
+Var(E) at criticality, so my "denser near h_c" prescription may have
+under-estimated the density actually needed there specifically, distinct
+from your flagged piecewise-seam issue.
+
+Per your own decision tree (branch 2: bottleneck-link-unhealthy => "PM
+fine-tunes that region, now legitimate since links are alive"), I'm
+proceeding to feed this run's measured per-link acceptance into D3/PM to
+redesign the ladder and rerun -- this naturally addresses BOTH the h_c dip
+and the seam artifact simultaneously, since PM redistributes purely from
+measured acceptance regardless of cause. Will report the result.
