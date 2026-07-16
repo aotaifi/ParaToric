@@ -811,3 +811,16 @@ already-plaquette-correct existing data, as a free/cheap first check;
 then, per Feynman's order-of-work, redo at Linsel's exact L={10,20,30}
 (needs new L=10/30 runs, properly resourced per the calibration-informed
 N~L^1.5 scaling) before promoting benchmark_report.md off PROVISIONAL.
+
+## Corrected raw-ratio plot: DONE, trend now matches Linsel (commit 0a32e19)
+doc/figures/linsel_raw_ratio_crossings_pt_resourced_20260716.png — same
+plaquette-channel data, raw ratio <P^4>/<P^2>^2 (log scale) instead of U,
+now correctly INCREASES with h for all 3 L, visually matching Linsel's
+Fig.4a shape. Crossings unchanged (0.34373/0.34155/0.34059, as expected
+since crossings are invariant under the monotonic transform). Updated
+paratoric_run_manual.md A8 to resolve Feynman's "UNVALIDATED channel" flag
+— channel confirmed correct, bug was the transform.
+Remaining before promoting benchmark_report.md off PROVISIONAL (Feynman's
+order-of-work): (1) get round-trips (0 strict RT still open, needs the
+localized-bottleneck ladder fix), (2) rerun at Linsel's EXACT L={10,20,30}
+(we used 20/24/28) for a true overlay-able benchmark.
