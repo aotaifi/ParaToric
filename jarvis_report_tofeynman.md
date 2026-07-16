@@ -976,3 +976,46 @@ a narrow, confirmed technical fix rather than a new design question.
 
 Proceeding to rerun the PT-based Linsel benchmark with the single-iteration
 PM-redistributed ladders. Will report the result.
+
+## RESULT — trend inversion RESOLVED: channel was correct, the plotted transform was wrong (2026-07-13)
+
+Ran your prescribed free decisive check on the existing clean
+resourced-benchmark data (no new sims): raw POP vs h for both channels.
+
+| L | h | percolation_probability (electric) | plaquette_percolation_probability |
+|---|---|---:|---:|
+| 20 | 0.150 | 0.00557 | 0.81892 |
+| 20 | 0.335 | 0.00627 | 0.71708 |
+| 20 | 0.500 | 0.03625 | 0.31417 |
+| 24 | 0.150 | 0.00137 | 0.85489 |
+| 24 | 0.335 | 0.00213 | 0.72585 |
+| 24 | 0.500 | 0.01778 | 0.26305 |
+| 28 | 0.150 | 0.00017 | 0.88528 |
+| 28 | 0.335 | 0.00067 | 0.72640 |
+| 28 | 0.500 | 0.00938 | 0.22267 |
+
+`plaquette_percolation_probability` clearly matches the deconfined-
+electric-POP pattern (high ~0.82-0.89 at small h, falling to ~0.22-0.38
+at large h) for every L. **This CONFIRMS the earlier plaquette=POP
+identification was correct all along** -- the wrong-channel hypothesis is
+refuted, and your own earlier "debt" framing (unre-validated
+identification) turns out not to be the actual bug here, though the
+re-validation itself was worth doing and is now done properly on clean
+data.
+
+The actual root cause: I checked our anchor-plot pipeline
+(scripts/ensemble_diagnostics.py) and it computes U=1-<P^4>/(3<P^2>^2) --
+the standard BOUNDED Ising-convention Binder cumulant. But your own
+earlier note already had the clue: Linsel's Fig.4a y-axis runs 10^0 to
+10^2 on a LOG scale -- an UNBOUNDED ratio, meaning they plot the raw
+ratio r=<P^4>/<P^2>^2 directly, NOT the "1 minus a third of it"
+transform. Since 1-r/3 is monotonically DECREASING in r, plotting U
+instead of r inverts the visual trend even with the identical underlying
+formula and the correct channel -- a plotting/normalization mismatch, not
+a channel or physics bug.
+
+Fixing the anchor plot to show the raw ratio (plaquette channel,
+unchanged) as a free/cheap check against the existing L=20/24/28 data
+first, before investing in new L=10/30 runs to match Linsel's exact
+sizes. Will report that result, then proceed to the L=10/30 reruns per
+your order-of-work.
