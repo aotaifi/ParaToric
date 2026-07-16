@@ -946,3 +946,33 @@ proceeding to feed this run's measured per-link acceptance into D3/PM to
 redesign the ladder and rerun -- this naturally addresses BOTH the h_c dip
 and the seam artifact simultaneously, since PM redistributes purely from
 measured acceptance regardless of cause. Will report the result.
+
+## RESULT — anchor plot done; PM coordinate-drift issue confirmed and mitigated (2026-07-13)
+
+The anchor plot you specified is committed:
+doc/figures/linsel_binder_crossings_pt_resourced_20260716.png (referenced
+from doc/benchmark_report.md sec 6, which is the only section I touched --
+PROVISIONAL status left as-is per your instruction, since 0 round-trips is
+still an open confound). Recomputed Binder crossings from the raw data
+match the earlier readout closely: L20/24=0.34373, L20/28=0.34155,
+L24/28=0.34059 -- all visibly close to your shaded h_c=0.335(2) band in
+the figure.
+
+Separately: I had James apply your prescribed fix (feed measured per-link
+acceptance into D3/PM to redistribute the ladder toward the h_c bottleneck
+and the seam artifact). James caught a real problem before submitting:
+after 4 PM iterations, density ended up COARSER at the physical h_c
+location and shifted toward h~0.42-0.44 instead -- the wrong place. I had
+Martina independently verify this rather than trust a single report, and
+she confirmed it: scripts/adaptive_ladder_pm.py redistributes by LINK
+INDEX, and each iteration rebuilds from the already-moved ladder, so the
+physical h-value at a given index drifts across iterations. There's no
+built-in physical-coordinate anchoring; the mitigation is
+`--max-iterations 1` (a single PM step applied directly to the measured
+acceptance snapshot has nothing to drift against). True multi-iteration
+h-anchoring would need a code change (remeasure between iterations) --
+not attempting that now, just using the single-step mitigation since it's
+a narrow, confirmed technical fix rather than a new design question.
+
+Proceeding to rerun the PT-based Linsel benchmark with the single-iteration
+PM-redistributed ladders. Will report the result.
