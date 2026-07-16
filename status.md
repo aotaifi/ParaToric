@@ -764,3 +764,25 @@ out of scope for now. Proceeding with single-iteration PM per this
 narrow, confirmed technical fix (not a new design question, so not
 blocking on Feynman for this specific mechanical correction — reporting
 for awareness alongside the plot).
+
+## Single-iteration PM ALSO fails the h_c density check — STOPPING, need Feynman
+James's second attempt (--max-iterations 1, the confirmed mitigation)
+STILL fails: h=0.42-0.44 seam correctly gets denser (e.g. L20:
+0.011429->0.006411, right direction), but h_c region (h~0.340) gets
+COARSER, not denser (L20: 0.007083->0.008672 — WRONG direction), even
+with only one PM step. James correctly stopped again rather than submit.
+This means the "single-iteration avoids drift" mitigation (which Martina
+and I both endorsed) was itself insufficient. Candidate alternative
+explanation (not yet confirmed, offering for Feynman): PM conserves TOTAL
+SPAN and redistributes proportionally to inverse-acceptance, so with TWO
+simultaneous weak spots of DIFFERENT severity (h_c at 3-7% vs the seam at
+an even-worse 2-5%), PM may correctly/legitimately prioritize the WORSE
+spot (the seam) at the expense of the already-partially-dense h_c region
+— a genuine zero-sum tradeoff under fixed span, not necessarily a
+"coordinate drift" bug at all. Two mechanical fix attempts have now failed
+(4-iteration and 1-iteration); STOPPING further PM-based attempts here
+rather than continuing to guess — reporting to Feynman for direction
+(possible options: widen the total span so both regions can densify
+without trading off against each other, treat the two weak spots
+sequentially rather than simultaneously, or increase rung count directly
+near h_c rather than relying on redistribution).
