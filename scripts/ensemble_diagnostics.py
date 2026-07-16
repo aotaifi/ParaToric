@@ -292,6 +292,16 @@ def strength_binder_cumulant(series: np.ndarray) -> float:
     return 1.0 - float(np.mean(series**4)) / (3.0 * second * second)
 
 
+def strength_raw_ratio(series: np.ndarray) -> float:
+    """Return r=<m^4>/<m^2>^2 from the recorded raw series."""
+    if series.size < 2:
+        raise ValueError("Raw ratio needs at least two samples")
+    second = float(np.mean(series * series))
+    if not math.isfinite(second) or second <= 0.0:
+        raise ValueError("Raw ratio is undefined when <m^2> is non-positive")
+    return float(np.mean(series**4)) / (second * second)
+
+
 def integrated_autocorrelation_time(series: np.ndarray) -> float:
     """Estimate tau_int with an initial-positive-sequence autocovariance sum."""
     values = np.asarray(series, dtype=float)
@@ -309,10 +319,10 @@ def integrated_autocorrelation_time(series: np.ndarray) -> float:
     return max(0.5, 0.5 + float(np.sum(autocorrelation[1 : cutoff + 1])))
 
 
-def block_bootstrap_binder_error(
-    series: np.ndarray, tau: float, resamples: int, rng: np.random.Generator
+def block_bootstrap_strength_ratio_error(
+    series: np.ndarray, tau: float, resamples: int, rng: np.random.Generator, quantity: str
 ) -> float:
-    """Autocorrelation-aware block-bootstrap error for a Binder cumulant.
+    """Autocorrelation-aware block-bootstrap error for a strength ratio quantity.
 
     Contiguous blocks have width ceil(2*tau_int).  Resampling their second- and
     fourth-moment sums preserves the within-block correlation without materializing
@@ -328,7 +338,8 @@ def block_bootstrap_binder_error(
     choices = rng.integers(0, n_blocks, size=(resamples, n_blocks))
     second = np.mean(second_sums[choices], axis=1) / block_size
     fourth = np.mean(fourth_sums[choices], axis=1) / block_size
-    replicates = 1.0 - fourth / (3.0 * second * second)
+    ratio = fourth / (second * second)
+    replicates = 1.0 - ratio / 3.0 if quantity == "binder-u" else ratio
     return float(np.std(replicates, ddof=1))
 
 
@@ -367,7 +378,7 @@ def pt_rung_series(paths: list[Path], observable: str) -> tuple[int, np.ndarray,
 
 
 def run_pt_binder_anchor(args: argparse.Namespace) -> int:
-    """Generate the one Linsel PT Binder-crossing anchor figure."""
+    """Generate the one Linsel PT strength-ratio crossing anchor figure."""
     import matplotlib
 
     matplotlib.use("Agg")
@@ -378,19 +389,23 @@ def run_pt_binder_anchor(args: argparse.Namespace) -> int:
         raise SystemExit("Each --paths group must resolve to at least one obs.h5 file")
     rng = np.random.default_rng(args.seed)
     curves: dict[int, tuple[np.ndarray, np.ndarray, np.ndarray]] = {}
+    quantity_name = "U" if args.quantity == "binder-u" else "r"
+    quantity = strength_binder_cumulant if args.quantity == "binder-u" else strength_raw_ratio
     for paths in grouped_paths:
         size, fields, reconstructed = pt_rung_series(paths, args.observable)
         selected = fields[(fields >= args.h_min) & (fields <= args.h_max)]
-        cumulants = np.array([strength_binder_cumulant(reconstructed[h]) for h in selected])
+        cumulants = np.array([quantity(reconstructed[h]) for h in selected])
         taus = np.array([integrated_autocorrelation_time(reconstructed[h]) for h in selected])
         errors = np.array(
-            [block_bootstrap_binder_error(reconstructed[h], tau, args.resamples, rng)
+            [block_bootstrap_strength_ratio_error(
+                reconstructed[h], tau, args.resamples, rng, args.quantity
+            )
              for h, tau in zip(selected, taus)]
         )
         curves[size] = (selected, cumulants, errors)
         print(
             f"L={size} " + " ".join(
-                f"h={h:.6f}:U={u:.8f}+/-{e:.8f}:tau={tau:.4g}"
+                f"h={h:.6f}:{quantity_name}={u:.8f}+/-{e:.8f}:tau={tau:.4g}"
                 for h, u, e, tau in zip(selected, cumulants, errors, taus)
             )
         )
@@ -424,15 +439,24 @@ def run_pt_binder_anchor(args: argparse.Namespace) -> int:
         axis.errorbar(fields, cumulants, yerr=errors, fmt="o-", capsize=3,
                       linewidth=1.6, markersize=4.5, color=colors[size], label=f"L={size}")
     axis.axvspan(0.333, 0.337, color="0.4", alpha=0.18, label=r"Linsel $h_c=0.335(2)$")
+    crossing_offsets = ((-54, 36), (0, 19), (54, 2))
     for offset, (left, right, crossing, crossing_u) in enumerate(crossings):
         axis.annotate(f"{left}/{right}: {crossing:.4f}", xy=(crossing, crossing_u),
-                      xytext=(0, 16 * offset), textcoords="offset points", ha="center",
+                      xytext=crossing_offsets[offset], textcoords="offset points", ha="center",
                       fontsize=8, arrowprops={"arrowstyle": "-", "color": "0.3"})
-    axis.set(xlim=(args.h_min, args.h_max), xlabel=r"$h$", ylabel=r"Binder cumulant $U_P$")
+    if args.quantity == "raw-ratio":
+        axis.set_yscale("log")
+        ylabel = r"Raw ratio $\langle P^4\rangle/\langle P^2\rangle^2$"
+        caption = ("ParaToric reproduces the Linsel et al. (PRB 110, L241101) Ising-line "
+                   "benchmark: raw ratio <P^4>/<P^2>^2 of plaquette percolation strength "
+                   "for L=20/24/28 at lmbda=0.3, beta=L (log scale, matching Linsel Fig.4a convention).")
+    else:
+        ylabel = r"Binder cumulant $U_P$"
+        caption = ("ParaToric reproduces the Linsel et al. (PRB 110, L241101) Ising-line "
+                   "benchmark: Binder crossings for L=20/24/28 at lmbda=0.3, beta=L.")
+    axis.set(xlim=(args.h_min, args.h_max), xlabel=r"$h$", ylabel=ylabel)
     axis.grid(axis="y", alpha=0.25)
     axis.legend(loc="best", frameon=True)
-    caption = ("ParaToric reproduces the Linsel et al. (PRB 110, L241101) Ising-line "
-               "benchmark: Binder crossings for L=20/24/28 at lmbda=0.3, beta=L.")
     figure.text(0.5, -0.06, caption, ha="center", va="top", wrap=True, fontsize=8.5)
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -644,6 +668,10 @@ def build_parser() -> argparse.ArgumentParser:
     anchor.add_argument(
         "-o", "--observable", default="plaquette_percolation_strength",
         help="Strength observable with a raw series (default: plaquette_percolation_strength)",
+    )
+    anchor.add_argument(
+        "--quantity", choices=("binder-u", "raw-ratio"), default="binder-u",
+        help="Plot U=1-r/3 (default) or raw r=<P^4>/<P^2>^2 on a log scale.",
     )
     anchor.add_argument("--h-min", type=float, default=0.30)
     anchor.add_argument("--h-max", type=float, default=0.38)

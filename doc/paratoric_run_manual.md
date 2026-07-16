@@ -87,10 +87,20 @@ A7. Sample spacing & count: do NOT pick a fixed spacing and assume independence.
     unknown, over-sample and thin in analysis.
 
 A8. Observable / channel:
-    - z-basis deconfinement POP = the PLAQUETTE channel
-      (plaquette_percolation_probability/_strength). The direct/"electric"
-      channel is its dual (complementary; sub-percolation-threshold in most of the
-      phase) — do not expect both positive from z-basis alone.
+    - RE-VALIDATED on clean post-fix data (2026-07-13): z-basis deconfinement
+      POP = the PLAQUETTE channel (plaquette_percolation_probability), CONFIRMED
+      empirically on the resourced-benchmark data (jobs 15118635/36/37):
+      plaquette POP is ~0.82-0.89 at small h falling to ~0.22-0.38 at large h,
+      the direct/electric channel stays near-zero throughout. The earlier
+      "UNVALIDATED" flag on this line (raised after a trend-inversion scare) is
+      RESOLVED: the channel was correct all along. The actual bug was plotting
+      U=1-<P^4>/(3<P^2>^2) (decreasing in the ratio) where Linsel's Fig.4a plots
+      the raw ratio <P^4>/<P^2>^2 directly (log-scale 10^0-10^2, unbounded,
+      increasing) — a plotting-transform mismatch, not a channel error. Plot the
+      raw ratio, not U, when comparing against Linsel's figure directly.
+    - The two z-basis channels are complementary (same sigma_z=-1 edges, direct vs
+      dual graph) — they percolate on OPPOSITE sides; do not expect both positive
+      from z-basis alone. m-sector needs the x-basis.
     - For DUALITY / e-vs-m / crossing LOCATION: use PROBABILITY (dimensionless,
       crosses). Correct dual pairs at the self-dual point: z-perc==x-plaq,
       z-plaq==x-perc (duality swaps sigma_z<->sigma_x AND vertices<->plaquettes).

@@ -48,8 +48,19 @@ compatibility**, not a precise nu.
 ## 3. Our setup
 
 L = 20, 24, 28; beta = L; lmbda = 0.3; mu = J = 1; z-basis; plaquette percolation
-channel (the z-basis deconfinement POP); percolation measured on a rotated
-imaginary-time slice; PT ladder in h.
+channel; percolation measured on a rotated imaginary-time slice; PT ladder in h.
+
+**KNOWN LIMITATIONS vs the benchmark — sec 5 remains PROVISIONAL:**
+1. **PLOTTED QUANTITY CORRECTED.** The plaquette-channel identity was confirmed
+   with both clean z-basis channels. The previous anchor used
+   U=1-<P^4>/(3<P^2>^2), a monotonically decreasing transform of Linsel Fig. 4a's
+   raw, unbounded ratio <P^4>/<P^2>^2; its decreasing direction was therefore a
+   plotting-definition error, not a channel error. Sec. 6 now uses the raw ratio.
+2. **WRONG SIZES.** We ran L=20/24/28; Linsel ran **L=10/20/30**. Different L =>
+   curves cannot be overlaid => not yet a plot-on-plot benchmark. Also a finite-L
+   crossing is NOT h_c; their 0.335(2) is an EXTRAPOLATED value.
+BAR: a peer sees our figure and their Fig.4a and says "same TREND, same crossing".
+Trend first, number second.
 
 --------------------------------------------------------------------------------
 ## 4. The path: intermediate results -> fixes -> current result
@@ -96,16 +107,19 @@ PROVISIONAL, not final, because:
 --------------------------------------------------------------------------------
 ## 6. The anchor plot
 
-**ONE figure** (not a gallery):
-- x: h (crossing region, ~0.30–0.38); y: Binder cumulant U_P of plaquette
-  percolation strength
+**Corrected figure** (keep the superseded U figure for comparison):
+- x: h (crossing region, ~0.30–0.38); y: raw ratio
+  <P^4>/<P^2>^2 of plaquette percolation strength (log scale, matching Linsel
+  Fig. 4a)
 - three curves L = 20, 24, 28 with autocorrelation-corrected error bars
 - shaded vertical band at **Linsel h_c = 0.335(2)**
-- annotate our pairwise crossings (0.3406–0.3437)
+- annotate our pairwise crossings (0.3406–0.3437; invariant under U=1-r/3)
 - caption: "ParaToric reproduces the Linsel et al. (PRB 110, L241101) Ising-line
-  benchmark: Binder crossings for L=20/24/28 at lmbda=0.3, beta=L."
+  benchmark: raw ratio <P^4>/<P^2>^2 of plaquette percolation strength for
+  L=20/24/28 at lmbda=0.3, beta=L (log scale, matching Linsel Fig.4a convention)."
 
-PLOT PATH: `doc/figures/linsel_binder_crossings_pt_resourced_20260716.png`
+CORRECTED PLOT PATH: `doc/figures/linsel_raw_ratio_crossings_pt_resourced_20260716.png`
+SUPERSEDED U PLOT PATH (retained): `doc/figures/linsel_binder_crossings_pt_resourced_20260716.png`
 DATA: `/scratch/a/A.Otaifi/paratoric_pt_linsel_resourced_20260716/`
 
 --------------------------------------------------------------------------------
