@@ -708,3 +708,35 @@ Verdict: NO-GO on the strict round-trip bar, but this is now a
 qualitatively different, more specific, and more promising problem than
 before. Not deciding myself whether the bottleneck is D3-fixable ladder
 mechanics or a genuine first-order physics signal — routing to Feynman.
+
+## Three-number diagnostic result: too-short REFUTED, unhealthy-link CONFIRMED at h_c, PLUS a separate seam artifact
+| L | attempts/replica (actual) | attempts needed for 3 RT | ratio | bottleneck link acceptance vs median | bottleneck h-range | branch |
+|---|---:|---:|---:|---|---|---|
+| 20 | 341,250 | 22,459 | **15.2x over** | 7.60% vs 21.37% | 0.335-0.342 (AT h_c) | unhealthy link |
+| 24 | 450,417 | 30,601 | **14.7x over** | 6.01-7.05% vs 22.59% | 0.341-0.353 (AT h_c) | unhealthy link(s) |
+| 28 | 580,167 | 53,190 | **10.9x over** | 3.43% vs 20.30% | 0.340-0.344 (AT h_c) | unhealthy link |
+
+**Branch 1 (too-short) REFUTED**: every run had 11-15x MORE swap attempts
+than needed for 3 round-trips, yet got 0. Not a time problem.
+**Branch 2 (unhealthy specific link) CONFIRMED**, and it sits RIGHT AT
+h_c=0.335 in all 3 L (not at the piecewise seams h=0.25/0.42) — the
+bottleneck link's acceptance is 3-7x below the ladder's own median.
+**Bonus finding, Branch 3 confirmed separately**: a SECOND, even worse
+acceptance hole exists near h~0.43-0.44 (2.2-5.3%, below even the h_c
+bottleneck) — just above the upper piecewise seam at h=0.42 — this DOES
+look like the seam-artifact Feynman flagged (piecewise dh discontinuity),
+distinct from the h_c dip.
+Physical read (not yet confirmed with Feynman, offering candidate): a mild
+acceptance dip AT h_c is not surprising even for a continuous transition
+(critical fluctuations enhance Var(E) right at criticality) — the smooth-
+profile prescription just needs to reflect the ACTUAL local Var(E)(h),
+not an assumed smooth curve. PM is now legitimate to apply (links are
+alive) and would naturally redistribute density toward BOTH weak spots
+(h_c dip + seam artifact) since it works from measured acceptance
+directly, regardless of cause.
+Reported to Feynman. Proceeding to apply D3/PM to the measured per-link
+acceptance data from this run (subsumes the "smooth the profile" fix,
+since PM redistributes based on measured data, not the piecewise
+construction) and rerun — this follows directly from Feynman's own
+pre-specified decision tree (branch 2 -> "PM fine-tunes that region, now
+legitimate").
