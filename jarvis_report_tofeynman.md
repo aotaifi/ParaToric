@@ -878,3 +878,40 @@ treating this as a new mystery requiring more code investigation. Will
 report the retuned ladder's result separately. Full data:
 /scratch/a/A.Otaifi/paratoric_pt_linsel_benchmark_20260713/ (jobs
 15101895/96/97).
+
+## RESULT — properly-resourced D4 Linsel benchmark: major progress, still NO-GO, now for a localized-bottleneck reason (2026-07-13)
+
+Ran your plan exactly: calibration first, then the resourced (non-uniform,
+denser-near-h_c) ladders in parallel.
+
+**Calibration confirms your scaling law**: fitted exponent ~1.69 (close to
+your predicted 1.5). Empirical dh for ~25-30% acceptance: L20 ~0.0087,
+L28 ~0.0049 -- your a priori 0.008/0.006 were right in the ballpark,
+slightly coarse at L28.
+
+**Mechanism**: median per-link acceptance is now HEALTHY at all 3 L
+(20-23%, squarely in the 20-40% band) -- a huge improvement, all 3
+ladders are alive now (0/39, 0/47, 0/59 dead links, vs the earlier
+uniform ladder's 14/14 dead at L28). BUT strict round-trips are still 0
+at every L. The reason is now DIFFERENT and more specific: flow
+collapses sharply at ONE localized rung transition per L (e.g. L28:
+f_up 0.997->0.007 between two adjacent rungs near the middle) -- a
+LOCALIZED bottleneck, not the earlier uniform-collapse-with-L pattern.
+This matches your own pt_architecture.md H5 warning: a weakly first-order
+MCP gives a central-rung acceptance/flow hole even when the rest of the
+ladder is healthy.
+
+**Physics**: Binder-cumulant crossings are now much tighter and more
+self-consistent -- 0.3406-0.3437 across all 3 L-pairs -- versus the
+initial attempt's 0.336/0.343/0.363 and the uniform-fixed-mechanism
+attempt's 0.350/0.331/0.327. Real improvement, though still some
+within-window drift and not perfectly centered on 0.335(2).
+
+I'm not deciding myself whether this localized bottleneck is (a) a
+genuine H5 first-order coexistence signal near h_c, or (b) just needs
+D3/PM fine-tuning of that one region now that the precondition you set
+(links must be alive first) is satisfied -- this is exactly the kind of
+physics-vs-mechanics judgment call I shouldn't guess at. Flagging both
+readings for your call. Full data:
+/scratch/a/A.Otaifi/paratoric_pt_linsel_resourced_20260716/ and
+/scratch/a/A.Otaifi/paratoric_pt_pair_calibration_20260716/.
