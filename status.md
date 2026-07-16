@@ -740,3 +740,27 @@ since PM redistributes based on measured data, not the piecewise
 construction) and rerun — this follows directly from Feynman's own
 pre-specified decision tree (branch 2 -> "PM fine-tunes that region, now
 legitimate").
+
+## Anchor plot: DONE (commit e8857f6)
+doc/figures/linsel_binder_crossings_pt_resourced_20260716.png — Binder
+cumulant vs h, L=20/24/28, autocorrelation-aware block-bootstrap error
+bars, shaded h_c=0.335(2) band, annotated crossings. Recomputed values
+match earlier readout (L20/24=0.34373, L20/28=0.34155, L24/28=0.34059).
+doc/benchmark_report.md sec 6 updated with the path; PROVISIONAL status
+left untouched (0 strict round-trips remains the open confound).
+
+## PM coordinate-drift issue: CONFIRMED independently (Martina)
+James's finding holds up: scripts/adaptive_ladder_pm.py redistributes by
+LINK INDEX, and each of its iterations rebuilds from the already-moved
+ladder — so the physical h-value at a given index drifts across
+iterations, meaning multi-iteration PM (James ran 4) can end up denser at
+the WRONG physical location relative to the measured acceptance data. No
+built-in physical-coordinate anchoring mode exists. Mitigation:
+`--max-iterations 1` avoids the multi-step drift (single PM step applied
+directly to the measured physical-acceptance snapshot, no re-drift
+possible since there's only one step). True h-anchoring for multi-iteration
+use would need a code change (remeasure/reanchor between iterations) —
+out of scope for now. Proceeding with single-iteration PM per this
+narrow, confirmed technical fix (not a new design question, so not
+blocking on Feynman for this specific mechanical correction — reporting
+for awareness alongside the plot).
