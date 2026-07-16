@@ -630,3 +630,36 @@ Consequences (Feynman, unchanged/new):
    channel.
 3. Once (2b) lands: re-run the Linsel benchmark (item 4) on
    plaquette+rotate+long-thermalization, scan h for h_c~0.335/nu~0.65.
+
+## Feynman's revised D4 plan (UPDATE 2026-07-13c): properly-resourced ladder, not PM-first
+My "use D3/PM to retune" proposal was WRONG: PM only redistributes spacing
+across a FIXED rung count (preserves span+count, per adaptive_ladder_pm.py's
+own guard: mean_p<=1e-12 returns the ladder untouched) — it cannot rescue
+dead links, confirmed by D3's own earlier "PM alone does NOT solve a
+bottleneck case" finding. The actual problem: energy-fluctuation scale
+sigma_Delta ~ dh*L^(3/2) (Var E ~ volume ~ L^3 at beta=L), so fixed
+dh=0.025 gives acceptance collapsing as L^(3/2) — matches the measured
+1.9%->0.005% L20->L28 falloff. To hold acceptance fixed, dh ~ L^(-3/2) =>
+N_rungs ~ L^(3/2). AND rung count is not a free knob either: round-trip
+time tau_RT ~ N^2/A(N) is minimized near ~23% acceptance (the 20-40% rule
+of thumb); overshooting N by 4x makes round-trips ~5x SLOWER, not faster.
+
+Action plan (PI: "proceed"):
+1. Redo the benchmark properly resourced (NOT PM-first): L20 ~35-40 rungs
+   (dh~0.008 near h_c, ~0.013 away), L24 ~45-50, L28 ~55-60 (dh~0.006),
+   non-uniform, DENSER NEAR h_c=0.335. 40-60 ranks = 1-2 nodes (needs a
+   node-capacity check, see item 4).
+2. THEN apply D3/PM to equalize residual unevenness once links are alive.
+3. Calibrate rather than trust the derived constant: short acceptance-vs-dh
+   scan at L=20 and L=28 (~1h), fit dh_good(L)~L^(-3/2), run alongside (1).
+4. Resource check: max ranks/node on this cluster + whether inter-node PT
+   is viable (needed since N_opt will exceed 1 node at L=120).
+5. DEFERRED (explicit, not now): L=120 pilot walltime scaling is severe
+   (tau_RT~N^2~L^3 sweeps, wallclock/RT~L^6 overall — naive scaling implies
+   weeks at L=120 even for a narrow h-range). This is a CAMPAIGN-LEVEL
+   resourcing question (the original pilot budget was sized from walltime
+   alone, never from the acceptance-driven rung count) — Feynman explicitly
+   says raise this AFTER step 3's calibration data lands, not speculate now.
+
+Dispatching: calibration scan (3) + resource check (4) + properly-resourced
+benchmark staging (1) as a combined James task.
