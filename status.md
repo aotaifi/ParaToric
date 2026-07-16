@@ -663,3 +663,17 @@ Action plan (PI: "proceed"):
 
 Dispatching: calibration scan (3) + resource check (4) + properly-resourced
 benchmark staging (1) as a combined James task.
+
+## Calibration + properly-resourced benchmark: STAGED and RUNNING
+Resource check confirmed: 128 physical cores/node available on the cluster
+partition, so all designs (40/48/60 ranks) fit on ONE node — no multi-node
+MPI complexity needed. Codex sandbox's Slurm-DNS issue recurred for
+submission; submitted directly from Jarvis's own shell.
+- Calibration (acceptance vs dh at L=20/28, near h_c): job `15118489`,
+  8-task array, RUNNING.
+- Properly-resourced Linsel benchmark (Feynman's a priori L^(-3/2) ladders,
+  non-uniform density denser near h_c, per his fallback prescription since
+  calibration runs in parallel per his own "alongside" instruction):
+  L20=40 rungs (job `15118635`), L24=48 rungs (`15118636`),
+  L28=60 rungs (`15118637`) — all RUNNING, built from commit `98c45e8`.
+Readout pending both.
