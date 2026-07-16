@@ -786,3 +786,28 @@ rather than continuing to guess — reporting to Feynman for direction
 without trading off against each other, treat the two weak spots
 sequentially rather than simultaneously, or increase rung count directly
 near h_c rather than relying on redistribution).
+
+## TREND INVERSION RESOLVED: channel was RIGHT, transform was WRONG
+Free decisive check (existing clean resourced-benchmark data, both z-basis
+channels, no new sims): `plaquette_percolation_probability` clearly shows
+the correct deconfined-electric-POP pattern (high ~0.82-0.89 at small h,
+falling to ~0.22-0.38 at large h, for every L) — **CONFIRMS the earlier
+plaquette=POP identification was right all along**, refuting the
+wrong-channel hypothesis. `percolation_probability` (direct channel) stays
+near-zero at small h and rises only modestly — the complementary pattern,
+as expected.
+**Actual root cause**: Linsel's Fig.4a plots the RAW ratio r=<P^4>/<P^2>^2
+directly (unbounded, log-scale 10^0->10^2 axis), but our anchor plot
+computed the TRANSFORMED U=1-r/3 (the standard bounded Ising-convention
+Binder cumulant). Since 1-r/3 is monotonically DECREASING in r, plotting
+U instead of r inverts the trend even with the identical underlying
+formula and the CORRECT channel — a plotting-transform mismatch, not a
+channel or physics bug. (This also corrects my own earlier "sign
+convention, probably h-axis or channel" guess to the user — the specific
+mechanism is now nailed down: it's literally "U vs raw ratio", not the
+channel or the h-axis direction.)
+Next: redo the anchor plot plotting the RAW ratio (not U) from the
+already-plaquette-correct existing data, as a free/cheap first check;
+then, per Feynman's order-of-work, redo at Linsel's exact L={10,20,30}
+(needs new L=10/30 runs, properly resourced per the calibration-informed
+N~L^1.5 scaling) before promoting benchmark_report.md off PROVISIONAL.
