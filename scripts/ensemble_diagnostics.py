@@ -292,6 +292,155 @@ def strength_binder_cumulant(series: np.ndarray) -> float:
     return 1.0 - float(np.mean(series**4)) / (3.0 * second * second)
 
 
+def integrated_autocorrelation_time(series: np.ndarray) -> float:
+    """Estimate tau_int with an initial-positive-sequence autocovariance sum."""
+    values = np.asarray(series, dtype=float)
+    values = values - np.mean(values)
+    n = values.size
+    variance = float(np.dot(values, values)) / n
+    if n < 4 or not math.isfinite(variance) or variance <= 0.0:
+        return 0.5
+    padded = 1 << (2 * n - 1).bit_length()
+    spectrum = np.fft.rfft(values, padded)
+    autocovariance = np.fft.irfft(spectrum * np.conjugate(spectrum), padded)[:n]
+    autocorrelation = autocovariance / autocovariance[0]
+    positive = np.flatnonzero(autocorrelation[1:] <= 0.0)
+    cutoff = int(positive[0] + 1) if positive.size else n - 1
+    return max(0.5, 0.5 + float(np.sum(autocorrelation[1 : cutoff + 1])))
+
+
+def block_bootstrap_binder_error(
+    series: np.ndarray, tau: float, resamples: int, rng: np.random.Generator
+) -> float:
+    """Autocorrelation-aware block-bootstrap error for a Binder cumulant.
+
+    Contiguous blocks have width ceil(2*tau_int).  Resampling their second- and
+    fourth-moment sums preserves the within-block correlation without materializing
+    an N-sample bootstrap trajectory for every replicate.
+    """
+    block_size = max(1, int(math.ceil(2.0 * tau)))
+    n_blocks = series.size // block_size
+    if n_blocks < 2:
+        raise ValueError("Need at least two autocorrelation-sized blocks for Binder error")
+    trimmed = series[: n_blocks * block_size].reshape(n_blocks, block_size)
+    second_sums = np.sum(trimmed * trimmed, axis=1)
+    fourth_sums = np.sum(trimmed**4, axis=1)
+    choices = rng.integers(0, n_blocks, size=(resamples, n_blocks))
+    second = np.mean(second_sums[choices], axis=1) / block_size
+    fourth = np.mean(fourth_sums[choices], axis=1) / block_size
+    replicates = 1.0 - fourth / (3.0 * second * second)
+    return float(np.std(replicates, ddof=1))
+
+
+def pt_rung_series(paths: list[Path], observable: str) -> tuple[int, np.ndarray, dict[float, np.ndarray]]:
+    """Reconstruct stationary observable series at every PT ladder rung."""
+    size_values = {
+        int(capture_path_value(path, r"(?:^|_)L(?P<size>[0-9]+)(?:_|$)", "size"))
+        for path in paths
+    }
+    if len(size_values) != 1:
+        raise ValueError("Each pt-binder-anchor input glob must contain exactly one L")
+    ladders: list[np.ndarray] = []
+    observables: list[np.ndarray] = []
+    h_by_index: dict[int, float] = {}
+    for path in paths:
+        with h5py.File(path, "r") as handle:
+            pt_root = "/simulation/diagnostics/parallel_tempering"
+            index = int(handle[f"{pt_root}/initial_ladder_index"][()])
+            h_by_index[index] = float(handle[f"{pt_root}/initial_s"][()])
+            ladders.append(np.asarray(handle[f"{pt_root}/ladder_index_by_sample"], dtype=int))
+            observables.append(real_array(handle[f"{RESULTS_ROOT}/{observable}/series"]))
+    if len(h_by_index) != len(paths):
+        raise ValueError("PT files do not provide one unique initial ladder index per rank")
+    labels = np.stack(ladders)
+    values = np.stack(observables)
+    if labels.shape != values.shape:
+        raise ValueError("PT ladder and observable series shapes differ")
+    sample_index = np.arange(labels.shape[1])
+    reconstructed: dict[float, np.ndarray] = {}
+    for index, h_value in h_by_index.items():
+        owners = np.argmax(labels == index, axis=0)
+        if not np.all(labels[owners, sample_index] == index):
+            raise ValueError(f"PT rung {index} is missing or duplicated in a sample")
+        reconstructed[h_value] = values[owners, sample_index]
+    return next(iter(size_values)), np.array(sorted(reconstructed)), reconstructed
+
+
+def run_pt_binder_anchor(args: argparse.Namespace) -> int:
+    """Generate the one Linsel PT Binder-crossing anchor figure."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    grouped_paths = [expand_inputs(patterns) for patterns in args.paths]
+    if any(not paths for paths in grouped_paths):
+        raise SystemExit("Each --paths group must resolve to at least one obs.h5 file")
+    rng = np.random.default_rng(args.seed)
+    curves: dict[int, tuple[np.ndarray, np.ndarray, np.ndarray]] = {}
+    for paths in grouped_paths:
+        size, fields, reconstructed = pt_rung_series(paths, args.observable)
+        selected = fields[(fields >= args.h_min) & (fields <= args.h_max)]
+        cumulants = np.array([strength_binder_cumulant(reconstructed[h]) for h in selected])
+        taus = np.array([integrated_autocorrelation_time(reconstructed[h]) for h in selected])
+        errors = np.array(
+            [block_bootstrap_binder_error(reconstructed[h], tau, args.resamples, rng)
+             for h, tau in zip(selected, taus)]
+        )
+        curves[size] = (selected, cumulants, errors)
+        print(
+            f"L={size} " + " ".join(
+                f"h={h:.6f}:U={u:.8f}+/-{e:.8f}:tau={tau:.4g}"
+                for h, u, e, tau in zip(selected, cumulants, errors, taus)
+            )
+        )
+
+    if sorted(curves) != [20, 24, 28]:
+        raise SystemExit(f"Expected L=20,24,28; found {sorted(curves)}")
+    crossings: list[tuple[int, int, float, float]] = []
+    for left, right in ((20, 24), (20, 28), (24, 28)):
+        h_left, u_left, _ = curves[left]
+        h_right, u_right, _ = curves[right]
+        overlap_low = max(h_left[0], h_right[0])
+        overlap_high = min(h_left[-1], h_right[-1])
+        fields = np.unique(np.concatenate((h_left, h_right)))
+        fields = fields[(fields >= overlap_low) & (fields <= overlap_high)]
+        difference = np.interp(fields, h_left, u_left) - np.interp(fields, h_right, u_right)
+        brackets = np.flatnonzero(difference[:-1] * difference[1:] <= 0.0)
+        if brackets.size != 1:
+            raise ValueError(f"Expected one crossing for L={left}/{right}; found {brackets.size}")
+        i = int(brackets[0])
+        crossing = fields[i] - difference[i] * (fields[i + 1] - fields[i]) / (difference[i + 1] - difference[i])
+        crossing_u = 0.5 * (
+            np.interp(crossing, h_left, u_left) + np.interp(crossing, h_right, u_right)
+        )
+        crossings.append((left, right, float(crossing), float(crossing_u)))
+        print(f"crossing L={left}/{right}: h={crossing:.8f} bracket=[{fields[i]:.6f},{fields[i + 1]:.6f}]")
+
+    figure, axis = plt.subplots(figsize=(7.2, 4.8), constrained_layout=True)
+    colors = {20: "#0072B2", 24: "#D55E00", 28: "#009E73"}
+    for size in (20, 24, 28):
+        fields, cumulants, errors = curves[size]
+        axis.errorbar(fields, cumulants, yerr=errors, fmt="o-", capsize=3,
+                      linewidth=1.6, markersize=4.5, color=colors[size], label=f"L={size}")
+    axis.axvspan(0.333, 0.337, color="0.4", alpha=0.18, label=r"Linsel $h_c=0.335(2)$")
+    for offset, (left, right, crossing, crossing_u) in enumerate(crossings):
+        axis.annotate(f"{left}/{right}: {crossing:.4f}", xy=(crossing, crossing_u),
+                      xytext=(0, 16 * offset), textcoords="offset points", ha="center",
+                      fontsize=8, arrowprops={"arrowstyle": "-", "color": "0.3"})
+    axis.set(xlim=(args.h_min, args.h_max), xlabel=r"$h$", ylabel=r"Binder cumulant $U_P$")
+    axis.grid(axis="y", alpha=0.25)
+    axis.legend(loc="best", frameon=True)
+    caption = ("ParaToric reproduces the Linsel et al. (PRB 110, L241101) Ising-line "
+               "benchmark: Binder crossings for L=20/24/28 at lmbda=0.3, beta=L.")
+    figure.text(0.5, -0.06, caption, ha="center", va="top", wrap=True, fontsize=8.5)
+    output = Path(args.output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(output, dpi=220, bbox_inches="tight")
+    print(f"plot: {output}")
+    return 0
+
+
 def capture_path_value(path: Path, pattern: str, name: str) -> float:
     match = re.search(pattern, path.parent.name)
     if match is None or name not in match.groupdict():
@@ -483,6 +632,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="Regex matching parent directory with named capture (?P<field>...)",
     )
     binder.set_defaults(func=run_binder_crossing)
+
+    anchor = subparsers.add_parser(
+        "pt-binder-anchor", help="Plot autocorrelation-aware PT Binder crossings for Linsel anchor"
+    )
+    anchor.add_argument(
+        "--paths", action="append", nargs="+", required=True,
+        help="One quoted obs.h5 glob per L; provide three groups for L=20,24,28.",
+    )
+    anchor.add_argument("--output", required=True, help="Static PNG or PDF output path")
+    anchor.add_argument(
+        "-o", "--observable", default="plaquette_percolation_strength",
+        help="Strength observable with a raw series (default: plaquette_percolation_strength)",
+    )
+    anchor.add_argument("--h-min", type=float, default=0.30)
+    anchor.add_argument("--h-max", type=float, default=0.38)
+    anchor.add_argument("--resamples", type=int, default=1000)
+    anchor.add_argument("--seed", type=int, default=20260716)
+    anchor.set_defaults(func=run_pt_binder_anchor)
 
     self_test = subparsers.add_parser("self-test", help="Run synthetic R-hat assertions")
     self_test.set_defaults(func=lambda _args: synthetic_self_test())

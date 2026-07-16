@@ -12,6 +12,8 @@ adding new one-off analysis code.
   IID errors can be corrected with `--stored-error naive`. The
   `binder-crossing` subcommand evaluates the strength Binder cumulant from raw
   series and linearly brackets adjacent-size crossings.
+  Its `pt-binder-anchor` subcommand reconstructs fixed-h PT rung series and
+  writes the single autocorrelation-aware Linsel Binder-crossing anchor plot.
 - `pt_diagnostics.py`: Python CLI for offline parallel-tempering ladder health
   diagnostics from `ladder_index_by_sample`, including strict endpoint-cycle
   round-trips, tau_ergodic in sweeps, and per-rung up/down flow.

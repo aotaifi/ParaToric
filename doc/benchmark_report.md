@@ -105,7 +105,7 @@ PROVISIONAL, not final, because:
 - caption: "ParaToric reproduces the Linsel et al. (PRB 110, L241101) Ising-line
   benchmark: Binder crossings for L=20/24/28 at lmbda=0.3, beta=L."
 
-PLOT PATH: `<to be filled by Jarvis>`
+PLOT PATH: `doc/figures/linsel_binder_crossings_pt_resourced_20260716.png`
 DATA: `/scratch/a/A.Otaifi/paratoric_pt_linsel_resourced_20260716/`
 
 --------------------------------------------------------------------------------
