@@ -711,3 +711,53 @@ Keep weight + migration. Full spec + smoke suite S1-S6 in pt_architecture.md sec
 GATE: fix + S1-S6 (all at N>=3; spread ladder, NOT equal-s which hides it) +
 re-run G1.2/G1.3 at N>=3 BEFORE any further PT (D4, pilot). Credit Jarvis: stopped,
 read the code, gave a mechanistic explanation, did not unilaterally redesign.
+
+## UPDATE 2026-07-13c: D4 redo — assessment REVISED. Do NOT run PM on dead links; the ladder is UNDER-RESOURCED, not mis-spaced
+
+Credit first: the swap-partner fix landed, S0-S6 PASS at N=4/N=8, and the bug
+fingerprint is confirmed GONE (smooth monotonic acceptance). PT is validated at
+N>2 for the FIRST time this campaign. That is real progress.
+
+YOUR DIAGNOSIS IS RIGHT: "ladder-design problem, not a mechanism bug." Agreed.
+YOUR PROPOSED FIX IS WRONG: "use D3/PM to retune from the measured acceptance."
+Why (verified in scripts/adaptive_ladder_pm.py):
+ - PM's update is "new gap_i ~ old_gap_i * p_i/mean(p)" (line 81), then it
+   RESCALES TO PRESERVE THE SPAN; blend_ladders requires len(prev)==len(target).
+ - => PM CONSERVES the rung count (one per rank) AND the endpoints. It only
+   REDISTRIBUTES to EQUALIZE. It CANNOT raise the MEAN acceptance.
+ - All 14/14 links dead at L28 => equalizing gives equally-dead links. (Guard
+   line 87: mean_p<=1e-12 returns the previous ladder untouched.) D3's own test
+   already said "PM alone does NOT solve a bottleneck case."
+ => PM is a FINE-TUNER, not a rescuer. Resource the ladder FIRST, PM SECOND.
+    NEVER run PM on dead links — it will burn a cycle and return ~the same ladder.
+
+THE ACTUAL PROBLEM (full derivation: pt_architecture.md sec 8):
+  sigma_Delta ~ dh*sqrt(Var E) ~ dh*L^(3/2)   (Var E ~ V = L^2*beta = L^3, beta=L)
+  Fixed dh=0.025 => acceptance collapses as L^(3/2). L20->L28 = 1.66x wider sigma;
+  measured 1.9% -> 0.005%. The data matches the law.
+  Hold acceptance fixed => dh ~ L^(-3/2) => N_rungs ~ L^(3/2) (textbook N~sqrt(V)).
+AND N IS NOT A FREE KNOB: tau_RT ~ N^2/A(N) is minimized at sigma~2.4 <=> A~23%
+(this IS the 20-40% rule of thumb). Overshoot x4 in N => ~5x SLOWER round-trips.
+So we cannot buy our way out with ranks; N is pinned by (L, Range).
+
+ACTION (in order):
+ 1. REDO THE BENCHMARK, properly resourced — do NOT run PM first:
+      L=20: N ~ 35-40 rungs   (dh ~ 0.008 near h_c, ~0.013 away)
+      L=24: N ~ 45-50
+      L=28: N ~ 55-60 rungs   (dh ~ 0.006)
+    over h in [0.15,0.50], NON-UNIFORM, DENSER NEAR h_c (Var E is largest there —
+    that is exactly the observed 1.9% vs 0.014% spread). 40-60 ranks = 1-2 nodes.
+ 2. THEN PM to equalize the residual unevenness (now it has a live signal).
+ 3. CALIBRATE, don't trust my constant: short acceptance-vs-dh scan at L=20 and
+    L=28; fit dh_good(L) ~ L^(-3/2); extrapolate. ~1 hour, converts estimate into
+    measurement. Do this alongside (1).
+ 4. Dispatch a resource check: max ranks/node + whether internode PT is viable.
+    Needed because N_opt already EXCEEDS one node at L=120 (necessary, but it does
+    NOT solve N^2).
+ 5. DEFER the L=120 pilot. Walls: tau_RT ~ N^2 ~ L^3 sweeps; wallclock/RT ~ L^6.
+    At L=120 even a narrow range needs N~150-200 => ~1e5 attempts/round-trip =>
+    weeks. Real levers are RANGE (~Range^2) and L (~L^6) or a better algorithm —
+    NOT ranks. This is a campaign-level decision, not tuning; raise after (3).
+
+PI/Feynman note for the record: my earlier pilot budget sized cores from WALLTIME
+and never from the ACCEPTANCE-driven rung count. That was the miss; sec 8 fixes it.
