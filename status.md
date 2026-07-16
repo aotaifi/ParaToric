@@ -824,3 +824,18 @@ Remaining before promoting benchmark_report.md off PROVISIONAL (Feynman's
 order-of-work): (1) get round-trips (0 strict RT still open, needs the
 localized-bottleneck ladder fix), (2) rerun at Linsel's EXACT L={10,20,30}
 (we used 20/24/28) for a true overlay-able benchmark.
+
+## Round-trip fix: increased rung budget (not PM redistribution) — STAGED and RUNNING
+Per PI priority ("get round-trips"), diagnosed the PM failures as a
+genuine zero-sum tradeoff (PM conserves total span/rung count, so with
+two weak spots of different severity it prioritizes one at the expense
+of the other) rather than a residual bug. Fix: new
+scripts/acceptance_informed_ladder.py builds a continuous,
+measured-acceptance-informed density profile across the WHOLE h range
+(not 3-segment piecewise), with rung count increased ~50% (L20 40->60,
+L24 48->72, L28 60->90) so both weak spots (h_c bottleneck, h~0.42-0.44
+seam) can densify without competing. Verified BEFORE submitting: gap
+ratios (new/original) at both spots are <1 for all 3 L (genuinely
+denser this time, unlike either PM attempt). Jobs `15126362` (L20),
+`15126364` (L24), `15126363` (L28) — confirmed running, ~15/30/40 min
+ETA. Readout will check specifically: >=3 strict round-trips per L.
