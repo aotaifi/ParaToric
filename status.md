@@ -677,3 +677,34 @@ submission; submitted directly from Jarvis's own shell.
   L20=40 rungs (job `15118635`), L24=48 rungs (`15118636`),
   L28=60 rungs (`15118637`) — all RUNNING, built from commit `98c45e8`.
 Readout pending both.
+
+## Calibration + resourced benchmark readout: MAJOR PROGRESS, still NO-GO (localized bottleneck, not under-resourcing)
+**Calibration confirms the scaling law**: fitted exponent ~1.69 (close to
+Feynman's predicted 1.5). dh for ~25-30% acceptance: L20 ~0.0087,
+L28 ~0.0049 (Feynman's a priori 0.008/0.006 were in the right ballpark,
+slightly coarse at L28).
+
+**Mechanism, resourced ladders (39/47/59 links)**: median acceptance is
+now HEALTHY at all 3 L (20-23%, squarely in the 20-40% target band) — a
+huge improvement over the earlier uniform ladder's fully-dead L28. BUT
+still 0 strict round-trips at every L. Root cause is now different: flow
+is sharply BOTTLENECKED at one specific rung transition per L (e.g. L28:
+f_up 0.997->0.007 between adjacent rungs near the middle of the ladder) —
+a LOCALIZED collapse, not the earlier uniform-collapse-with-L pattern.
+This matches pt_architecture.md's own flagged H5 concern: a (weakly)
+first-order-like MCP gives a central-rung acceptance/flow bottleneck even
+when the REST of the ladder is healthy — this could be genuine physics
+(coexistence near h_c) or just needing D3/PM fine-tuning of that one
+region now that links are alive (Feynman's own precondition for using PM
+is now satisfied: "resource FIRST, PM SECOND... PM needs a live signal").
+
+**Physics**: Binder-cumulant crossings are now MUCH tighter/more
+self-consistent (0.3406-0.3437 across all 3 L-pairs) than either prior
+attempt (0.336/0.343/0.363 initial; 0.350/0.331/0.327 uniform-fixed-
+mechanism) — genuine improvement, though still showing some within-window
+drift and not perfectly centered on 0.335(2).
+
+Verdict: NO-GO on the strict round-trip bar, but this is now a
+qualitatively different, more specific, and more promising problem than
+before. Not deciding myself whether the bottleneck is D3-fixable ladder
+mechanics or a genuine first-order physics signal — routing to Feynman.
