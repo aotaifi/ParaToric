@@ -824,3 +824,114 @@ round-trips land and the crossing moves. Honest status stays: PROVISIONAL — a
 crossing from a NON-MIXING ladder (0 round-trips) is encouraging, not conclusive.
 This file is the regression test for the whole observable+PT stack and the thing
 we hand a peer to show we are doing physics, not chasing an artifact.
+
+## UPDATE 2026-07-13e: benchmark MISMATCH is the priority (wrong L set); bridge idea parked; plaquette-hardcoding claim REFUTED
+
+CREDIT: anchor plot committed; PM coordinate-drift caught by James, independently
+confirmed by Martina, mitigated with --max-iterations 1. That is exactly the right
+handling of a narrow technical defect — good.
+
+### (A) HIGH PRIORITY — the benchmark MISMATCH. It is not yet a benchmark.
+Our crossings 0.3406-0.3437 vs Linsel 0.335(2): 3-4 sigma outside their band.
+Diagnosis:
+ - NOT a convention error, most likely: ratio 0.3406/0.335 = 1.017 (no clean
+   factor of 2 or sqrt2), AND the crossings drift MONOTONICALLY toward 0.335 as L
+   grows: 0.34373 (20/24) -> 0.34155 (20/28) -> 0.34059 (24/28). Finite-size
+   corrections converging in the RIGHT direction.
+ - THE REAL MISMATCH: **we are not using Linsel's sizes.** They ran L = 10, 20, 30.
+   We ran L = 20, 24, 28. Different L => different curves => the two figures CANNOT
+   BE OVERLAID => it is not a plot-on-plot benchmark yet.
+ - ALSO: a finite-L crossing is NOT h_c. Linsel's 0.335(2) is an EXTRAPOLATED
+   value. Comparing our raw finite-L crossings to it is apples-to-oranges.
+ACTION (in order):
+ 1. Get round-trips first (the 3 numbers from 13d) — 0 RT can bias each rung.
+ 2. **Re-run at L = 10, 20, 30 — Linsel's EXACT sizes.** L=10/30 are cheap.
+ 3. Overlay our U_P(h) curves with their Fig. 4a. The bar: a peer looks at both
+    plots and says "same trend, same crossing" — no minus-sign archaeology.
+Only then may benchmark_report.md sec 5 be promoted off PROVISIONAL.
+
+### (B) PARKED (good idea, wrong moment): the (beta,Gamma)-style bridge
+PI raised the Newman-Moore trick (use a 2nd coordinate to route around a barrier).
+Verdict: principle transfers, implementation does not.
+ - beta CANNOT be the bridge here: **beta = L is locked by the FSS design**, not a
+   free knob.
+ - The natural bridge coordinate is the DUALITY-ODD direction (h - lmbda): the
+   first-order segment lives ONLY on the self-dual line; the flanking Ising lines
+   are CONTINUOUS. A replica blocked at the MCP can detour off-diagonal, cross
+   where it is 2nd-order, and return — routing AROUND the barrier.
+ - It stays a **1D ladder** — a CURVED path in (h,lmbda), NOT a 2D grid. (This
+   answers the earlier "decoupled PT is hard to tune" objection.)
+ - **D4 (independent h,lmbda) is the enabler** — its value is higher than the
+   "benchmark-only" framing I gave it.
+STATUS: do NOT build now. Zero evidence of an MCP bottleneck (the current
+bottleneck is at lmbda=0.3, a CONTINUOUS Ising line, where H5 cannot apply).
+Contingency for if/when the self-dual ladder stalls at s*.
+
+### (C) REFUTED — "the tuple/plaquette in the update is hardcoded"
+Verified all four tuple updates in extended_toric_code_qmc.hpp:
+  global_tuple_flip (2609), double_tuple_flip (2666), single_tuple_flip_move
+  (2868), spin_tuple_combination (3185).
+EVERY one samples the tuple RANDOMLY: get_random_plaquette_index() (z-basis) /
+get_random_vertex() (x-basis). **No hardcoded plaquette in the update path.** The
+concern appears to come from loophex's membrane update — different code, out of
+scope. No audit needed.
+ADJACENT, REAL, LOW PRIORITY (different from the claim): the
+`staggered_imaginary_times` OBSERVABLES (lattice.cpp:3239/3262) sample a SINGLE
+random plaquette/star per measurement — a 1-sample estimator, very noisy. Not a
+bug; unused by this campaign. Park it.
+
+## UPDATE 2026-07-13f: STOP — TREND INVERSION is the top priority. Likely WRONG CHANNEL. (supersedes 13e ordering)
+
+PI caught this and it outranks everything numerical, including the 3-sigma
+question and the round-trip work: **our U_P(h) DECREASES with h; Linsel's
+INCREASES.** A trend inversion is a DEFINITION/OBSERVABLE problem, not a
+statistics problem. Do this BEFORE any further mixing/round-trip work — a mixing
+fix on the wrong observable buys nothing.
+
+### Why the matching crossing is NOT reassurance
+A crossing is INVARIANT under any MONOTONIC map: if U_L(h) cross at h*, then
+f(U_L(h)) cross at the SAME h* for any monotonic f — INCLUDING a DECREASING f.
+=> "crossings agree (0.34 vs 0.335) but the trend is inverted" is EXACTLY the
+fingerprint of plotting a monotonically-DECREASING FUNCTION of Linsel's
+observable. The number agreeing is expected even if the channel is wrong. Do not
+take it as evidence.
+
+### It is NOT a Binder-formula mismatch (verified)
+Ours: `e4_raw/(e2_raw*e2_raw)` = <P^4>/<P^2>^2 (src/statistics/bootstrap.hpp:164,179).
+Linsel Fig.4a y-axis: 10^0 -> 10^2 on a LOG scale = an unbounded ratio >= 1, i.e.
+the SAME functional form. Same formula => same trend expected. The inversion is in
+WHAT WE FEED IT, not how we compute it.
+
+### LEADING HYPOTHESIS: we are plotting the DUAL/COMPLEMENTARY channel
+The two z-basis channels percolate on OPPOSITE sides of the transition
+(complementary). Complementary channel => P decreasing where theirs increases =>
+U_P inverted => crossing still lands in the same place. That fits every observation.
+FEYNMAN'S DEBT, stated plainly: I made the "plaquette = the deconfinement POP" call
+on the CONTAMINATED, under-thermalized dataset, and flagged it myself as
+provisional ("identify which channel is the electric POP from the POST-FIX
+benchmark, not the current contaminated data" — UPDATE 13d). That step was never
+done. This inversion is that shortcut coming due. Treat the plaquette
+identification as UNVALIDATED.
+
+### THE FREE DECISIVE CHECK (existing clean benchmark data; do FIRST)
+Do NOT plot U_P yet. Plot **raw POP vs h for BOTH channels**
+(percolation_probability AND plaquette_percolation_probability) from the clean
+resourced-benchmark data, and compare to Linsel's stated behaviour:
+DECONFINED (small h) => electric strings PERCOLATE. So the CORRECT channel must show
+  - POP high (~1) at SMALL h, falling to ~0 at LARGE h; and consequently
+  - U_P ~ 1 at small h -> LARGE at big h (INCREASING) — matching their Fig.4a.
+Whichever of our two channels does that IS Linsel's electric channel.
+If it is the OTHER one => the plaquette identification is WRONG and every
+downstream statement keyed to it must be revisited (incl. "plaquette = the z-basis
+deconfinement POP" in the run manual A8 and benchmark_report sec 3).
+
+### ORDER OF WORK (revised)
+ 1. POP-vs-h, BOTH channels, existing data => fix the channel identification
+    EMPIRICALLY. (free, one plot)
+ 2. Redo the anchor plot with the RIGHT channel AND Linsel's L = 10/20/30.
+ 3. Compare TREND first, crossing second. Only then may benchmark_report.md sec 5
+    be promoted off PROVISIONAL.
+ 4. THEN resume the round-trip / 3-numbers work (13d).
+BAR (unchanged, PI): a peer looks at our figure and Linsel Fig.4a and says "same
+trend, same crossing" — no minus-sign archaeology. Until the trend matches, it is
+NOT a benchmark.
