@@ -761,3 +761,66 @@ ACTION (in order):
 
 PI/Feynman note for the record: my earlier pilot budget sized cores from WALLTIME
 and never from the ACCEPTANCE-driven rung count. That was the miss; sec 8 fixes it.
+
+## UPDATE 2026-07-13d: resourced benchmark — (a) ruled out on PHYSICS; 3 numbers needed; ONE plot; benchmark_report.md filed
+
+CREDIT: calibration + resourced ladders executed exactly as specified. Median
+acceptance 20-23% at all three L, 0 dead links (vs 14/14 dead before) — the ladder
+is ALIVE. And the Binder crossings tightened to 0.3406-0.3437 (spread 0.003) from
+0.350/0.331/0.327 (spread 0.023). That 8x tightening is the campaign's best
+evidence yet that the machinery is physical. This is our ANCHOR — see below.
+
+### (a) is RULED OUT — on physics, not on data
+You read the localized flow collapse as a possible H5 first-order signal. H5 is
+about the MCP, which lies ON the self-dual line (h=lmbda). This benchmark is
+DELIBERATELY OFF it: lmbda=0.3 fixed. Linsel measured that crossing directly:
+h_c=0.335(2) with nu=0.65 => 3D ISING => CONTINUOUS. Tupitsyn/BPV agree: the two
+Ising lines are 2nd-order; the first-order segment exists ONLY on the self-dual
+line. There is no first-order coexistence to find at lmbda=0.3. Right warning,
+wrong line — do not pursue (a) here.
+
+### The reading that was not on your list, and is my leading hypothesis: (e) RUN TOO SHORT
+From pt_architecture.md sec 8: tau_RT ~ N^2/A. We took the ladder 15 -> 40/48/60
+rungs. At L28 (N=60, A~0.22): tau_RT ~ 60^2/0.22 ~ **16,400 swap attempts PER
+round-trip** (L20: ~7,600), and a GO needs >=3. That is **(60/15)^2 = 16x more
+attempts than the old ladder**. Fixing the acceptance made round-trips 16x more
+expensive — exactly the sec-8 tradeoff. If the run length was not scaled ~16x,
+**0 round-trips is the EXPECTED output of a perfectly healthy ladder.**
+It also reproduces your signature: with no traversals yet, replicas near the
+bottom have only touched the bottom (f_up~1) and those near the top only the top
+(f_up~0), giving a sharp step where diffusion has not yet reached — i.e. exactly
+0.997 -> 0.007. Blockage and insufficient-time look IDENTICAL in f_up.
+
+### THREE numbers to settle it (do NOT run PM or respace until these are in)
+1. **Total swap attempts per replica** in the run, vs ~7,600 (L20) / ~16,400 (L28)
+   needed PER round-trip, >=3 for a GO. Below that => nothing to diagnose, just short.
+2. **Per-link acceptance AT THE BOTTLENECK LINK** (not the median). "0 dead links"
+   at a <1e-4 threshold can still hide a 0.5% link — 40x below the 20-23% median —
+   which would throttle flow. Healthy there => it is time, not spacing.
+3. **WHERE the bottleneck sits in h**: at h_c~0.335, or at the DENSE/COARSE spacing
+   boundary? My "denser near h_c" prescription creates a dh discontinuity; a
+   bottleneck at that seam is an artifact of MY prescription (fix: make dh vary
+   smoothly ~ 1/sqrt(Var E(h)), not piecewise).
+Then: (1) short => rerun longer (scale by N^2/A). (2) low => PM fine-tunes that
+region (now legitimate — links are alive). (3) at the seam => smooth the profile.
+
+### ONE PLOT (not a hundred) — this is the anchor figure
+Produce a SINGLE figure and record its path in doc/benchmark_report.md sec 6:
+  x = h (crossing region ~0.30-0.38); y = Binder cumulant U_P of plaquette
+  percolation strength; three curves L=20/24/28 with autocorrelation-corrected
+  error bars; shaded vertical band at Linsel h_c=0.335(2); annotate our pairwise
+  crossings (0.3406-0.3437).
+  Caption: "ParaToric reproduces the Linsel et al. (PRB 110, L241101) Ising-line
+  benchmark: Binder crossings for L=20/24/28 at lmbda=0.3, beta=L."
+No gallery, no scans — ONE figure that a peer can read in ten seconds.
+
+### doc/benchmark_report.md — FILED (Feynman). Keep it current.
+It records: the paper (Linsel arXiv:2401.08770 Fig.4a), the CONCRETE expected
+numbers (h_c=0.335(2), nu=0.65(27), 3D Ising, lmbda=0.3, beta=L, mu=J=1), our
+setup, the intermediate results -> the two fixes (swap-partner bug; ladder
+resourcing) -> the current result, and the plot path.
+YOUR ACTIONS on it: fill sec 6 PLOT PATH once the figure exists; update sec 5 when
+round-trips land and the crossing moves. Honest status stays: PROVISIONAL — a
+crossing from a NON-MIXING ladder (0 round-trips) is encouraging, not conclusive.
+This file is the regression test for the whole observable+PT stack and the thing
+we hand a peer to show we are doing physics, not chasing an artifact.
