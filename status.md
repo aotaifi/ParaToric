@@ -839,3 +839,30 @@ ratios (new/original) at both spots are <1 for all 3 L (genuinely
 denser this time, unlike either PM attempt). Jobs `15126362` (L20),
 `15126364` (L24), `15126363` (L28) — confirmed running, ~15/30/40 min
 ETA. Readout will check specifically: >=3 strict round-trips per L.
+
+## Acceptance-informed ladder readout: seam FIXED, h_c bottleneck PERSISTS (was masked)
+Seam (h~0.435) is fully healed: production-only acceptance 37-40% at all
+L, matching target. BUT round-trips still 0/0/0 for L=20/24/28. Root
+cause found: the standing acceptance diagnostic COMBINES
+thermalization-phase + production-phase swap counters, and
+thermalization-phase acceptance was masking a persistent problem —
+PRODUCTION-ONLY (stationary) acceptance at the h_c link is still only
+4.2%/3.9%/9.9% (L20/24/28) vs the combined-counter view's misleadingly
+healthy 18.6%/22.5%/26.9%. Flow remains non-monotonic at h_c (0.92->0.09,
+0.93->0.13, 0.79->0.20) — a genuine, still-unresolved stationary-regime
+bottleneck, not fixed by the uniform +50% budget increase (which mostly
+helped diffusion elsewhere/during thermalization, not the persistent
+h_c-specific problem). Binder crossings: L20/28 and L24/28 land close to
+h_c (0.336, 0.336), but L20/24 shows THREE crossings (noisy/non-monotonic
+in that specific pair) — consistent with the same h_c mixing problem.
+**Verdict: PARTIAL, still NO-GO on round-trips.** Process fix identified:
+future acceptance diagnostics MUST separate production-only from
+thermalization-phase counters (the combined view is misleading).
+Physical candidate (not yet confirmed): Var(E) may have a genuine SHARP
+PEAK right at h_c (expected for any critical point, even continuous ones,
+via specific-heat-like divergence in a finite system) requiring much MORE
+aggressive, narrowly-targeted density there than a broad-based scaling
+gives — not just moderately denser, but specifically pinned tighter in a
+narrow h_c window. Next: build an even more targeted ladder refinement
+using PRODUCTION-ONLY acceptance data (not combined), concentrating
+substantially more density in a narrow window right at h_c specifically.
