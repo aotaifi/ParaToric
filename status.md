@@ -957,3 +957,35 @@ intended" gap Feynman flagged. Generous run-length safety margin (3-5x
 original production sweeps) applied given Lane 1's harmonic-mean finding.
 Jobs `15140239` (L10), `15140247` (L20), `15140246` (L30) — submitted,
 3h caps, ~5-10/20-30/55-75 min expected once running.
+
+## Lane 2 (L=10/20/30 exact-size overlay): NO-GO — 4th consecutive round-trip failure
+Round-trips: 0/0/0 (production-only), even with the generous 3-5x
+run-length safety margin. Trend correctly matches Linsel (monotonic
+increase). Crossings 0.3441/0.3421/0.3408 (spread 0.0033) — NOT
+meaningfully more stable than the earlier L={20,24,28} attempts (spread
+was also ~0.003 there). L30 shows a severe, specific bottleneck: min
+acceptance 0.24% at h=[0.339,0.344], right at h_c — harmonic-mean
+acceptance is 6.3% vs 21.5% median, confirming (again) the harmonic/median
+gap matters and a genuine serial bottleneck persists even with the longer
+run.
+**This is the 4th consecutive failed attempt at round-trips specifically**
+(3 ladder redesigns + this longer-run variant), all blocked by a
+persistent, severe minimum-acceptance bottleneck right at h_c. STOPPING
+further mechanical iteration here per loop-containment discipline — this
+now looks like it needs a strategic decision, not another tactical patch.
+**Candidate strategic alternative worth Feynman's/PI's consideration**
+(not deciding myself): the L=10/20/30 exact-size overlay benchmark's
+PURPOSE is to reproduce Linsel's KNOWN answer at sizes where THEY did not
+need PT (their paper's methods do not describe PT for this Ising-line
+benchmark). Our own critical-slowing-without-PT finding was specifically
+at L=32 (near the TOP of their range, not L=10-20). It may be that a
+properly-deep NO-PT single-chain run is sufficient at L=10/20/30 (as it
+evidently was for Linsel), decoupling "do we reproduce the known Ising
+answer" from "does our PT mechanism work" — the latter is already
+separately, cleanly validated at the N=4/N=8 unit-test scale (S0-S6 all
+PASS). Fighting PT-ladder engineering specifically to reproduce an
+overlay benchmark that may not need PT at all could be solving a harder
+problem than necessary.
+Reported to Feynman with this finding + candidate alternative; benchmark_report.md
+remains PROVISIONAL. Not proceeding to a 5th mechanical ladder attempt
+without explicit direction.
