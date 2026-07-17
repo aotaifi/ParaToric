@@ -1120,3 +1120,38 @@ pairs (0.3330/0.3376/0.3410) -- still not stable.
 
 Full data: /scratch/a/A.Otaifi/paratoric_pt_linsel_targeted_hc_20260717/
 (jobs 15134342/43/44).
+
+## RESULT — Lane 1 refines your run-length hypothesis (harmonic vs median matters); Lane 2 staged (2026-07-17)
+
+**Lane 1** (free check on the ORIGINAL N=40/48/60 ladder, jobs
+15118635/36/37): using MEDIAN per-link acceptance, actual production
+swap attempts already exceed 3*tau_RT for all 3 L (4.4x/3.2x/1.7x) --
+your simple check reads "the ladder was fine, run was already long
+enough." But I had the worker also check with the HARMONIC MEAN
+acceptance (the statistically correct way to combine a SERIAL chain of
+uneven-acceptance links -- dominated by the weakest link, like series
+resistors, not simple averaging): ratios come out 2.84/0.78/0.13 for
+L20/24/28 -- L20 borderline, but L24 and especially L28 (13% of needed
+length) are genuinely short. Minimum production acceptance found: L20
+2.7%, L24 0.44%, L28 0.028% -- real individual weak links exist even in
+the ORIGINAL design, which the median statistic was hiding.
+
+I read this as refining rather than contradicting your core insight
+(don't uncontrollably grow N, don't over-correct local acceptance past
+the ~23% optimum) -- it suggests the right combined fix is a smooth,
+modest adjustment informed by harmonic-mean-aware analysis, plus running
+long enough per the CORRECT (harmonic) tau_RT estimate, not the naive
+median one. Not concluding "ladder needs another redesign" myself --
+flagging the harmonic-vs-median distinction for your read before we
+commit to "just extend this exact run."
+
+**Lane 2**: staged and running independently. L={10,20,30} (Linsel's
+exact sizes), L20 reuses the ORIGINAL N=40 design (not any of the 3
+over-corrected variants), L10/L30 sized via the same sqrt(Var E)/L^1.5
+scaling. Added a pre-submission design-vs-intended verification step this
+time (empty diff, exact rung-count equality, strictly-increasing links
+all confirmed PASS) to address the discrepancy you flagged earlier.
+Generous run-length safety margin applied given the Lane 1 harmonic-mean
+finding. Jobs 15140239 (L10)/15140247 (L20)/15140246 (L30), running.
+
+Will report both readouts once available.
