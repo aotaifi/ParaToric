@@ -866,3 +866,26 @@ gives — not just moderately denser, but specifically pinned tighter in a
 narrow h_c window. Next: build an even more targeted ladder refinement
 using PRODUCTION-ONLY acceptance data (not combined), concentrating
 substantially more density in a narrow window right at h_c specifically.
+
+## Targeted h_c ladder: STAGED, with a submission mixup resolved + a new seed-overflow bug found
+James's dispatch accidentally double-submitted (a DNS-retry race created
+two separate script/directory variants): the "canonical" set (jobs
+15134326/27/28, dir paratoric_pt_linsel_hc_targeted_20260717) FAILED
+immediately with `Exception caught: the argument ('202607172063') for
+option '--seed' is invalid` — a NEW int32-overflow-class bug: a
+timestamp-derived seed (~2e11) exceeds the CLI's --seed argument range
+(same class as the earlier N_thermalization overflow, fixed in `af0a3c2`,
+but --seed itself was never widened). The OTHER set (jobs 15134342/43/44,
+dir paratoric_pt_linsel_targeted_hc_20260717, 66/78/96 rungs) used a
+different/valid seed and is confirmed RUNNING CLEANLY (5-6min in, no
+crash). No data-corruption risk — the two attempts wrote to genuinely
+separate output directories. Treating 15134342/43/44 as the real run;
+the failed canonical set is dead, nothing to clean up.
+Carried-forward known issue (not blocking, not fixed now): --seed CLI
+argument needs the same int64 widening as --N_thermalization got in
+af0a3c2, to avoid this recurring with large timestamp-derived seeds.
+Local h_c-window rung density (per James, production-only informed):
+subdivided the minimum-acceptance link + one shoulder each side by 3x;
+new rung counts L20=66, L24=78, L28=96 (up from 60/72/90). Readout
+pending, will check specifically for >=3 strict round-trips via
+production-only trajectory motion (not combined counters).
