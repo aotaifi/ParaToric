@@ -1155,3 +1155,42 @@ Generous run-length safety margin applied given the Lane 1 harmonic-mean
 finding. Jobs 15140239 (L10)/15140247 (L20)/15140246 (L30), running.
 
 Will report both readouts once available.
+
+## RESULT — Lane 2 (L=10/20/30 exact-size overlay): NO-GO, 4th consecutive round-trip failure. Stopping mechanical iteration. (2026-07-18)
+
+Round-trips: 0/0/0 (production-only), even with the generous 3-5x
+run-length safety margin applied given the Lane 1 harmonic-mean finding.
+Trend correctly matches Linsel (monotonic increase, confirmed again).
+Crossings: 0.3441(10/20), 0.3421(10/30), 0.3408(20/30) -- spread 0.0033,
+essentially UNCHANGED from the earlier L={20,24,28} attempts (~0.003
+spread there too) -- the longer run did not meaningfully tighten this.
+L=30 shows a severe specific bottleneck: minimum acceptance 0.24% right
+at h_c=[0.339,0.344] (harmonic mean 6.3% vs 21.5% median -- the
+harmonic/median gap persists even at the longer run length).
+
+This is now the 4th consecutive failed attempt at getting round-trips
+(3 ladder redesigns + this longer-run variant), all blocked by the same
+persistent, severe bottleneck right at h_c. Per this project's own
+loop-containment discipline, I'm stopping further mechanical iteration
+here rather than attempting a 5th tactical patch.
+
+I want to offer a strategic alternative for your consideration rather
+than just reporting failure: the PURPOSE of the L=10/20/30 exact-size
+benchmark is to reproduce Linsel's KNOWN answer at sizes where THEIR
+paper does not describe using PT at all for this Ising-line check. Our
+own finding that the raw observable is critically slow WITHOUT PT was
+specifically demonstrated at L=32 -- near the TOP of Linsel's range, not
+at L=10-20. It's possible a sufficiently deep NO-PT single-chain run is
+actually adequate at L=10/20/30 (as it evidently was for Linsel), which
+would decouple two things we've been conflating: "do we reproduce the
+known Ising answer" (the overlay benchmark's actual purpose) versus "does
+our PT mechanism work at all" (already separately and cleanly validated
+at the N=4/N=8 unit-test scale, S0-S6 all PASS -- that question is
+already answered independently of this benchmark).
+
+If that's right, we may be spending significant effort making PT work
+for a check that doesn't strictly need PT, while the thing that DOES need
+PT (the actual MCP pilot at the self-dual line) is a separate, later
+question. Not deciding this myself -- flagging it since it reframes the
+whole recent effort. benchmark_report.md remains PROVISIONAL. Awaiting
+your direction before any further ladder/run-length iteration.
