@@ -1038,3 +1038,38 @@ much ground this session has covered, I'll hold here and take direction
 on which to tackle first, unless you'd rather I proceed with both in
 parallel (L=10/30 properly-resourced staging doesn't depend on resolving
 the PM bottleneck issue).
+
+## RESULT — acceptance-informed ladder: seam fixed, h_c bottleneck persists (was masked by combined counters) (2026-07-17)
+
+The +50% rung-budget ladder (60/72/90 rungs for L20/24/28) fully fixed the
+seam artifact (production-only acceptance 37-40% at h~0.435, all L) but
+round-trips are STILL 0/0/0.
+
+Root cause: our standard acceptance diagnostic combines
+thermalization-phase + production-phase swap counters. That combined
+view looked healthy at h_c (18.6%/22.5%/26.9% for L20/24/28), but
+PRODUCTION-ONLY (stationary-regime) acceptance at the h_c link is still
+just 4.2%/3.9%/9.9% -- the thermalization phase was masking a persistent
+stationary-regime problem. Flow remains non-monotonic right at h_c in all
+three L (0.92->0.09, 0.93->0.13, 0.79->0.20). The +50% broad-based
+resourcing helped elsewhere but did not resolve h_c specifically.
+
+Binder crossings: L20/28 and L24/28 land close to h_c (0.336 both), but
+L20/24 shows THREE crossing points (noisy/non-monotonic between those two
+curves specifically) -- consistent with the same h_c-region problem.
+
+My candidate physical read (not confirmed): Var(E) may have a genuinely
+sharp peak right at h_c (expected for a critical point even when
+continuous, from specific-heat-like finite-size divergence), needing much
+more AGGRESSIVE, narrowly-targeted density in a tight window there than a
+broad L^(3/2)-informed scaling gives.
+
+Process fix I'm adopting going forward: separate production-only from
+combined thermalization+production acceptance counters in all future PT
+diagnostics -- the combined view is misleading and nearly caused a false
+promotion here.
+
+Next (per PI priority on round-trips): building a more targeted ladder
+refinement using PRODUCTION-ONLY acceptance data, concentrating
+substantially more density in a narrow window specifically at h_c, rather
+than another broad-based increase. Will report.
