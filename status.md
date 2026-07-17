@@ -889,3 +889,37 @@ subdivided the minimum-acceptance link + one shoulder each side by 3x;
 new rung counts L20=66, L24=78, L28=96 (up from 60/72/90). Readout
 pending, will check specifically for >=3 strict round-trips via
 production-only trajectory motion (not combined counters).
+
+## Targeted h_c ladder (3rd attempt): STILL NO-GO, 0/0/0 round-trips — STOPPING iteration, reporting up
+h_c window itself is now VERY healthy (72.7-76.4% L20, 67.1-76.3% L24,
+62.3-75.5% L28 — arguably over-corrected) and the seam remains healthy
+(36-42%). BUT round-trips are still 0/0/0 for all L. Root cause: the
+narrow local refinement created NEW unsupported gaps immediately ADJACENT
+to the h_c spike (zero cross-rung flow mixing in large regions: L20
+[0.346,0.363], L24 [0.328,0.371], L28 [0.313,0.406]) — acceptance there
+(13-20%) isn't dead, but flow analysis shows literally no traversal
+activity through those specific gaps, blocking end-to-end round-trips
+even though every individual region looks locally reasonable.
+**Implementation discrepancy found**: James's report claimed 66/78/96
+rungs with "minimum link + one shoulder on each side" refined; the actual
+submitted job used 62/74/92 rungs with only ONE link refined (not the
+shoulders as instructed) — a real gap between what was asked/reported and
+what was implemented, which likely explains why new adjacent gaps formed
+(shoulders were the natural place to prevent them).
+**This is the 3rd distinct ladder-design iteration (uniform -> broad
+acceptance-informed -> narrow targeted), each fixing the SPECIFIC problem
+found but revealing a new, narrower one elsewhere.** Per this project's
+own loop-containment discipline (max 3 rounds before stop-and-report,
+not open-ended iteration), STOPPING here rather than dispatching a 4th
+mechanical attempt. Reporting to Feynman/PI: the pattern suggests
+per-round hand-patching of individual weak links may not converge:
+recommend either (a) a genuinely smooth, continuous, FULLY-recomputed
+density profile fit to ALL measured production-only acceptance data at
+once (not patching one region at a time), verified end-to-end before
+submission, or (b) reconsidering whether round-trips at this rung count
+are achievable at all without a fundamentally different ladder strategy.
+Binder crossings (informational): now single-valued per pair (the L20/24
+3-crossing noise issue resolved) but spread 0.00797 across the 3 pairs
+(0.3330/0.3376/0.3410) — not yet stable, consistent with the ladder still
+not actually mixing (0 round-trips means these are NOT trustworthy
+equilibrium crossings).
