@@ -923,3 +923,37 @@ Binder crossings (informational): now single-valued per pair (the L20/24
 (0.3330/0.3376/0.3410) — not yet stable, consistent with the ladder still
 not actually mixing (0 round-trips means these are NOT trustworthy
 equilibrium crossings).
+
+## LANE 1 free check: NUANCED — median-A says "run was long enough", harmonic-mean-A (the physically correct statistic for serial bottlenecks) says L24/L28 were still short
+Using the ORIGINAL (N=40/48/60) properly-resourced ladder's own data
+(jobs 15118635/36/37), computed tau_RT two ways:
+- **Median acceptance** (Feynman's simple check): actual production swap
+  attempts already EXCEED 3*tau_RT for all 3 L (ratios 4.4x/3.2x/1.7x) —
+  this reading says "ladder was fine, just needed nothing more."
+- **Harmonic-mean acceptance** (the mathematically correct statistic for
+  a SERIAL chain of links with uneven acceptance — dominated by the
+  weakest link, like resistors in series, not simple averaging): ratios
+  are 2.84/0.78/0.13 for L20/24/28 — L20 borderline-adequate, **L24 and
+  L28 genuinely SHORT of 3*tau_RT**, L28 badly so (only 13% of needed
+  length). Minimum production acceptance values found: L20 2.7%, L24
+  0.44%, L28 0.028% — real individual weak links exist even in the
+  ORIGINAL, not-yet-over-corrected design; the median statistic averages
+  these away.
+**Reading**: this REFINES rather than contradicts Feynman's core insight
+(don't uncontrollably grow N, avoid over-correcting local acceptance) —
+it means the correct combined fix is a SMOOTH, modest density adjustment
+informed by harmonic-mean-aware analysis (not median) PLUS adequate run
+length computed from the CORRECT (harmonic, bottleneck-aware) tau_RT, not
+the naive median-based one. Reported to Feynman for their read before
+concluding "just run longer" definitively.
+
+## LANE 2 (L=10/20/30 overlay benchmark): STAGED and RUNNING
+Ladders sized via the sqrt(Var E)/L^(3/2) scaling law, reusing L=20's
+ORIGINAL (N=40, not over-corrected) design as reference; L10=14 rungs,
+L30=67 rungs. Pre-submission design-vs-intended verification added this
+time (PRE_SUBMISSION_CHECK.md: empty diff PASS, exact equality PASS,
+strictly increasing links PASS) — addresses the earlier "submitted !=
+intended" gap Feynman flagged. Generous run-length safety margin (3-5x
+original production sweeps) applied given Lane 1's harmonic-mean finding.
+Jobs `15140239` (L10), `15140247` (L20), `15140246` (L30) — submitted,
+3h caps, ~5-10/20-30/55-75 min expected once running.
