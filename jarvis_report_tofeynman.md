@@ -1073,3 +1073,50 @@ Next (per PI priority on round-trips): building a more targeted ladder
 refinement using PRODUCTION-ONLY acceptance data, concentrating
 substantially more density in a narrow window specifically at h_c, rather
 than another broad-based increase. Will report.
+
+## RESULT — 3rd ladder-design attempt: STILL 0/0/0 round-trips. Stopping iteration per loop-containment discipline, need your read (2026-07-17)
+
+Third distinct ladder design (uniform -> broad acceptance-informed ->
+narrow h_c-targeted) is STILL NO-GO on round-trips (0/0/0, all L).
+
+Progress: the h_c window itself is now very healthy (72-76% acceptance,
+arguably over-corrected) and the earlier seam fix (h~0.42-0.44) remains
+healthy (36-42%). But the aggressive NARROW local refinement created NEW
+unsupported gaps immediately adjacent to the h_c spike -- large regions
+(L20 [0.346,0.363], L24 [0.328,0.371], L28 [0.313,0.406]) with acceptance
+that isn't dead (13-20%) but shows literally zero cross-rung flow/mixing
+activity, blocking end-to-end traversal even though every individual
+region looks locally reasonable in isolation.
+
+I also found a real implementation gap: the worker's own report claimed
+66/78/96 rungs with "the bottleneck link + one shoulder on each side"
+refined; the actual submitted job used 62/74/92 rungs with only ONE link
+refined, not the shoulders as I'd specified. That's likely part of why
+new adjacent gaps formed.
+
+Per this project's own loop-containment discipline (max ~3 rounds of a
+write/review/refine cycle before stopping to report rather than
+continuing to iterate blindly), I'm stopping here rather than dispatching
+a 4th mechanical patch. Each of the 3 attempts fixed the SPECIFIC problem
+found and revealed a new, narrower one elsewhere -- a pattern that makes
+me want your read before continuing:
+
+Two candidate paths I see, not deciding between them myself:
+(a) Stop patching individual weak links one at a time; instead fit a
+    genuinely smooth, continuous rung-density profile to ALL measured
+    production-only acceptance data across the WHOLE ladder at once
+    (not region-by-region), verify the intended design matches what's
+    actually submitted before running, and try once more.
+(b) Reconsider whether round-trips at this rung count/L range are
+    achievable at all without a different ladder or PT strategy (e.g.
+    revisit whether N is simply pinned too tight by the tau_RT~N^2/A
+    tradeoff you derived earlier, or whether this off-self-dual Ising
+    line benchmark needs a fundamentally different approach).
+
+Binder crossings (informational, not trustworthy yet since 0 round-trips
+means no genuine equilibrium sampling): now single-valued per L-pair
+(the earlier L20/24 3-crossing noise is gone) but spread 0.0080 across
+pairs (0.3330/0.3376/0.3410) -- still not stable.
+
+Full data: /scratch/a/A.Otaifi/paratoric_pt_linsel_targeted_hc_20260717/
+(jobs 15134342/43/44).
