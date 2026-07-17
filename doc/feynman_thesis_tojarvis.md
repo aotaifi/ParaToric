@@ -935,3 +935,79 @@ deconfinement POP" in the run manual A8 and benchmark_report sec 3).
 BAR (unchanged, PI): a peer looks at our figure and Linsel Fig.4a and says "same
 trend, same crossing" — no minus-sign archaeology. Until the trend matches, it is
 NOT a benchmark.
+
+## UPDATE 2026-07-17: 0 round-trips is likely a RUN-LENGTH problem, not a ladder-design problem. STOP redesigning.
+
+PI insight (correct): healthy per-link acceptance does NOT give round-trips —
+DIFFUSION NEEDS TIME. tau_RT ~ N^2/A (diffusive RW on N rungs). Round-trips need
+run >= a few x tau_RT; below that, **0 round-trips is the EXPECTED output of a
+HEALTHY ladder**. Credit: stopping after 3 attempts per loop-containment was right.
+
+### The number that decides it (likely never checked)
+L28: N=92, A~0.2 => tau_RT ~ 92^2/0.2 ~ 42,000 swap attempts ONE WAY ~ 85,000 per
+round-trip ~ 250,000 for 3. => **total swap attempts in the run vs ~250k** is THE
+diagnostic. If the run did fewer, the 3-attempt ladder chase diagnosed a non-problem.
+
+### The trap the 3 attempts fell into: adding rungs makes it WORSE
+tau_RT ~ N^2. Each "fix" GREW N (sec-8 optimum ~40/48/60 -> actual 62/74/92) and
+over-refined h_c to 72-76% acceptance (far past the A~23% OPTIMUM that MINIMIZES
+tau_RT). So the design fought itself: better acceptance, ~2.4x WORSE diffusion
+(92^2/60^2) at fixed run length. Whack-a-mole on weak links spends rungs, and rungs
+are QUADRATICALLY expensive. "13-20% acceptance but zero flow there" = too-short-
+window artifact, NOT a localized block (13-20% accept => swaps ARE crossing; with
+run < tau_RT NO region shows completed flow).
+
+### FIX (opposite of a 4th redesign)
+ 1. Measure total swap attempts vs 3*tau_RT (tau_RT ~ N^2/A from measured accept).
+    Short => LADDER IS FINE, RUN LONGER. Stop redesigning.
+ 2. Cap N back at the A~23% optimum (~40/48/60); ONE smooth density profile
+    ~ local sqrt(Var E) across the WHOLE ladder (Jarvis path (a) but sized DOWN,
+    not up). Revert the h_c over-correction — a few links at 20-23% is OPTIMAL.
+ 3. Verify submitted == intended (the 62-vs-66 / one-link-vs-shoulders gap is real;
+    diff the design against the job before every submit).
+ 4. Run for > 3*tau_RT. At N~60, L=28 that is ~100-180k sweeps ~ a few hours. Cheap.
+On Jarvis's paths: (a) is right IF sized down; (b) is a FALSE ALARM at these L —
+tau_RT is a few hours at L=20-28, NOT prohibitive; it only bites at L=120 (the
+separately-deferred pilot question). Do not conflate.
+
+### FLAG THAT OUTRANKS ALL OF THIS: is the 13f CHANNEL CHECK done?
+13f made the TREND-INVERSION channel check (POP-vs-h, BOTH channels) the top
+priority BEFORE round-trip work — the observable may be the WRONG channel. These 3
+ladder attempts look like round-trip work on a possibly-wrong observable. If the
+both-channels POP-vs-h check has NOT run, it STILL COMES FIRST. A round-trip on the
+wrong channel proves nothing. Binder crossings (0.3330/0.3376/0.3410) remain
+doubly-untrustworthy: possibly-wrong channel AND 0 round-trips.
+
+## UPDATE 2026-07-17b: 13f RESOLVED — it was the BINDER CONVENTION, not the wrong channel. Channel CONFIRMED. Green-light two parallel lanes.
+
+Jarvis re-plotted the raw ratio <P^4>/<P^2>^2 (log axis) instead of the bounded
+Binder form; trend now INCREASES with h, matching Linsel Fig.4a. Crossings
+unchanged (monotonic transform). This is CORRECT on independent grounds, not
+fitting-to-answer:
+ - Linsel's y-axis is LOG 10^0-10^2. The Binder CUMULANT U = 1 - <P^4>/(3<P^2>^2)
+   is <= 2/3 and can go negative => CANNOT be log-plotted 1..100. So their axis can
+   ONLY be the unbounded RATIO <P^4>/<P^2>^2 — exactly what ParaToric stores
+   (bootstrap.hpp:164). The earlier "decreasing U" was a spurious 1-ratio/3 in the
+   plot script. Plotting the raw ratio is RIGHT.
+ - CHANNEL ALSO CONFIRMED (favorably): ratio INCREASING with h means P is robust
+   (percolating, ratio->1) at small h and intermittent (ratio->large) at large h
+   = deconfined->confined. The COMPLEMENTARY (wrong) channel would give a
+   DECREASING ratio. So the plaquette channel IS the deconfinement POP.
+ => My 13f "we plotted the dual channel" hypothesis was WRONG; it was the Binder
+    CONVENTION. Credit Jarvis. run_manual A8 correctly marked resolved.
+
+CONFIRMATORY (free, non-blocking): plot raw POP vs h for the plaquette channel —
+must be high(~1) at small h -> low at large h. Transform-free channel confirmation;
+lets benchmark_report cite physics, not just a matching curve.
+
+GREEN-LIGHT — TWO PARALLEL LANES (independent):
+ LANE 1 (round-trips): per UPDATE 2026-07-17 — STOP redesigning the ladder; cap N
+   at the A~23% optimum (~40/48/60, revert the h_c over-correction to 72-76%),
+   ONE smooth density profile ~ sqrt(Var E); MEASURE total swap attempts vs
+   3*tau_RT (tau_RT~N^2/A); if short => RUN LONGER (~few hrs at L28), do not patch
+   links. Verify submitted==intended before every submit.
+ LANE 2 (overlay benchmark): rerun at Linsel's EXACT sizes L = 10, 20, 30 (cheap;
+   independent of Lane 1). Then overlay our raw-ratio U_P(h) with their Fig.4a —
+   bar: peer sees SAME TREND + SAME CROSSING.
+Promote benchmark_report.md sec 5 off PROVISIONAL only after BOTH: round-trips > 0
+AND the L=10/20/30 overlay matches trend + crossing.
