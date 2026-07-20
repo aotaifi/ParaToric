@@ -6,7 +6,8 @@ one minute that we are doing physics and not chasing an artifact. Come back here
 whenever a result looks strange: if this benchmark still passes, the machinery is
 sound and the strangeness is elsewhere.
 
-Status: 2026-07-13. PROVISIONAL PASS (see 5). Update on each new result.
+Status: 2026-07-20. PROVISIONAL; exact-size L=10/L=20 progress, benchmark not
+closed (see 5). Update on each new result.
 
 --------------------------------------------------------------------------------
 ## 1. The benchmark source (the paper)
@@ -47,19 +48,17 @@ compatibility**, not a precise nu.
 --------------------------------------------------------------------------------
 ## 3. Our setup
 
-L = 20, 24, 28; beta = L; lmbda = 0.3; mu = J = 1; z-basis; plaquette percolation
-channel; percolation measured on a rotated imaginary-time slice; PT ladder in h.
+Current anchor: L=10 and L=20, beta=L, lmbda=0.3, mu=J=1, z-basis, no PT,
+plaquette percolation strength on rotated imaginary-time slices, eight independent
+chains (four cold plus four hot) per h. These are two of Linsel's three exact
+sizes. Job `15149119` ran to 40M sweeps at L=10; job `15159599` ran to 64M at
+L=20, both sampled every 25 sweeps.
 
-**KNOWN LIMITATIONS vs the benchmark — sec 5 remains PROVISIONAL:**
-1. **PLOTTED QUANTITY CORRECTED.** The plaquette-channel identity was confirmed
-   with both clean z-basis channels. The previous anchor used
-   U=1-<P^4>/(3<P^2>^2), a monotonically decreasing transform of Linsel Fig. 4a's
-   raw, unbounded ratio <P^4>/<P^2>^2; its decreasing direction was therefore a
-   plotting-definition error, not a channel error. Sec. 6 now uses the raw ratio.
-2. **WRONG SIZES.** We ran L=20/24/28; Linsel ran **L=10/20/30**. Different L =>
-   curves cannot be overlaid => not yet a plot-on-plot benchmark. Also a finite-L
-   crossing is NOT h_c; their 0.335(2) is an EXTRAPOLATED value.
-BAR: a peer sees our figure and their Fig.4a and says "same TREND, same crossing".
+Analysis uses only stationary suffixes: after 16M sweeps at L=10; after 8M at
+L=20, except h=0.318989179906 after its validated 48M plateau entry. L=20
+h=0.305629247317 and h=0.339573841268 have no nontrivial stationary suffix and
+are explicitly excluded, not silently promoted. L=30 has not run. A finite-L
+L=10/L=20 crossing is not Linsel's extrapolated h_c.
 Trend first, number second.
 
 --------------------------------------------------------------------------------
@@ -72,6 +71,7 @@ Binder-cumulant crossings (pairwise, L=20/24/28). Spread = max-min across pairs.
 | A. PT, broken mechanism, uniform ladder | drifts, no convergence | — | NO-GO |
 | B. PT, mechanism FIXED, uniform dh=0.025 | 0.350(1) / 0.331(1) / 0.327(1) | 0.023 | NO-GO |
 | C. PT, mechanism fixed + ladder RESOURCED | **0.3406 – 0.3437** | **0.003** | PROVISIONAL |
+| D. Exact-size no-PT L=10/L=20, stationary suffixes | **formal crossing 0.32441(82)** | one pair | PROVISIONAL / FLAG |
 | target (Linsel) | **0.335(2)** | — | — |
 
 **The two fixes (short):**
@@ -87,48 +87,98 @@ Binder-cumulant crossings (pairwise, L=20/24/28). Spread = max-min across pairs.
    Calibration measured the exponent as **1.69** (vs 1.5 from pure volume; the
    excess is the specific-heat enhancement L^(alpha/nu) near h_c) — use 1.69.
 
-**Effect:** the crossing spread collapsed **0.023 -> 0.003 (8x tighter)** and
-converged to just above the published value. That progression — driven by two
-independently-diagnosed fixes — is the evidence that the machinery is physical.
+Stage C's PT crossing spread collapsed 0.023 -> 0.003 after the two mechanism
+fixes, but zero strict round-trips prevented closure. Stage D is the requested
+existing-data exact-size deliverable. It does not confirm Stage C: the L=10 curve
+is nonmonotonic at low h, two L=20 points are void, and the only central linear
+sign-change is far below the published h_c. This negative result is retained
+rather than selecting a visually preferred near-h_c intersection.
 
 --------------------------------------------------------------------------------
 ## 5. Current result and HONEST status
 
-**Crossings 0.3406–0.3437 vs published 0.335(2).** Tight and self-consistent
-across all three L-pairs, ~3-4 sigma above the published value.
+The raw-ratio autocorrelation time is defined from the delta-method influence
+series of r=<P^4>/<P^2>^2; it is not the tau of P itself. Values below are means
+of eight independent-chain tau estimates in sweeps, with delete-one-chain
+jackknife errors. Curve errors use a hierarchical bootstrap that resamples
+chains, then blocks no shorter than 2*tau. Full values, ratio means/errors,
+retained sample counts, and chain-tau ranges are in
+`doc/figures/linsel_no_pt_l10_l20_diagnostics_20260720.tsv`.
 
-PROVISIONAL, not final, because:
-- **PT is not yet mixing**: 0 strict round-trips at every L, so each rung may
-  still carry initial-condition bias. A crossing from a non-mixing ladder is
-  encouraging, not conclusive.
-- Residual within-sampling-window drift.
-=> Expect the number to move once round-trips land. Update this section then.
+| h | L=10 tau(raw ratio) | L=10 tau(base density) | L=20 tau(raw ratio) | L=20 tau(base density) |
+|---:|---:|---:|---:|---:|
+| 0.305629247317 | 9092 +/- 9071 | 20.631 +/- 0.614 | VOID | VOID |
+| 0.318989179906 | 33667 +/- 20154 | 19.108 +/- 0.370 | 18.402 +/- 0.243 | 20.961 +/- 0.088 |
+| 0.322000000000 | 71086 +/- 12650 | 19.026 +/- 0.265 | 18.512 +/- 0.121 | 20.929 +/- 0.102 |
+| 0.326000000000 | 35043 +/- 12949 | 18.519 +/- 0.139 | 18.763 +/- 0.155 | 20.767 +/- 0.136 |
+| 0.330615254621 | 22411 +/- 2888 | 18.710 +/- 0.095 | 18.658 +/- 0.422 | 20.680 +/- 0.117 |
+| **0.335362847648** | **11818 +/- 2312** | **18.760 +/- 0.086** | **58.88 +/- 17.78** | **21.475 +/- 0.227** |
+| 0.339573841268 | 3971 +/- 377 | 19.214 +/- 0.207 | VOID | VOID |
+| 0.343520981103 | 1946 +/- 328 | 20.023 +/- 0.433 | 243.6 +/- 34.5 | 25.44 +/- 1.56 |
+| 0.347398758564 | 846.3 +/- 55.7 | 23.486 +/- 0.722 | 26.85 +/- 2.78 | 20.696 +/- 0.240 |
+
+At h=0.335362847648:
+- raw-ratio tau20/tau10 = **0.004983 +/- 0.001792**, apparent
+  z=log2(ratio) = **-7.649 +/- 0.519**;
+- base-density tau20/tau10 = **1.14472 +/- 0.01319**, apparent
+  z = **0.19499 +/- 0.01662**.
+
+Neither independently measured tau ratio points toward steeper-than-z=2 slowing.
+They disagree sharply with the sector-exchange-rate result: 233,758 events/40M
+sweeps at L=10 versus 28,421/64M at L=20 gives slowdown **13.2** and apparent
+exponent **about 3.7**. These are not the same observable. Sector exchange counts
+threshold crossings of the direct percolation indicator, whose own distribution
+changes with L; the rate is therefore not a clean tau_int. Raw-ratio tau instead
+uses the plaquette-strength ratio estimator's influence series, while density is
+local. The disagreement must not be converted into a dynamical-exponent claim.
+
+The formal L=10/L=20 linear-interpolation crossing is
+**h_x=0.32441 +/- 0.00082** (99.9% of hierarchical-bootstrap replicates retain a
+crossing in the search window). It lies 0.01059 below Linsel's 0.335(2), about
+4.9 combined sigma. This is not a successful reproduction: the L=10 curve is
+nonmonotonic near the formal bracket, and the missing L=20 h=0.339574 point blocks
+a trusted near-h_c bracket. It is quoted because it is the algorithmic pairwise
+crossing, not because it is physically preferred.
+
+**Status remains PROVISIONAL.** This establishes an exact-size, reproducible
+negative readout from all presently usable existing data and rules out claiming
+benchmark closure from the L=10/L=20 overlay. It does not establish the published
+h_c, an Ising-line dynamical exponent, the L=20 full curve, or any MCP property.
+L=20's two targeted points must stabilize and L=30 remains unrun.
 
 --------------------------------------------------------------------------------
 ## 6. The anchor plot
 
-**Corrected figure** (keep the superseded U figure for comparison):
-- x: h (crossing region, ~0.30–0.38); y: raw ratio
-  <P^4>/<P^2>^2 of plaquette percolation strength (log scale, matching Linsel
-  Fig. 4a)
-- three curves L = 20, 24, 28 with autocorrelation-corrected error bars
-- shaded vertical band at **Linsel h_c = 0.335(2)**
-- annotate our pairwise crossings (0.3406–0.3437; invariant under U=1-r/3)
-- caption: "ParaToric reproduces the Linsel et al. (PRB 110, L241101) Ising-line
-  benchmark: raw ratio <P^4>/<P^2>^2 of plaquette percolation strength for
-  L=20/24/28 at lmbda=0.3, beta=L (log scale, matching Linsel Fig.4a convention)."
+**Current exact-size figure:**
+- x: h; y: raw ratio <P^4>/<P^2>^2 of plaquette percolation strength on a log
+  scale, matching Linsel Fig. 4a's convention;
+- L=10 and L=20 with hierarchical chain/block-bootstrap error bars;
+- formal pairwise crossing with its bootstrap x error and Linsel's 0.335(2) band;
+- L=20 h=0.305629 and 0.339574 explicitly omitted; the L=20 line is broken at
+  the missing h=0.339574 point so the plot does not interpolate through void data.
 
-CORRECTED PLOT PATH: `doc/figures/linsel_raw_ratio_crossings_pt_resourced_20260716.png`
-SUPERSEDED U PLOT PATH (retained): `doc/figures/linsel_binder_crossings_pt_resourced_20260716.png`
-DATA: `/scratch/a/A.Otaifi/paratoric_pt_linsel_resourced_20260716/`
+CURRENT PLOT PATH: `doc/figures/linsel_raw_ratio_crossing_no_pt_l10_l20_20260720.png`
+
+CURRENT TABLE PATH: `doc/figures/linsel_no_pt_l10_l20_diagnostics_20260720.tsv`
+
+ENTRYPOINT: registered `scripts/ensemble_diagnostics.py no-pt-benchmark`, seeded
+with `20260720`; inputs are jobs `15149119` and `15159599` under their scratch
+roots stated in sec. 3.
+
+PRIOR PT RAW-RATIO PLOT (retained): `doc/figures/linsel_raw_ratio_crossings_pt_resourced_20260716.png`
+
+SUPERSEDED U PLOT (retained): `doc/figures/linsel_binder_crossings_pt_resourced_20260716.png`
 
 --------------------------------------------------------------------------------
 ## 7. How to re-check / what would change the verdict
 
-- Re-run sec 3 setup; compare crossings to sec 2. If they land at 0.335(2) with
-  round-trips > 0 and no window drift => FULL PASS; promote sec 5.
-- If a future change makes this benchmark drift, the change is suspect — this is
-  the regression test for the whole observable + PT stack.
-- If crossings stay ~0.34 even after PT mixes, investigate residual systematics
-  (thermalization depth, aspect ratio, correction-to-scaling at L<=28) BEFORE
-  doubting the observable — it is calibrated (doc/paratoric_run_manual.md G5).
+- First clear the two L=20 void points on the prescribed geometric ladder. Only
+  after both have a nontrivial stationary suffix may they enter the registered
+  no-PT analysis and reconnect the plotted L=20 curve.
+- Re-run `scripts/ensemble_diagnostics.py no-pt-benchmark` with the same seed and
+  suffix rules. FULL PASS requires a stable near-h_c crossing compatible with
+  0.335(2), not merely a formal sign change on a nonmonotonic segment.
+- If the exact-size crossing remains incompatible after the L=20 void clears,
+  investigate the L=10 nonmonotonicity, suffix dependence, and finite-size
+  corrections before adding L=30. The observable itself remains statically
+  calibrated (doc/paratoric_run_manual.md G5).

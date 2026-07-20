@@ -49,6 +49,16 @@ G5. CALIBRATE THE OBSERVABLE ON KNOWN STATIC CONFIGS BEFORE TRUSTING A DYNAMIC R
     string, dense random) is the only way to know what the instrument returns.
     Dynamic-run numbers are uninterpretable until this is done.
 
+G6. CHECKPOINT LADDERS MUST BE GEOMETRIC, FIRST CHECKPOINT WELL BELOW EXPECTED
+    CONVERGENCE DEPTH (~1/8 or less). A ladder whose first checkpoint already sits
+    at or past the convergence depth measures nothing — it cannot show the
+    relaxation SHAPE, only confirm an endpoint. Cost: the L=20 no-PT depth-ramp
+    (2026-07-19) opened its ladder at 8M sweeps; most h-points were already
+    converged there, leaving no genuine plateau-entry depth to calibrate against,
+    and a control point (h=0.305629) never stabilized through 64M — the ladder's
+    coarseness masked it. Fix: space checkpoints geometrically (e.g. x2 per step)
+    starting well before the best available depth estimate, not just under it.
+
 --------------------------------------------------------------------------------
 ## PART A — Picking run parameters
 

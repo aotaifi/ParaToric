@@ -367,3 +367,59 @@ nodes: benchmark is RESCUABLE. L=120 pilot is not (see 8.3).
 4. Check max ranks/node + internode viability (N_opt exceeds one node at L=120).
 5. The L=120 pilot needs a campaign-level decision (smaller L / tighter range /
    better algorithm), NOT tuning. Defer until (3).
+
+--------------------------------------------------------------------------------
+## 9. BARRIER AVOIDANCE AT A CRITICAL POINT — beta-bridge is the plan of record (2026-07-18)
+
+Motivated by 4 consecutive PT failures at the L=10-30 Ising benchmark, all
+blocked by the SAME localized acceptance hole at h_c (L30: 0.24% acceptance at
+h_c; harmonic-mean acceptance 6.3% vs median 21.5%).
+
+### 9.1 Why a single link kills diffusion (harmonic mean, not median)
+A replica random-walks across the ladder; the ladder is like resistors IN SERIES,
+so the round-trip time is set by the WORST link, not the average:
+  **tau_RT ~ N^2 / A_harmonic**  (A_harmonic dominated by the min-acceptance link).
+=> a run-length margin computed from the MEDIAN acceptance is wrong by ~
+A_median/A_harmonic (here ~100x). This refines sec 8's N^2/A (credit Jarvis).
+
+### 9.2 The h_c hole is physical and grows with L
+sigma_Delta ~ dh*sqrt(Var E). At a transition Var E is ENHANCED by the specific
+heat, C_V ~ L^(alpha/nu). So the min-acceptance link sits AT the critical point
+and worsens with L. For CONTINUOUS (Ising) alpha/nu~0.17 => mild, fixable by
+denser dh there (sec 8). For a FIRST-ORDER MCP, C_V ~ L^d (latent heat, BIMODAL
+energy, H5) => density CANNOT fix it. This is the barrier the campaign will hit
+at the self-dual MCP if it is (weakly) first-order.
+
+### 9.3 beta-bridge (PLAN OF RECORD for the hard point; supersedes the duality-odd note)
+Add beta as a SECOND ladder coordinate. Route AROUND the critical point via HIGH
+TEMPERATURE = LOW beta (beta -> small), where the quantum transition SMEARS OUT
+and mixing is free; traverse h/s there; descend back to beta=L (the measured rung).
+Only beta=L rungs produce physics; low-beta rungs are decorrelation HIGHWAYS.
+ - WHY it beats the duality-odd (h-lmbda) bridge: the duality-odd route escapes to
+   the continuous Ising lines, which are ALSO critical => does not escape critical
+   slowing. The beta-bridge escapes to a regime with NO transition => defeats
+   critical slowing of ANY order (1st OR 2nd). More robust.
+ - FEASIBLE: coupled-pinning already tempers beta with worldline RESCALING
+   (t_new = t*beta_partner/beta) — the machinery exists as a reference. A config
+   that changed its winding sector at low beta, rescaled to beta=L, CARRIES that
+   new sector => injects the sector diversity we need.
+ - COSTS (honest): a 2D (h/s, beta) ladder => more rungs => tau_RT ~ N^2 pays the
+   quadratic cost; worldline-rescaling + a beta-swap weight are new code to
+   validate (S0-S6-style at N>=3). It converts an INFINITE barrier (blocked 1D)
+   into a FINITE (larger) diffusion time — worth it ONLY if the 1D is truly blocked.
+ - DIRECTION NOTE: beta=L is the COLDEST/sharpest point; the highway is LOW beta.
+
+### 9.4 Decision rule — DOCUMENT now, BUILD only on evidence
+Do NOT build the beta-bridge yet. Its payoff is a FIRST-ORDER MCP, which is the
+campaign's open question (chicken-and-egg: need PT at the MCP to learn the order).
+BUILD IF AND ONLY IF the self-dual PT ladder STALLS at s* with a first-order
+signature (central-rung acceptance hole that DENSITY does not fix + bimodal
+energy). Ranking of barrier tools for the MCP: beta-bridge (lower risk, machinery
+exists) > worm (bespoke, higher risk) > duality-odd bridge (does not escape
+critical slowing).
+
+### 9.5 The BENCHMARK does NOT need any of this
+Linsel did L=10/20/30 with LOCAL updates, no PT. PT mechanism is separately
+validated (S0-S6, N=4/8). So DECOUPLE: close the overlay benchmark with deep
+NO-PT cold/hot single chains at L=10/20/30. The 4 PT failures were making PT work
+for a check that does not need PT. See benchmark_report.md.
