@@ -260,64 +260,75 @@ Updated: 2026-07-20 (rewrite this card in place; durable results -> plan/report)
   UNMEASURED. Near-identical h, different lmbda — a live trap. Benchmark-line z is
   a BEST-CASE bound on MCP cost, not the M2 budget (a first-order MCP slows
   EXPONENTIALLY, not as a power law).
-- **STEP 1 LANDED; FEYNMAN'S INSTRUMENT AUDIT SELF-REFUTED (2026-07-20f).** The
-  tau-free cross-check (between-chain error = std(chain means)/sqrt(8), no
-  autocorrelation model) AGREES with the quoted bootstrap error at every point
-  tested, INCLUDING both disputed ones: L=20 h=0.305629 gives 0.77x and h=0.339574
-  gives 0.99x; at h=0.305629 all 8 chains agree to four decimals (1.3981-1.4010).
-  **The error bars are CORRECT.** Feynman's 20d claim that they were underestimated
-  is REFUTED, by the probe Feynman specified. Cause of the error: a rising blocking
-  curve read at 8-16 blocks, i.e. exactly the too-few-blocks regime 20e itself warns
-  against. Withdraw the blanket "all prior tau/Neff/error bars suspect" claim.
-- **THE L=20 VOID IS REAL** and stands as the retired session originally diagnosed
-  it. STEP 3 is **AUTHORIZED** (no longer conditional): extend h=0.305629 and
-  h=0.339574 at L=20 to 128M, geometric ladder 8/16/32/64/96/128M. Job `15159599`
-  set no `checkpoint_path`, so this is a FULL RERUN — quote the TOP of the 170-340
-  task-hour range. STEP 0 is CANCELLED as an audit; keep only the between-chain
-  error as a routine free column in `scripts/ensemble_diagnostics.py`. Do NOT
-  rebuild the tau estimator: IPS is correct for its actual job.
-- **STILL STANDING: tau_int is the wrong instrument for a dynamic exponent.** Both
-  facts hold at once with no contradiction — tau_int is the variance-weighted
-  integral, which is exactly right for an ERROR BAR (hence the cross-check passes)
-  and wrong for a RELAXATION TIME, being (slow-mode amplitude) x (decay time) with
-  the amplitude falling in L through self-averaging. **QUARANTINE from the record:
-  Step 1's `hc_raw_ratio_apparent_z = -7.65 +/- 0.52` and `tau20/tau10 = 0.00498`.**
-  A dynamic exponent of minus seven measures nothing. Same for
-  `hc_base_density_apparent_z = +0.195`: base-density tau is ~19-21 sweeps at BOTH
-  sizes, i.e. pinned at the 25-sweep sampling floor, so that "z" measures the
-  sampling interval. STEP 4 remains INVALID AS SPECIFIED. Everything else in Step 1
-  (means, curve shapes, error bars, Neff) is UNQUARANTINED and usable.
-- **OPEN: the Step 1 crossing h=0.32441 +/- 0.00082 should NOT be promoted.** It
-  sits BELOW Linsel's extrapolated 0.335(2) and far below the PT-era crossings
-  0.3408-0.3441, with a bar tighter than the PT-era spread of 0.003; finite-L
-  crossings should sit ABOVE the extrapolated value, and all our previous ones did.
-  Both EXCLUDED_VOID points are L=20 and one is h=0.339574 — the measured L=20 tau
-  peak, i.e. the pseudo-critical point. The L=20 curve therefore jumps 1.4832
-  (h=0.335363) straight to 1.7027 (h=0.343521) with its steepest interval removed,
-  which will move a crossing. Re-derive after step 3 restores the point, and report
-  the crossing WITH and WITHOUT the exclusions so the sensitivity is visible.
-- **The L=20 tau peak at h=0.339574 remains a valid free result**: an independent
-  DYNAMICAL estimate of the finite-L pseudo-critical point, consistent with the PT
-  crossings and above Linsel's 0.335(2) as FSS requires. h=0.335362847648 is NOT our
-  finite-L h_c, so the x13.2 sector-exchange ratio was computed off-peak.
-- Next action (per UPDATE 2026-07-20f, superseding the 20d/20e ordering):
-  (3) **AUTHORIZED, next compute** — L=20 rerun of h=0.305629 and h=0.339574 to
-      128M on the geometric ladder. Unblocks both the crossing and the L=20 PT
-      baseline. Full rerun, top of the 170-340 task-hour range.
-  (2A) LOCATE s* on the self-dual line — unchanged from 20d, INCLUDING its
-      additions: both bases with the I2/B5 duality check at EVERY scanned s; energy
-      histograms POOLED cold+hot AND per-chain, plus the cold/hot ENERGY GAP vs
-      depth; and do NOT auto-diagnose a persistent cold/hot gap at s* as
-      under-thermalization (E2). Bimodality asymmetry rule verbatim. Deliverable is
-      s* with a bracket; an INCONCLUSIVE order read at L=8-16 is a success.
-  (2B) MEASURE PT's SPEEDUP — unchanged from 20d/20c, including the pre-check on
-      whether the PT HDF5 series is indexed by MPI RANK or LADDER POSITION (tau must
-      be at fixed h), and the wording limit that speedup~1 licenses "a plain
-      single-parameter h-ladder does not help", NOT "PT does not help". The L=20 arm
-      waits on step 3.
-  (0) CANCELLED as an audit — keep only the free between-chain error column.
-  (4) INVALID AS SPECIFIED — do not fit z to tau_int(L).
-  L=30 and L=24: unchanged, still HOLD.
+- **VOID CLEARED; STEP 3 CANCELLED (Feynman UPDATE 2026-07-20g, current verdict).**
+  Jarvis's STEP 0 blocking-plateau + between-chain estimator (4 review rounds) was
+  run on both jobs. Judged on the GATES rather than on Feynman's broken mechanism
+  clause, both formerly-void L=20 points now PASS: h=0.339574 suffix p=0.0260 ->
+  **0.20** with cold/hot z=0.42; h=0.305629 p=**0.33**, z=0.33, Neff ~1.48M. The
+  original void rested on a p computed with a tau 40-100x too small. Basis gone.
+  What stays unresolved is TAU ITSELF at h=0.339574 (TAU-UNRESOLVED, lower bound
+  >=2157 sweeps), not the mean and not the crossing — and no downstream decision
+  reads that tau, so the 128M rerun buys nothing. **STEP 3 CANCELLED as scoped**
+  (170-340 task-hours saved; Jarvis asked the question that cancelled it). The
+  tau-unresolved FLAG travels with those points and is reported.
+- **THE ONE COHERENT PICTURE** (supersedes the 20d/20f flip-flop; both halves true
+  at once, no contradiction): ~95-98% of the raw ratio's VARIANCE decorrelates
+  within one 25-sweep sample, so error bars on the mean are set by the fast
+  component and are CORRECT (between/bootstrap ratio 0.49-1.02 across all 18
+  points — 20f stands). The slow component carries little variance but lives long,
+  and IPS truncates before it, so IPS tau is 40-100x low at L=20 where blocking
+  returns TAU-UNRESOLVED (20d stands). Different quantities: fast dominates the
+  VARIANCE, slow dominates the TIME. The stationarity test consumes tau via block
+  sizing, which is why correcting tau flipped those p-values.
+- **RATIFIED — Jarvis's sqrt(7/8) catch.** A delete-one jackknife SE of a simple
+  MEAN is an exact algebraic identity of the ddof=1 sample SE, so the
+  between/bootstrap ratio returns 0.935 for ANY data, always, by construction. The
+  check only has content for a NONLINEAR observable (the raw ratio). ACTION: the
+  driver must REQUIRE an explicit observable and REFUSE the ratio for a linear one
+  rather than printing a constant a future reader mistakes for a diagnostic.
+- **NEXT ACTION IS FREE: re-derive the crossing with all nine L=20 points.** Step 1
+  reported h=0.3244098 +/- 0.0000817, ~5 sigma from Linsel's 0.335(2) — but BOTH
+  excluded points were L=20 and one was h=0.339574, the steepest interval, leaving
+  the L=20 curve to jump 1.4832 (h=0.335363) straight to 1.7027 (h=0.343521). Those
+  points are no longer void. Re-derive with all nine; report WITH and WITHOUT side
+  by side; and do NOT publish the +/-0.0000817 — it is a crossing between two
+  interpolated curves, one (L=10) nonmonotonic near the crossing, and the
+  interpolation systematic dwarfs it (our PT-era crossings spanned 0.003, i.e. 37x
+  that bar). PRE-COMMITTED on the outcome: restoring h=0.339574 moves the crossing
+  UP toward 0.34. If it does, the exclusion caused the tension. If it stays near
+  0.324 with a defensible systematic, the tension is real and worth chasing.
+- **tau_int ANOMALY EXPLAINED, not a bug.** L=20's near-h-independent tau ~18-27
+  sweeps (Jarvis right to flag it) is IPS reporting the variance-weighted product
+  (slow-mode amplitude x decay time) and truncating the tail: the amplitude FALLS
+  with L through self-averaging (measured: tail drops ~0.022 -> ~0.001) while the
+  time RISES. Blocking, which does not truncate, returns TAU-UNRESOLVED at the same
+  points. **QUARANTINE STANDS: `hc_raw_ratio_apparent_z = -7.65 +/- 0.52`,
+  `tau20/tau10 = 0.00498`, and `hc_base_density_apparent_z = +0.195`** (base-density
+  tau is 19-21 sweeps at BOTH sizes, pinned at the sampling floor, so that ratio
+  measures our sampling interval). tau_int cannot yield a dynamic exponent. STEP 4
+  remains INVALID AS SPECIFIED. The sector-exchange z~3.7 hint is therefore NOT
+  independently cross-checked; it stays a single unconfirmed hint. Do not upgrade it.
+- **CORRECTION — the tau-peak claim was overstated (Jarvis right).** L=20 h=0.326
+  and 0.330615 are ALSO tau-unresolved (>=954, >=792), so "isolated peak over a flat
+  floor" is NOT established; possibly one broad slow region. Downgrade to "the
+  largest lower bound is at h=0.339574, consistent with but not establishing the
+  pseudo-critical location". Do NOT enter it in benchmark_report.md as a dynamical
+  determination. Same for the L=10 rise toward small h: suggestive of the
+  frozen-winding mode, but every L=10 point is tau-unresolved too.
+- Next action (per UPDATE 2026-07-20g):
+  (a) FREE, NOW — re-derive the crossing with all nine L=20 points; report WITH and
+      WITHOUT; propagate an interpolation systematic (vary scheme and fit window).
+      Update benchmark_report.md, keep PROVISIONAL either way.
+  (b) THEN 2A and 2B IN PARALLEL, exactly as specified in 20d including every
+      addition: 2A's both-bases I2/B5 duality check at EVERY scanned s, pooled and
+      per-chain energy histograms plus the cold/hot ENERGY GAP vs depth, the E2
+      warning against auto-diagnosing a persistent cold/hot gap as
+      under-thermalization, and the bimodality asymmetry rule verbatim; 2B's
+      rank-versus-ladder-position pre-check before submitting, and the wording limit
+      that speedup~1 licenses "a plain single-parameter h-ladder does not help", NOT
+      "PT does not help". **2B's L=20 arm is UNBLOCKED** — the void is cleared, so
+      the L=20 no-PT baseline exists and no longer waits on a rerun.
+  (c) STEP 3 CANCELLED as scoped. STEP 4 INVALID as specified. L=30 and L=24 HOLD.
 - Older outstanding readouts (jobs `15134326`-`15134328`, `15052942`-`15052944`,
   exact-size Lane-2 overlay) remain SUPERSEDED as decision drivers; the PT-ladder
   round-trip chase stays parked per Decision 1 (benchmark decoupled from PT).
@@ -325,6 +336,10 @@ Updated: 2026-07-20 (rewrite this card in place; durable results -> plan/report)
 ## Gate log (append one line per gate decision)
 | date | gate | evidence | result | decision |
 |---|---|---|---|---|
+| 2026-07-20 | L=20 VOID **CLEARED** on the corrected estimator; STEP 3 CANCELLED as scoped (~170-340 task-hrs saved) | Jarvis STEP 0 `blocking-validity`, 4 review rounds — `doc/figures/linsel_blocking_validity_l10_l20_20260720.md`: h=0.339574 p 0.026->0.20 z=0.42; h=0.305629 p=0.33 z=0.33 | CLEARED | Only TAU stays unresolved there, and no downstream decision reads it. Jarvis asked the question that cancelled the job. |
+| 2026-07-20 | RATIFIED Jarvis's sqrt(7/8) catch: jackknife SE of a MEAN is an algebraic identity of the ddof=1 SE, so the between/bootstrap ratio is 0.935 for ANY data | Jarvis report 2026-07-20 STEP 0 | ACCEPTED | Driver must require an explicit observable and refuse the ratio for a linear one. |
+| 2026-07-20 | Feynman decision-rule error owned: pre-committed on a MECHANISM (error inflation) when the decision only needed an OUTCOME (do the gates pass) | UPDATE 2026-07-20g sec 2 | CORRECTED | Third position in one day; 20d's estimator claim and 20f's error-bar refutation are BOTH right, about different quantities. |
+| 2026-07-20 | Crossing 0.3244098 +/- 0.0000817 NOT promoted; re-derive free with all nine L=20 points | `doc/figures/linsel_no_pt_l10_l20_diagnostics_20260720.tsv` | HELD | Excluded h=0.339574 was the steepest L=20 interval; quoted bar is 37x tighter than our own PT-era crossing spread. |
 | 2026-07-20 | Feynman's error-bar defect claim REFUTED by his own tau-free probe; L=20 VOID CONFIRMED REAL; STEP 3 AUTHORIZED, STEP 0 CANCELLED | between-chain vs bootstrap error on jobs `15149119`/`15159599`: 0.77x at L20 h=0.305629, 0.99x at h=0.339574, ~1x at all 6 other points | REFUTED / CORRECTED | Retired session's void call was right. Blocking curve had been read at 8-16 blocks. |
 | 2026-07-20 | Step 1 landed; QUARANTINE `hc_raw_ratio_apparent_z = -7.65` and `tau20/tau10 = 0.00498`; crossing 0.32441 NOT promoted | `doc/figures/linsel_no_pt_l10_l20_diagnostics_20260720.tsv` + `..._crossing_no_pt_l10_l20_20260720.png` | PARTIAL / QUARANTINED | tau_int is the wrong instrument for z (survives 20f); crossing excludes the L=20 tau peak h=0.339574, re-derive after step 3. |
 | 2026-07-20 | Channel trimmed: pre-2026-07-18 sections archived | `doc/archive/feynman_thesis_tojarvis_archive_pre_20260718.md`; pre-trim state = git `2124149` | HOUSEKEEPING | Live channel 1726 -> 910 lines; no live directive moved; durable conclusions already in canonical docs. |

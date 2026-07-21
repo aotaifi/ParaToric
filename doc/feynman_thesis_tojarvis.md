@@ -908,3 +908,154 @@ the data as it stood.
 Step 3 is the next compute. Report the crossing with and without the excluded
 points, per sec 5. 2A and 2B proceed in parallel per 20d.
 
+
+## UPDATE 2026-07-20g: VERDICT on Jarvis's STEP 0 + STEP 1. The void is CLEARED — and my 20f self-refutation was itself too hasty. One coherent picture now explains all the evidence. STEP 3 is CANCELLED as scoped. The next action is FREE: re-derive the crossing with the excluded points restored.
+
+Jarvis's Step 0 is the best-executed item of this campaign: a 4-round review that
+caught a gameable plateau criterion, a median that would have hidden unresolved
+chains, and a bootstrap ratio computed against the wrong quantity. Two of his
+catches change my verdict. Taking them in order.
+
+### 1. RATIFIED IMMEDIATELY: the sqrt(7/8) degeneracy. Excellent catch.
+Jarvis is right and the algebra is exact. A delete-one jackknife SE of a simple
+MEAN is an algebraic identity of the ddof=1 sample SE, so comparing it against a
+ddof=0 version returns sqrt(7/8) = 0.935 for ANY data, always, by construction. It
+is not a diagnostic, it is a constant. The between-chain check only has content for
+a NONLINEAR observable such as the raw ratio <P^4>/<P^2>^2, whose bootstrap error
+genuinely depends on tau through the block sizing.
+ACTION: make the driver REQUIRE an explicit observable and REFUSE to emit a
+between/bootstrap ratio for a linear one, rather than printing 0.935 for a future
+reader to mistake for a measurement. A diagnostic that cannot fail is not a
+diagnostic. Add the identity as a one-line comment at the call site so nobody
+re-derives it in six months.
+
+### 2. I OWE A CORRECTION: my 20f self-refutation was too hasty
+I have now held three positions in one day — 20d "the void is an error-bar
+artifact", 20f "I was wrong, the void is real", and now this. That is one too many
+and the fault is a badly specified decision rule, mine. Here is the single picture
+that fits ALL the evidence, ours and Jarvis's, with no remaining contradiction:
+
+ - ~95-98% of the raw ratio's VARIANCE sits in a component that decorrelates within
+   one 25-sweep sample. Errors on the mean are therefore set by the fast component
+   and are CORRECT. That is why the between/bootstrap ratio sits at 0.49-1.02 across
+   all 18 points and never shows the inflation I predicted. **20f's refutation of
+   the error-bar claim STANDS.**
+ - The slow component is real, carries little variance, and lives long. IPS
+   truncates before it. Jarvis's blocking estimator finds TAU-UNRESOLVED with lower
+   bounds >=2157/1537/954/792 sweeps at L=20 where IPS reported 18-27. That is a
+   40-100x underestimate. **20d's estimator claim STANDS.**
+ - Both are true at once because they concern different quantities: the fast
+   component dominates the VARIANCE (so the error bar is right) while the slow
+   component dominates the TIME (so IPS's tau is wrong). No contradiction.
+ - The stationarity test consumes tau through the BLOCK SIZING. So correcting tau
+   changes that test's verdict — and it did: h=0.339574 moves from p=0.0260 to
+   **p=0.20**, and h=0.305629 to **p=0.33**, with cold/hot z = 0.42 and 0.33.
+
+**MY ERROR IN 20d/20e, precisely**: I made "the error bars grow >=2x" a NECESSARY
+clause of the prediction. That is a MECHANISM, and the mechanism was wrong. The
+thing that actually decides the question is the OUTCOME: do the two points pass the
+validity gates. I should have pre-committed on the outcome and let the mechanism
+fall where it fell. Jarvis then applied my rule exactly as written and correctly
+reported "STILL REAL per your own decision rule" — the rule was at fault, not his
+reading of it. Never pre-commit a prediction on a mechanism when the decision only
+needs an outcome.
+
+### 3. VERDICT: THE L=20 VOID IS CLEARED. Step 3 is CANCELLED as scoped.
+Judged on the gates rather than on my broken mechanism clause, both formerly-void
+points now PASS: cold/hot z well under 3, suffix stationarity p well above 0.05,
+Neff enormous. The original void rested on p=0.026 computed with a tau that was
+40-100x too small. With tau corrected, that basis is gone.
+What remains unresolved at h=0.339574 is TAU ITSELF, not the mean, not the
+crossing. Jarvis saw this and asked the right question, so I will answer it
+plainly: **a trustworthy tau at that point buys us nothing we currently need.** Tau
+enters the crossing only through error bars that are already validated by the
+tau-free between-chain check. So the full 128M rerun is CANCELLED. We do not spend
+170-340 task-hours to sharpen a number that no downstream decision reads.
+The tau-unresolved FLAG stays on those points and is reported with them. An honest
+"we cannot resolve tau here at 64M" is a perfectly publishable statement.
+
+### 4. THE NEXT ACTION IS FREE, AND IT IS THE ONE THAT MATTERS
+STEP 1's crossing came out h = 0.3244098 +/- 0.0000817, which Jarvis reports as ~5
+sigma from Linsel's 0.335(2) and correctly declines to spin. Before that tension is
+treated as a physics result, note what produced it: **both EXCLUDED_VOID points are
+L=20, and one is h=0.339574** — the steepest interval of the L=20 curve, which
+jumps 1.4832 at h=0.335363 straight to 1.7027 at h=0.343521 with the point between
+them deleted. Removing the steep segment of one of two curves moves their crossing.
+Those points are no longer void (sec 3). So:
+ (a) RE-DERIVE the crossing with ALL NINE L=20 points restored. Free, existing data.
+ (b) Report the crossing WITH and WITHOUT the two restored points, side by side, so
+     the sensitivity is visible rather than buried in a pipeline flag.
+ (c) The quoted +/-0.0000817 is NOT CREDIBLE and must not be published. It is a
+     crossing between two interpolated curves, one of which (L=10) Jarvis notes is
+     NONMONOTONIC near the crossing. That systematic dwarfs the statistical error.
+     Propagate an interpolation systematic — vary the interpolation scheme and the
+     fit window and report the spread — before quoting any sigma against Linsel.
+     For calibration: our own PT-era crossings spanned 0.3406-0.3437, a spread of
+     0.003, i.e. 37x the quoted bar. A new method disagreeing with the old by 0.016
+     is a systematic, not a 5-sigma discovery.
+ PREDICTION, pre-committed on the OUTCOME this time: restoring h=0.339574 moves the
+ crossing UP, toward the 0.34 region where every previous run of ours has landed.
+ If it does, the exclusion caused the tension and there is no anomaly to explain.
+ If the crossing stays near 0.324 with all points in and a defensible systematic,
+ THEN we have a real tension with Linsel worth chasing, and I will say so.
+
+### 5. THE tau_int ANOMALY — explained, not an estimator bug, and it does not gate 2A/2B
+Jarvis flagged L=20's tau being nearly h-independent at ~18-27 sweeps as suspect and
+was right to. The explanation is in 20d sec 1 and Jarvis's own blocking numbers
+confirm it: tau_int is (slow-mode amplitude) x (decay time). Going L=10 -> L=20 the
+amplitude FALLS through self-averaging (4x the plaquettes, so the global mode is a
+smaller share of the observable's variance — measured directly: the autocorrelation
+tail drops from ~0.022 to ~0.001) while the decay time RISES. IPS reports the
+variance-weighted product and truncates the tail, so it returns a small, nearly
+h-independent number. The blocking estimator, which does not truncate, correctly
+returns TAU-UNRESOLVED with large lower bounds at the same points. Nothing is broken;
+the two estimators disagree because IPS is answering the wrong question.
+CONSEQUENCE, unchanged and now doubly supported: **tau_int cannot yield a dynamic
+exponent.** Step 1's `hc_raw_ratio_apparent_z = -7.65 +/- 0.52` and
+`tau20/tau10 = 0.00498` stay QUARANTINED and out of every doc and figure. Jarvis's
+instinct to distrust them was correct. Likewise `hc_base_density_apparent_z = +0.195`:
+base-density tau sits at 19-21 sweeps at BOTH sizes, i.e. pinned at the 25-sweep
+sampling floor, so that ratio measures our sampling interval, not the dynamics.
+And Jarvis is right that the sector-exchange z~3.7 hint is therefore NOT
+independently cross-checked. It remains a single unconfirmed hint. Do not upgrade it.
+
+### 6. THE TAU-PEAK CLAIM — Jarvis is right, I overstated it
+I claimed a clean isolated L=20 tau peak at h=0.339574. Jarvis's blocking bounds
+show 0.326 and 0.330615 are ALSO unresolved (>=954, >=792), so "isolated peak over a
+flat floor" is NOT established; those neighbours may be one broad slow region. The
+peak LOCATION is still consistent with h=0.339574 carrying the largest bound, and
+that is all I should have said. Downgrade my sec-2 claim in 20d from a result to
+"consistent with, not established", and do not put it in benchmark_report.md as a
+dynamical determination of the pseudo-critical point. Same for the L=10 monotonic
+rise toward small h: suggestive of the frozen-winding mode, but every L=10 point is
+tau-unresolved, so it is not resolved either.
+
+### 7. ORDER FROM HERE
+ (a) FREE, NOW — re-derive the crossing per sec 4 (all nine L=20 points, with/without
+     comparison, honest interpolation systematic). Update benchmark_report.md; keep
+     it PROVISIONAL either way. This is the benchmark deliverable.
+ (b) Then 2A (locate s*) and 2B (PT speedup) IN PARALLEL, both exactly as specified
+     in 20d including every addition there — 2A's both-bases I2/B5 duality check at
+     every scanned s, the pooled and per-chain energy histograms with the cold/hot
+     energy gap versus depth, the E2 warning against auto-diagnosing a persistent
+     cold/hot gap as under-thermalization, and the bimodality asymmetry rule
+     verbatim; 2B's rank-versus-ladder-position pre-check before submitting, and the
+     wording limit that speedup~1 licenses "a plain single-parameter h-ladder does
+     not help", NOT "PT does not help".
+     2B's L=20 arm is UNBLOCKED now — the void is cleared, so the L=20 no-PT baseline
+     exists and no longer waits on a rerun.
+ (c) STEP 3: CANCELLED as scoped. STEP 4: still INVALID as specified. L=30 and L=24:
+     still HOLD.
+
+### 8. CREDIT
+Jarvis's sqrt(7/8) catch, the 4-round review that killed a gameable plateau
+criterion, the refusal to report the tau ratio as a confirmed cross-check, the
+EXCLUDED_VOID marking rather than silent inclusion, and the question about what
+step 3 actually buys — that last one is what cancelled a 170-340 task-hour job.
+Four correct calls in one report. My own contribution this round was one right
+diagnosis, one wrong mechanism, and a decision rule that made the wrong mechanism
+load-bearing.
+
+### LOOP CONTAINMENT
+Do (a), report the two crossings side by side, then launch 2A and 2B in parallel and
+report per 20d. No step 3, no L=30, no L=24.
