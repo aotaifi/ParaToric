@@ -315,7 +315,44 @@ Updated: 2026-07-20 (rewrite this card in place; durable results -> plan/report)
   pseudo-critical location". Do NOT enter it in benchmark_report.md as a dynamical
   determination. Same for the L=10 rise toward small h: suggestive of the
   frozen-winding mode, but every L=10 point is tau-unresolved too.
-- Next action (per UPDATE 2026-07-20g):
+- **PI CORRECTION (UPDATE 2026-07-20h): ROUND-TRIPS ARE NOT NECESSARY for low
+  autocorrelation.** Run manual F7's "NECESSARY but NOT SUFFICIENT" is WRONG on the
+  first half. A round trip is SUFFICIENT evidence of decorrelation (it guarantees a
+  reservoir visit) but not REQUIRED: what matters is the replica at the h of
+  interest escaping its basin, which local excursions over a few rungs can do with
+  zero completed round trips — and diffusing to the far end is the most expensive
+  route (tau_RT ~ N^2/A_harmonic). **The gate is measured tau at the rung of
+  interest; round-trips are transport CONTEXT, never pass/fail.**
+  CONSEQUENCE IN HINDSIGHT: all four ladder NO-GO calls were scored on ">=3 strict
+  round-trips" (F3) and NONE measured tau at h_c. So "4 consecutive PT failures" is
+  WEAKER evidence against PT than it has been treated as. The marker test's genuine
+  0.235% h_c barrier still stands; the point is we never measured the deciding
+  quantity. Same mechanism-vs-benefit conflation as before, now on the diagnostic side.
+  CAVEAT THAT CUTS THE OTHER WAY: this holds when the slow mode is LOCAL (continuous
+  transition). At a FIRST-ORDER point the replica escapes only by reaching a rung
+  where the coexistence gap closes, so round-trips become close to NECESSARY again
+  and the h_c acceptance hole is physics, not a ladder defect (E2/F8/H5). Which
+  regime we are in IS thesis T1, undecided — so do NOT generalize the corrected rule
+  to the MCP in advance. It is correct on the benchmark line, which is where 2B runs.
+- **DOC FIXES REQUIRED (cheap, load-bearing):** run manual F3 (delete the ">=3 strict
+  round-trips or the ladder is broken" bar), run manual F7 (correct to "neither
+  necessary nor sufficient" + the first-order caveat), `doc/pt_architecture.md`
+  (same, and record that the 4 NO-GO calls used a non-gating metric), and harness
+  **gate G1.2**, which carries the same ">= 3 round trips" language — a harness gate
+  is the worst place to leave a wrong bar.
+- **PROMOTED: PT operational calibration is now an explicit 2B deliverable** (PI's
+  point — bank the experience, not just the go/no-go), at BOTH L=10 and L=20:
+  (i) tau at the rung of interest vs swap_period in SWEEPS (~1/2/5/10) — there is an
+  optimum between label-travel-on-a-frozen-config and wasting the ladder, and we
+  have never located it; report the CURVE. (ii) sweeps-to-decorrelate vs L at fixed
+  ladder — the quantity a budget actually needs. (iii) per-link acceptance vs rung
+  spacing dh, HARMONIC mean called out separately from the median (Lane 1: harmonic
+  governs transport). (iv) EXCURSION STATISTICS replacing round-trips — distribution
+  of rungs travelled before returning, and its correlation with tau reduction at
+  that rung; this is the diagnostic that replaces F3 and directly tests the PI's
+  point. (v) all of 20c's cost-normalized metrics. Deliverable: a short PT
+  calibration table in `doc/pt_architecture.md` a future run can size a ladder from.
+- Next action (per UPDATE 2026-07-20g, with the 20h doc fixes folded into step (a)):
   (a) FREE, NOW — re-derive the crossing with all nine L=20 points; report WITH and
       WITHOUT; propagate an interpolation systematic (vary scheme and fit window).
       Update benchmark_report.md, keep PROVISIONAL either way.
@@ -336,6 +373,8 @@ Updated: 2026-07-20 (rewrite this card in place; durable results -> plan/report)
 ## Gate log (append one line per gate decision)
 | date | gate | evidence | result | decision |
 |---|---|---|---|---|
+| 2026-07-20 | PI CORRECTION: round-trips NOT NECESSARY for low tau; run manual F3/F7 + harness G1.2 bars are WRONG as written | PI physics call, UPDATE 2026-07-20h | RULE CORRECTED | Gate is measured tau at the rung of interest. All 4 PT NO-GO calls used a non-gating metric and never measured tau at h_c — that evidence is weaker than treated. First-order caveat: round-trips likely necessary again at a coexistence barrier. |
+| 2026-07-20 | PT operational calibration PROMOTED to explicit 2B deliverable (swap-period optimum, sweeps-to-decorrelate vs L, harmonic acceptance, excursion stats) | PI instruction, UPDATE 2026-07-20h sec 5 | SCOPE ADDED | Bank the ladder-design experience in a pt_architecture.md calibration table. |
 | 2026-07-20 | L=20 VOID **CLEARED** on the corrected estimator; STEP 3 CANCELLED as scoped (~170-340 task-hrs saved) | Jarvis STEP 0 `blocking-validity`, 4 review rounds — `doc/figures/linsel_blocking_validity_l10_l20_20260720.md`: h=0.339574 p 0.026->0.20 z=0.42; h=0.305629 p=0.33 z=0.33 | CLEARED | Only TAU stays unresolved there, and no downstream decision reads it. Jarvis asked the question that cancelled the job. |
 | 2026-07-20 | RATIFIED Jarvis's sqrt(7/8) catch: jackknife SE of a MEAN is an algebraic identity of the ddof=1 SE, so the between/bootstrap ratio is 0.935 for ANY data | Jarvis report 2026-07-20 STEP 0 | ACCEPTED | Driver must require an explicit observable and refuse the ratio for a linear one. |
 | 2026-07-20 | Feynman decision-rule error owned: pre-committed on a MECHANISM (error inflation) when the decision only needed an OUTCOME (do the gates pass) | UPDATE 2026-07-20g sec 2 | CORRECTED | Third position in one day; 20d's estimator claim and 20f's error-bar refutation are BOTH right, about different quantities. |

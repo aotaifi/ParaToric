@@ -1059,3 +1059,97 @@ load-bearing.
 ### LOOP CONTAINMENT
 Do (a), report the two crossings side by side, then launch 2A and 2B in parallel and
 report per 20d. No step 3, no L=30, no L=24.
+
+## UPDATE 2026-07-20h: PI CORRECTION — round-trips are NOT NECESSARY for low autocorrelation. Run manual F3/F7 are WRONG as written and are fixed here. PT operational calibration promoted to an explicit 2B deliverable.
+
+The PI's point: round-trips are not needed for low autocorrelation times. That is
+correct, it is sharper than what we have written down, and it invalidates a bar we
+have been enforcing for four failed ladder attempts.
+
+### 1. THE CORRECTION, stated precisely
+Run manual F7 currently says round-trips are "NECESSARY but NOT SUFFICIENT". The
+second half is right (F1/C7: a label can round-trip on a frozen config). **The first
+half is wrong.** A full end-to-end round trip is a SUFFICIENT condition for a
+replica to have decorrelated — it guarantees a visit to a reservoir rung where the
+slow mode is fast — but it is not a NECESSARY one. What we actually need is for the
+replica sitting at the h of interest to escape its free-energy basin. If the basin
+is escaped by excursions over a few rungs, tau drops with zero completed round
+trips. Diffusing all the way to the far end is one way to buy decorrelation, not the
+only way, and it is the most expensive way (tau_RT ~ N^2/A_harmonic).
+=> **The correct gate is tau at the rung of interest, measured. Not round-trips.**
+Round-trips stay as CONTEXT and as a transport diagnostic, never as a pass/fail bar.
+
+### 2. WHAT THIS COSTS US IN HINDSIGHT
+Four ladder attempts were judged NO-GO on ">=3 strict round-trips or the ladder is
+broken" (F3). Not one of them measured tau at h_c. It is therefore an OPEN QUESTION
+whether any of those ladders was actually delivering a useful speedup while being
+scored as a failure on a metric that does not gate the thing we care about. I am not
+claiming they were fine — the marker test showed a genuine 0.235%-acceptance barrier
+at h_c, and that is real. I am saying we never measured the quantity that decides
+it, so "4 consecutive failures" is weaker evidence against PT than it has been
+treated as. This is the same MECHANISM-vs-BENEFIT conflation as before, now on the
+diagnostic side: we scored transport and inferred decorrelation.
+
+### 3. THE NUANCE THAT MATTERS FOR THE MCP — and it cuts the other way
+Round-trips being unnecessary holds when the slow mode is LOCAL, i.e. critical
+slowing at a continuous transition. It does NOT obviously hold at a FIRST-ORDER
+point. There the slow mode is tunneling between coexisting phases, and a replica
+escapes only by reaching a rung where the coexistence gap has closed — which is a
+round-trip-like excursion in all but name. So:
+ - continuous MCP => round-trips unnecessary, local excursions suffice, PT plausibly
+   cheap.
+ - first-order MCP => the reservoir must actually be reached, round-trips become
+   close to necessary again, and the h_c acceptance hole is the physics rather than
+   a ladder defect (E2/F8, H5).
+**Which regime we are in is precisely thesis T1, still undecided.** So do not
+generalize the corrected rule to the MCP in advance. It is correct on the benchmark
+line, which is continuous by construction, and that is where 2B runs.
+
+### 4. DOC FIXES (do these, they are cheap and they are load-bearing)
+ - `doc/paratoric_run_manual.md` F3: delete the ">=3 strict round-trips or the ladder
+   is broken" PASS/FAIL bar. Replace with: round-trips are reported as transport
+   context; the gate is measured tau at the rung of interest.
+ - `doc/paratoric_run_manual.md` F7: correct "NECESSARY but NOT SUFFICIENT" to
+   "NEITHER NECESSARY NOR SUFFICIENT — sufficient evidence of mixing when genuine,
+   but not required for a tau reduction; and a label can round-trip on a frozen
+   config, so they are not sufficient either." Add the first-order caveat from sec 3.
+ - `doc/pt_architecture.md`: same correction wherever the round-trip bar appears, and
+   record that the 4 NO-GO calls used a metric that does not gate decorrelation.
+ - Gate G1.2 in `doc/multicritical_execution_harness.md` carries the same ">= 3 round
+   trips" language. Correct it identically; a harness gate is the worst place to
+   leave a wrong bar.
+
+### 5. PROMOTED: PT OPERATIONAL CALIBRATION IS NOW AN EXPLICIT 2B DELIVERABLE
+The PI is right that we should bank the operational knowledge rather than only the
+go/no-go. 2B already runs the machinery; make it report the numbers we will need to
+design any future ladder, at BOTH L=10 and L=20 (the L=20 arm is unblocked now that
+the void is cleared):
+ (i)  SWAP PERIOD: tau at the rung of interest as a function of swap_period in
+      SWEEPS (try ~1, 2, 5, 10 sweeps). There is an optimum — too short is label
+      travel on a frozen config (C7/F1), too long wastes the ladder. We have never
+      located it. Report the curve, not a single point.
+ (ii) SWEEPS-TO-DECORRELATE vs L at fixed ladder: the actual quantity a budget needs.
+ (iii) PER-LINK ACCEPTANCE vs rung spacing dh, with the harmonic mean called out
+      separately from the median (Lane 1 established the harmonic mean is what
+      governs transport).
+ (iv) EXCURSION STATISTICS instead of round-trips: distribution of how many rungs a
+      replica travels from its starting position before returning, and the
+      correlation between excursion range and tau reduction at that rung. THIS is
+      the diagnostic that replaces F3, and it directly tests the PI's point.
+ (v)  Everything already in 20c: cost-normalized Neff per core-hour, speedup at h_c
+      called out separately from the ladder average, and the G1.3 physics check.
+Deliverable: a short PT calibration table in `doc/pt_architecture.md` that a future
+run can size a ladder from without re-deriving any of it.
+
+### 6. WHAT DOES NOT CHANGE
+Decision 1 stands: the benchmark's ANSWER is decoupled from PT and closes with local
+updates, as Linsel did. 2B uses the benchmark as a CALIBRATION FIXTURE. This update
+does not reopen the PT-closes-the-benchmark route; it fixes the diagnostic we judge
+PT by, and it banks the operational numbers.
+Also unchanged: N is not a free knob (A~23% is the tau_RT optimum, more rungs is
+worse past that), swap_period is in SWEEPS scaled ~L^2, and PT+checkpoint throws so
+any PT run fits one walltime block.
+
+### LOOP CONTAINMENT
+Do the sec-4 doc fixes with the sec-7(a) free crossing re-derivation from 20g, then
+run 2A and 2B in parallel with 2B carrying the sec-5 deliverables. Report per 20g.
