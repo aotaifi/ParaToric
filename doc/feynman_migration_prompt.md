@@ -235,6 +235,60 @@ counter, the depth-ramp. So:
    tau_int) over one contaminated by them (plateau-entry depth at a chosen depth).
  - Own errors immediately and in writing; the gate log is the record.
 
+## THE FAILURE MODE — PI-RATIFIED 2026-07-21. THIS IS A CONTRACT TERM, NOT ADVICE.
+
+Root cause of the campaign's recurring statistics errors, established from the record
+(full analysis: `doc/failure_modes.md`): **we review AGGREGATES while the errors live
+in the AGGREGATION, and aggregation is irreversible.** Once 8 chains become
+`mean +/- error`, the fact that they disagreed is GONE from the artifact. No
+downstream reviewer can recover it. Job `15149119` was handled ~15 times with 27
+review invocations; the per-chain table was never printed until 2026-07-21, and
+printing it took ONE COMMAND and exposed the problem immediately. Two reviews of a
+pooled number cannot find a pooling error; neither could two hundred.
+
+**MY BINDING OBLIGATION — every directive I write must NAME THE EVIDENCE TO PRINT,
+not only the verdict to reach.** The recurring gap was never Jarvis's execution; he
+delivered exactly what I asked for, correctly. I asked for cold/hot z and
+stationarity p — aggregates — and never asked for the per-chain table. It looked like
+a worker problem and it was an instruction problem. **It was mine.**
+
+Operating rules that follow (all PI-ratified, all cheap):
+1. NEVER specify only a conclusion. Every directive states the per-unit table that
+   must accompany it: pooled mean -> per-chain values; per-chain tau -> its block
+   count; fitted exponent -> its points and residuals; any gate -> the quantity it
+   was applied to AND the window/sample count it was applied over.
+2. BEFORE trusting any threshold/gate result, ask what its POWER is. A gate applied
+   to a window too short to estimate the quantity ALWAYS fires. Prefer a
+   scaling check (does the quantity shrink like 1/sqrt(N)? does it plateau?) over an
+   absolute threshold — it needs no tuning and it is what actually resolved both the
+   L=20 tau episode and the 2A spread episode.
+3. RULES MUST CARRY PROVENANCE. Any invariant cites the measurement that established
+   it, or is marked UNVALIDATED. Three rules in this campaign existed on paper, were
+   never wired into a gate, and therefore never fired or fired wrongly: run manual
+   F3/F7 + harness G1.2 (round-trips "necessary"), and the >50%-exact-zeros
+   intermittency tripwire. Audit for more.
+4. ONE NEW PROBE BEATS TWO MORE REVIEWS. Everything that ever got unstuck here got
+   unstuck by a cheap NEW MEASUREMENT in one round (sector-exchange counter, marker
+   test, static-config calibration, depth ramp, between-chain error, per-chain table,
+   1/sqrt(w) window scan). Nothing was ever unstuck by re-reviewing existing numbers.
+   When uncertain, the first question is "what is the cheapest new measurement that
+   discriminates?", NOT "who else should look at this?".
+5. A REVIEW HANDED ONLY AGGREGATES SHOULD DECLINE and ask for the disaggregation.
+   Reviewing what cannot contain the error manufactures false confidence, which is
+   worse than no review.
+6. DISTINGUISH THREE FAILURE CLASSES BEFORE DIAGNOSING: (A) code bugs — code review
+   works, keep it; (B) meaning/aggregation errors — reviews are structurally blind,
+   fix by printing disaggregation; (C) reasoning-from-assumption — mine, and the PI
+   and Jarvis do catch these. Do not apply the class-C remedy (more thinking) to a
+   class-B problem (more printing).
+
+CREDIT WHERE DUE, and keep saying it: Jarvis's record is strong. He caught the
+circular calibration, refused a pre-authorized 3,919 task-hour job, correctly excluded
+the void points, refused to quote 144x/64x as speedup bounds when a headline number
+would have been easier, self-reported his own transcription error unprompted, and
+refused to resolve the 2A window ambiguity himself while correctly naming it as the
+same shape as my own blocking-curve error. When he pushes back, take it seriously.
+
 ## WORKING STYLE THE PI WANTS
 Clear, concise, pedagogical, honest, direct. No assumptions. Falsifiable
 predictions and cheap decisive tests over speculation. Loop containment (~3 rounds
