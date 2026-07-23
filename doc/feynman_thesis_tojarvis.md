@@ -1363,3 +1363,141 @@ crossing figure so nobody reads that crossing without seeing this.
 ### LOOP CONTAINMENT
 (a) and (b) free and immediate, then (c). Hold (d) on (a)'s result. Report the
 per-chain audit as a table with the spread column, L=10 and L=20 and 2A together.
+
+## UPDATE 2026-07-20k: FINAL DIRECTIVE. (1) Free clean-window crossing, PI-approved. (2) HONEST BENCHMARK VERDICT: not anchored — we have ONE clean size and a crossing needs two. (3) The cheap fix is PT at L=10 and it IS 2B, not a detour, with a measured ladder redesign. (4) s* plan. (5) NEW FREE FIRST-ORDER DIAGNOSTIC that the benchmark has just calibrated for us.
+
+### 1. DO FIRST — FREE, no new jobs: the clean-window crossing
+The contaminated L=10 points are at LOW h and the crossing is not there. Per-chain
+spreads: 0.4433 (h=0.3056), 0.3671 (0.3190), 0.1613 (0.3220), 0.0752 (0.3260), then
+0.0881/0.0886/0.0467/0.0361/0.0270. So re-derive the L=10/L=20 crossing using ONLY
+the h-window where BOTH sizes pass a per-chain spread gate, and report:
+ (i) crossing from the clean window only, with the window stated explicitly;
+ (ii) the same interpolation-systematic scan you already built (18 choices), run
+      inside the clean window — the question is whether the 0.0112 envelope
+      COLLAPSES once the contaminated points stop driving the curve shape;
+ (iii) crossing vs gate threshold (try spread < 0.10, 0.05, 0.03) so we can see
+      whether the answer is stable or moves with the cut. A result that swings with
+      the threshold is telling us the window is not yet clean enough.
+If the envelope collapses and the crossing stabilizes, the benchmark may be
+closeable with no new compute at all. If it does not, we have learned that cheaply.
+PRE-COMMITTED: do NOT tune the gate to land on Linsel's 0.335. Report the curve of
+crossing-vs-threshold and let it say what it says.
+
+### 2. MY HONEST VERDICT ON THE BENCHMARK — the PI asked directly
+**Not anchored. Half-anchored, and the missing half is the half that carries the
+number.** Splitting it properly:
+ - TREND: **PASS, and better than we have ever had it.** L=20 rises cleanly and
+   monotonically, 1.3999 -> 1.8043 across the window, with all 8 chains agreeing to
+   <=0.045 at every point. That is Linsel Fig.4a's shape, from a size we can now
+   defend chain-by-chain. The observable, the rotated-slice measurement, the
+   plaquette channel and the Binder convention are all vindicated by it.
+ - CROSSING: **FAIL, structurally.** A crossing is a statement about TWO sizes. We
+   have exactly ONE trustworthy size. L=10 is contaminated where it matters most and
+   PT-L10 is better but not yet clean (residual init memory 0.0712 -> 0.0240 across
+   rungs). A crossing computed from one good curve and one bad curve is not a
+   crossing, however tight its error bar looks — and the tightness of 0.32441 +/-
+   0.00082 was itself a warning sign we read as a strength.
+So: the PI's instinct that "we got L=20 right" is correct and it is worth more than
+it sounds. It converts the benchmark from "we do not know if the machinery works"
+to "the machinery works; we are one clean size short of the published number."
+**Should we fix it first? YES — but not because it is scientifically urgent.
+Because it is CHEAP and because the fix is work we already decided to do.** See 3.
+
+### 3. THE FIX IS 2B. THEY ARE THE SAME RUN.
+L=10 is a tiny lattice: the 14-rank PT run took 1h27m total; a no-PT chain is ~1.5h.
+Getting a clean L=10 is tens of task-hours, not hundreds. And the run that produces
+it is precisely 2B — PT at L=10 on the benchmark line — because a PT run that
+delivers a clean L=10 curve has, by that very fact, demonstrated the ergodicity
+repair which 20i named as PT's real figure of merit. One run, three payoffs: it
+closes the benchmark, it measures PT's benefit, and it validates PT before we bet
+the MCP on it. **Do not treat this as a benchmark detour competing with s*. It is
+the PT calibration, and the benchmark closure falls out of it.**
+NOTE FOR THE PI's RUNTIME POINT: Linsel did L=10 with local updates, so in principle
+so can we, and I am not proposing PT because PT is required in principle. Two facts
+decide it. First, more chains does NOT fix this: independent chains populate basins
+by which one they fall into, not by the correct thermodynamic weight, so adding
+chains converges to a PRECISE WRONG NUMBER. Only a method that moves a chain BETWEEN
+basins fixes the weights. Second, at L=10 the PT run is cheaper than the no-PT
+ensemble it replaces. We are not spending runtime here, we are spending less.
+
+### 4. PT LADDER REDESIGN FOR 2B — measured, not guessed
+The current 14-rung ladder is 0.15 0.1833 0.2167 0.25 0.2712 0.2925 0.3137 0.335
+0.3563 0.3775 0.3987 0.42 0.46 0.50. Two measured facts condemn its low end:
+ - **The fast-mixing reservoir is the HIGH-h end, not the low end.** Measured L=10
+   tau: 759 sweeps at h=0.3474 versus 88,826 at h=0.3190 — a factor ~117. Low h is
+   the FROZEN end (E3: the deeper you go the more frozen), so rungs at h=0.15-0.25
+   are not a reservoir, they are the disease.
+ - **Four of fourteen rungs (29%) sit below h=0.26**, outside Linsel's window
+   entirely, while replicas travel a mean of only 1.33 rungs. A replica at h=0.31
+   therefore never reaches the fast end, which is exactly why the residual init
+   memory is largest at the low rungs and shrinks with h.
+=> REDESIGN: drop the rungs below ~0.28 and respend them inside the window we
+actually need (~0.29-0.42), giving denser spacing, higher per-link acceptance,
+longer excursions, and a reservoir at the HIGH-h end where mixing is genuinely fast.
+Same rank count, same cost, strictly better transport. Keep N fixed: N is not a free
+knob (A~23% is the tau_RT optimum; more rungs is worse past it).
+VALIDITY GATE for the new run, and it replaces round-trips: per-chain / per-rung
+agreement at fixed h, plus the init-memory number (ratio by origin-rank init) driven
+to within its own error. If PT cannot drive the low-h init memory to zero, say so —
+that is a real limit on PT, and it is exactly what we need to know before the MCP.
+
+### 5. s* — THE NON-BENCHMARK PATH
+Order of operations, and the first item is free:
+ (a) FREE — per-chain audit of the existing 2A scan, reported per (L, s). 2A used
+     L=8/12/16, all at or below the size that fails on the benchmark line, and on
+     the low-s side where freezing is worst. Its "no common three-size crossing" and
+     13 NOT_GATED pairs are exactly what contamination looks like. This costs
+     nothing and it decides whether 2A's data can be salvaged or must be re-run.
+ (b) STATE THE TARGET PRECISION HONESTLY, because it reframes the job. For FSS AT
+     the MCP we need s* to about **0.001** (finite-L rounding ~L^(-1/nu): 0.00079 at
+     L=120 for nu=0.67, 0.00055 at L=192; and if it is FIRST-ORDER the rounding is
+     ~L^-3, i.e. ~1e-6). What we have: Linsel's prior is 0.020 wide and 2A's
+     provisional bracket is 0.025 wide. **2A's bracket is currently NO NARROWER THAN
+     THE PRIOR WE STARTED WITH.** That is the honest measure of what that run bought,
+     and it is why (a) matters before (d).
+ (c) DO NOT chase 0.001 now. It is the wrong order. Sequence: get a TRUSTWORTHY
+     bracket at small L (width ~0.01 is plenty), THEN refine with larger L where
+     self-averaging is on our side. A precise number from contaminated small-L data
+     is worse than an honest wide bracket, because we would then spend L=120 compute
+     sitting at the wrong s.
+ (d) 2A REDESIGN, held until (a): if the low-s small-L points are contaminated, the
+     fix is per-chain gating plus PT at L=8-16 (same argument as sec 3 — more chains
+     will not do it), NOT more s-values. Same budget, different spend. If (a) says
+     the 2A points are clean, then denser [0.325,0.350] sampling is correct and I
+     approve it as originally proposed.
+
+### 6. NEW, FREE, AND I THINK THE BEST IDEA IN THIS UPDATE: per-chain spread vs L is a FIRST-ORDER DIAGNOSTIC, and the benchmark has just calibrated it
+We measured, on the benchmark line, how the per-chain spread behaves at a KNOWN
+CONTINUOUS transition in THIS code with THIS observable: it collapses with L, 0.4433
+at L=10 to 0.0029 at L=20, a factor 153, by self-averaging.
+That is a calibrated continuous baseline, and we got it by accident.
+Now the physics: **at a first-order transition the trapping does NOT self-average
+away — it gets WORSE with L**, because the barrier between coexisting phases grows
+like exp(2*sigma*L^2). Chains started differently stay apart and stay apart harder as
+L grows.
+=> **Per-chain spread versus L, measured at s*, discriminates the two scenarios, and
+it is free with data we would take anyway.** Continuous: spread collapses like the
+benchmark. First-order: spread persists or grows.
+REPORT IT UNDER THE SAME ASYMMETRY AS BIMODALITY: spread PERSISTING or GROWING with
+L => strong first-order evidence. Spread COLLAPSING => consistent with continuous,
+and now with a quantitative comparison (does it collapse as fast as the benchmark's
+factor 153 per doubling?) rather than a bare impression. Spread collapsing is NOT
+proof of continuity — bad sampling can also mimic either side — but unlike an
+absolute threshold this is a comparison against a measured baseline from the same
+code, same observable, same sizes. That is much harder to fool ourselves with.
+This also means: **do not "fix" a persistent cold/hot spread at s* by adding depth
+without first checking how it scales with L.** At a first-order MCP that spread is
+the signal, not the bug. Same warning as 20d sec 2A(iii), now with a quantitative
+test attached.
+
+### 7. ORDERING
+ 1. sec 1 (free clean-window crossing) and sec 5(a) (free 2A per-chain audit) —
+    both free, both decide what follows. Report before new compute.
+ 2. sec 3+4: PT at L=10 with the redesigned ladder = 2B = benchmark closure.
+ 3. sec 5(d): 2A redesign, per what 5(a) says.
+ 4. sec 6 folded into every subsequent multi-L run at no extra cost.
+ Step 3 (L=20 rerun) unaffected and still authorized. L=30, L=24 still HOLD.
+
+### LOOP CONTAINMENT
+Report after item 1: clean-window crossing with the threshold curve, and the 2A
+per-chain table. Then we decide 2 and 3 together.
