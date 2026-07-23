@@ -217,3 +217,55 @@ SUPERSEDED U PLOT (retained): `doc/figures/linsel_binder_crossings_pt_resourced_
 - Before adding L=30, repair or replace the non-ergodic L=10 baseline and repeat
   the same per-chain gate. The observable remains statically calibrated
   (doc/paratoric_run_manual.md G5).
+
+--------------------------------------------------------------------------------
+## 8. COMPANION VALIDATION — the self-dual line (NOT the benchmark line)
+
+**Read the header of this section before using anything in it.** The result below is
+on the **SELF-DUAL line (h = lmbda = s)**, which is a DIFFERENT LINE from this
+report's benchmark (**lmbda = 0.30 FIXED**, scan h). It is recorded here because it
+is the strongest INSTRUMENT VALIDATION we have, and this report is where we come to
+ask "is the machinery sound?". It is **not** a benchmark result and must never be
+quoted as one. The two critical points are numerically close and that closeness is a
+known trap:
+  - benchmark critical point: (h, lmbda) = (0.335, **0.30**)   — off-diagonal
+  - self-dual MCP:            (s*, s*)   with s* ~ 0.33         — on the diagonal
+Same h to two digits, different lmbda. See `doc/multicritical_universality_plan.md`
+M1 for the s* deliverable itself; this section records only what it says about the
+INSTRUMENT.
+
+FIGURE: `doc/figures/selfdual_sstar_crossing_duality_20260723.png`
+DATA: `/scratch/a/A.Otaifi/paratoric_selfdual_step2a_20260721/` (job `15177203`)
+
+### What it validates
+1. **Duality (I2/B5) passes on the self-dual line with the CORRECT channel pairing.**
+   At L=16, `z-plaquette` vs `x-direct` percolation PROBABILITY (run manual A8:
+   z-plaq == x-perc), z-scores 0.4 / 2.1 / 1.6 / 0.3 / 1.0 across s = 0.250-0.375.
+   The WRONG pairing (z-plaq vs x-plaq, same graph) is off by a factor ~40
+   (0.7416 vs 0.0184 at s=0.300). So the observable, the basis mapping, the
+   rotated-slice measurement and the duality bookkeeping are all confirmed
+   simultaneously, on a line where duality is an exact symmetry and therefore an
+   exact test. **This is a stronger instrument check than the benchmark itself
+   provides**, because it is a symmetry statement rather than a comparison to a
+   published number.
+2. **It passes even where the raw-ratio observable is dead.** Above s ~ 0.35 the
+   percolation strength is 81-98% exact zeros, so `<P^4>/<P^2>^2` divides two
+   vanishing moments and is meaningless there (spreads of 8.5, 167, 418 on a
+   quantity of order 1.5). The BOUNDED probability channel keeps working and keeps
+   satisfying duality. This is the harness's own >50%-exact-zeros tripwire, now
+   wired into an automated gate (OBSERVABLE-DEGENERATE) rather than left on paper.
+
+### Consequence for THIS report
+The plaquette PROBABILITY channel is now the validated instrument of record for
+LOCATION and duality (as the run manual A8 already specified). Where the raw ratio is
+used for the Linsel overlay it must be accompanied by its zero-fraction; on the
+benchmark line the zero fraction is 0.23-0.40, comfortably below the tripwire, so the
+benchmark overlay is NOT affected by the degeneracy above. That was checked, not
+assumed.
+
+### What this section does NOT do
+It does not close, promote, or weaken the benchmark. Sec 5 remains PROVISIONAL and
+the outstanding blocker is unchanged: there is currently **no usable clean-window
+L=10/L=20 crossing**, because L=10 is not ergodic at low h
+(`doc/figures/l10_chain_disagreement_and_pt_repair_20260721.png`). A duality pass on
+a different line is instrument evidence; it is not a reproduction of Linsel Fig. 4a.

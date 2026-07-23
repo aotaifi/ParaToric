@@ -59,6 +59,28 @@ MEASURED (locate-s* step); best prior s*≈0.33-0.35 (Linsel), NOT 0.226 (classi
   duality/I2 check — dual pairs z-perc==x-plaq, z-plaq==x-perc, confirmed) +
   Binder cumulants from both dual arms; duality consistency as a systematic check.
 - Deliverable: s* (= h*=lmbda*) with error bar, L up to ~96.
+- **STATUS 2026-07-23 — FIRST DEFENSIBLE MEASUREMENT (partial deliverable).**
+  s* ~ 0.332 +/- 0.003 (statistical), bracket **[0.325, 0.350]**, from
+  finite-L crossings of the BOUNDED plaquette percolation PROBABILITY at
+  L = 8/12/16 (job `15177203`), validated by an exact-symmetry duality check
+  (z-plaq == x-perc; z-scores 0.3-2.1 across s=0.25-0.375, wrong pairing off 40x).
+  Figure: `doc/figures/selfdual_sstar_crossing_duality_20260723.png`.
+  **HONEST LIMITS, do not over-read:** (i) the bracket is GRID-LIMITED — the three
+  L-pairs all interpolate across the SAME single interval [0.325, 0.350] with the
+  same two columns, so their agreement to 1e-4 measures interpolation smoothness,
+  NOT reliability; the real statistical error is ~0.003 per pair. (ii) An
+  UNCONTROLLED interpolation systematic sits on top: the L=16 observable falls
+  0.6119 -> 0.1872 across that one interval and nothing constrains the curvature.
+  (iii) The between-chain error jumps ~60x at s >= 0.325 (0.0006 -> 0.035-0.047),
+  i.e. the chains stop agreeing exactly where s* is. (iv) FSS at L=120-192 will need
+  s* to ~0.001; we are at ~0.003 plus (ii). NEXT: denser s-grid (~0.005) inside
+  [0.325,0.350] WITH >=16 chains and/or PT, since denser sampling alone cannot beat
+  (iii). The earlier raw-ratio-based bracket was an artifact (the ratio is undefined
+  above s~0.35, >50% exact zeros); this supersedes it.
+- ORDER (first-order vs continuous) at s*: still UNDECIDED and correctly reported
+  INCONCLUSIVE at L=8-16 — all 528 energy histograms unimodal, zero STABLE-SEPARATED
+  cold/hot pairs. Per the standing asymmetry rule, absence of bimodality at these
+  sizes is NOT evidence of continuity.
 
 ### M2 — FSS ladder at the multicritical point
 - Sizes: L in {32, 48, 64, 96, 128, 192} (extend to 256 only if M3 ambiguous),
