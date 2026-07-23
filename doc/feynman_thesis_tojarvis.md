@@ -1501,3 +1501,84 @@ test attached.
 ### LOOP CONTAINMENT
 Report after item 1: clean-window crossing with the threshold curve, and the 2A
 per-chain table. Then we decide 2 and 3 together.
+
+## UPDATE 2026-07-20m: **GO.** PI has ratified 20k. This block is the executable sequence — self-contained, act from here; 20k holds the reasoning if you need it.
+
+Authority: PI ratified 2026-07-21. Nothing below re-opens a settled question. Where
+this block and any earlier UPDATE differ, THIS BLOCK WINS.
+
+### PHASE 1 — FREE. No new jobs. Report before any compute.
+**1A. Clean-window benchmark crossing.** Re-derive the L=10/L=20 crossing using only
+the h-window where BOTH sizes pass a per-chain spread gate. Deliver:
+  - the crossing from the clean window, with the window stated explicitly;
+  - your 18-choice interpolation-systematic scan re-run INSIDE that window — the
+    question is whether the 0.0112 envelope COLLAPSES once the contaminated points
+    stop driving the curve shape;
+  - crossing vs gate threshold at 0.10 / 0.05 / 0.03, as a curve.
+  PRE-COMMITTED: do NOT tune the threshold to land on 0.335. Report the curve and
+  let it say what it says. A crossing that swings with the threshold means the
+  window is not clean enough yet — that is a valid and useful answer.
+**1B. Per-chain audit, everything we own.** Jobs `15149119`, `15159599`, AND the 2A
+scan `15177203`. Per point report: per-chain ratio (cold/hot labelled), per-chain
+tau, the max/min tau factor, and the per-chain SPREAD. Mark every point failing I4's
+factor-2 clause. For 2A report per (L, s) — that is what decides Phase 3.
+**1C. Standing changes.** Add per-chain spread and tau-factor as permanent columns
+in `scripts/ensemble_diagnostics.py`; make I4's factor-2 clause a HARD per-point
+gate; add the between-chain error column (20f). Add to the run manual: report the
+PER-CHAIN table, never only the group summary — a split group can pass I5 because
+its own dispersion hides the split.
+**1D. Figure + report hygiene.** Put
+`doc/figures/l10_chain_disagreement_and_pt_repair_20260721.png` into
+`benchmark_report.md` beside the crossing figure, with one line stating the L=10
+baseline is not ergodic at low h. Benchmark stays PROVISIONAL regardless of 1A.
+
+### PHASE 2 — PT at L=10 = 2B = benchmark closure. One run, three payoffs.
+Authorized on completion of Phase 1. L=10, beta=10, lmbda=0.3, mu=J=1, z-basis.
+**Ladder REDESIGNED (this supersedes "reuse Lane-2 unchanged" in 20c):** drop the
+rungs below ~0.28 and respend them inside ~0.29-0.42. Keep N=14 fixed — N is not a
+free knob (A~23% is the tau_RT optimum; more rungs is worse past it). Rationale is
+measured, not guessed: the fast reservoir is the HIGH-h end (tau 759 sweeps at
+h=0.3474 vs 88,826 at h=0.3190), low h is the frozen end, and with mean excursion
+1.33 rungs a replica at h=0.31 never reaches the fast end today.
+DELIVERABLES: (i) a clean L=10 curve — per-rung agreement at fixed h, and init
+memory (ratio by origin-rank init) driven to within its own error; (ii) the crossing
+against clean L=20; (iii) cost-normalized Neff per core-hour vs the no-PT baseline,
+speedup at h_c called out separately; (iv) the operational calibration from 20h
+sec 5 — swap-period curve, per-link acceptance with harmonic mean separate from
+median, excursion statistics.
+GATE: per-rung agreement + init memory. **NOT round-trips** (20h).
+IF PT CANNOT drive the low-h init memory to zero, report that plainly — it is a real
+limit on PT and we need it before the MCP, not after.
+
+### PHASE 3 — s*. Held on 1B's verdict for the 2A scan.
+ - If 2A's low-s small-L points are CONTAMINATED: the redesign is per-chain gating
+   plus PT at L=8-16. **NOT more s-values.** Same budget, different spend.
+ - If they are CLEAN: denser [0.325,0.350] sampling is APPROVED as you proposed.
+ Either way: do NOT chase 0.001 precision yet. Target a trustworthy bracket of width
+ ~0.01 at small L first, then refine at larger L where self-averaging is on our side.
+ For scale: FSS at L=120-192 will eventually need ~0.001; Linsel's prior is 0.020
+ wide and your provisional bracket is 0.025 wide.
+
+### PHASE 4 — FREE, fold into every multi-L run from now on.
+Per-chain spread vs L as a first-order diagnostic, against the benchmark's measured
+continuous baseline (0.4433 at L=10 -> 0.0029 at L=20, factor 153). At s*:
+PERSISTING or GROWING spread => strong first-order evidence. COLLAPSING => consistent
+with continuous, quantitatively (does it collapse as fast as factor 153 per
+doubling?), and NEVER reported as proof of continuity. Same asymmetry rule as
+bimodality. Corollary: do NOT add depth to "fix" a persistent cold/hot spread at s*
+before checking how it scales with L — there, that spread may be the SIGNAL.
+
+### UNCHANGED
+Step 3 (L=20 rerun of h=0.305629 and h=0.339574 to 128M, geometric ladder, full
+rerun since `15159599` wrote no checkpoint) remains authorized and is independent of
+the above — it fixes a STATIONARITY issue, not a basin issue; do not conflate them.
+L=30 and L=24 remain HOLD. Decision 1 is not reopened.
+
+### LOOP CONTAINMENT
+Report after PHASE 1 — clean-window crossing with the threshold curve, and the
+per-chain audit table across all three jobs. Phase 2 proceeds on that report; Phase 3
+is gated by 1B. Do not run Phases 2 and 3 before Phase 1 lands.
+
+### PROCESS NOTE (your own lesson, and I agree with it)
+Split "submit" from "readout" into separate dispatches, per the orphaned-process
+issue you hit on 2A/2B. Do not bundle submit+wait+analyze into one call again.

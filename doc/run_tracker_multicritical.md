@@ -399,7 +399,9 @@ Updated: 2026-07-21 (rewrite this card in place; durable results -> plan/report)
   refine at larger L where self-averaging helps. A precise number from contaminated
   small-L data is worse than an honest wide bracket — we would spend L=120 compute
   sitting at the wrong s.
-- Next action (per UPDATE 2026-07-20k sec 7), first two items FREE and decide the rest:
+- **GO ISSUED 2026-07-21 (UPDATE 2026-07-20m).** PI ratified 20k; Jarvis is
+  authorized and acts from the channel tail. Next action (20m phases), first phase
+  FREE and gating the rest:
   1. FREE — re-derive the L=10/L=20 crossing using ONLY the h-window where BOTH sizes
      pass a per-chain spread gate. Report: crossing from the clean window with the
      window stated; the 18-choice interpolation-systematic scan re-run INSIDE that
@@ -560,6 +562,7 @@ Updated: 2026-07-21 (rewrite this card in place; durable results -> plan/report)
 ## Gate log (append one line per gate decision)
 | date | gate | evidence | result | decision |
 |---|---|---|---|---|
+| 2026-07-21 | **GO issued** — PI ratified 20k; executable sequence in UPDATE 2026-07-20m | doc/feynman_thesis_tojarvis.md UPDATE 2026-07-20m | AUTHORIZED | Phase 1 FREE (clean-window crossing + per-chain audit of `15149119`/`15159599`/`15177203` + standing gate changes); Phase 2 PT-at-L10 with redesigned ladder = 2B = benchmark closure; Phase 3 s* held on 1B; Phase 4 spread-vs-L folded in free. Step 3 unaffected; L=30/L=24 HOLD. |
 | 2026-07-21 | BENCHMARK VERDICT: half-anchored — TREND PASS (L=20 clean, monotonic 1.3999->1.8043), CROSSING FAIL (a two-size statement with only one trustworthy size) | UPDATE 20k sec 2 | PROVISIONAL RETAINED | Fix is cheap and is the same run as 2B; not a detour. |
 | 2026-07-21 | PT ladder redesign from measurement: drop the 4/14 rungs below h=0.26, respend inside 0.29-0.42; reservoir is the HIGH-h end (tau 759 vs 88,826 sweeps) | UPDATE 20k sec 4; excursion mean 1.33 rungs from job `15178251` | DESIGN FIXED | Same N and cost, better transport; validity gate = per-rung agreement + init memory, not round-trips. |
 | 2026-07-21 | NEW FREE FIRST-ORDER DIAGNOSTIC: per-chain spread vs L, calibrated against the benchmark's continuous baseline (factor 153 collapse L=10->20) | UPDATE 20k sec 6 | METHOD ADDED | Spread persisting/growing with L => strong first-order evidence; collapsing => consistent with continuous, never proof. |
