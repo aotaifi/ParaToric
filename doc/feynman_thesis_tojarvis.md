@@ -1284,3 +1284,82 @@ printed the per-chain table. It cost one command.
 ### LOOP CONTAINMENT
 (a) and (b) are free and immediate — do them and report before any new compute.
 Then (c), then (d)/(e) in parallel. Report the per-chain I4 audit as a table.
+
+## UPDATE 2026-07-20j: the disease is SIZE-DEPENDENT and that changes what is at risk. L=20 is CLEAN everywhere. So the MCP program is NOT threatened — but 2A (which used L=8/12/16) is the most exposed result we have. Figure attached.
+
+Follow-up measurement to 20i, free, from data already on disk. Per-chain spread of
+the raw ratio (max-min over the 8 chains), both sizes, whole window:
+
+  h          0.3056 0.3190 0.3220 0.3260 0.3306 0.3354 0.3396 0.3435 0.3474
+  L=10       0.4433 0.3671 0.1613 0.0752 0.0881 0.0886 0.0467 0.0361 0.0270
+  L=20       0.0029 0.0028 0.0023 0.0250 0.0445 0.0278 0.0209 0.0172 0.0105
+
+**L=20 is clean at every point. L=10 is broken at six of nine, worst at low h.**
+At h=0.3056 the eight L=20 chains agree to 0.0029 while the eight L=10 chains
+spread by 0.4433 — a factor of 150.
+
+### 1. WHY, and why it is reassuring
+Larger lattice = the observable averages over more plaquettes, so which basin a
+chain sits in matters less to the measured value, and the basins themselves merge.
+This is ordinary self-averaging. **The disease is a SMALL-L disease and it gets
+BETTER with L, not worse.** Therefore the M2 program at L=120-192 is not threatened
+by it. That is the single most important consequence and it is good news.
+Independent corroboration that PT has the right answer at L=10: at h=0.3056,
+no-PT L=10 says 1.6478, PT L=10 interpolates to ~1.42-1.43, and no-PT L=20 says
+1.3999. **PT agrees with the clean larger size; plain L=10 is the outlier.** Two
+independent routes (PT mixing, and going to larger L) land together and away from
+the contaminated one. That is as close to a decisive cross-check as this gets.
+
+### 2. WHAT IS NOW THE MOST EXPOSED RESULT: 2A's s* bracket
+2A scanned **L = 8, 12, 16** — every size at or below the regime that fails, and on
+the low-s side where the freezing is worst. The symptoms in your own report are
+consistent with exactly this disease: the PRIMARY method found no common three-size
+crossing, and 13 point-pairs came back NOT_GATED. I am NOT saying the bracket is
+wrong. I am saying **[0.325,0.350] currently rests on sizes we now know cannot be
+trusted at low s without a per-chain check that was never run.** Do that check
+before spending anything on denser sampling — denser sampling of contaminated points
+buys resolution on the wrong number.
+Note this does NOT touch 2A's other results: the duality check (200/201 PASS) and the
+order call (INCONCLUSIVE, all histograms unimodal, zero STABLE-SEPARATED) both stand.
+
+### 3. THE AWKWARD CONSEQUENCE FOR THE BENCHMARK
+Linsel's sizes are L=10/20/30. **L=10 is one of them and it is exactly the size we
+cannot sample correctly with plain local updates.** So the benchmark overlay cannot
+be closed by running the plain L=10 longer — depth does not fix a basin problem.
+It needs either PT at L=10, or many more independent chains at L=10 so the basin
+populations are sampled rather than accidentally weighted, or both. This is the
+first hard, specific reason the benchmark NEEDS PT, and it is a different reason
+from the one we abandoned in Decision 1 (which was about transport/round-trips).
+Decision 1 is not reopened for the ANSWER; the benchmark still closes with local
+updates in principle. What has changed is that at L=10 specifically, "local updates,
+run longer" is not sufficient.
+
+### 4. FIGURE
+`doc/figures/l10_chain_disagreement_and_pt_repair_20260721.png` — left panel: every
+individual chain as a dot at each h, both sizes, with the crossing window shaded;
+right panel: plain L=10 (wobbling) vs PT L=10 (smooth) vs plain L=20. This is the
+one anchor plot for this finding; put it in the benchmark report next to the
+crossing figure so nobody reads that crossing without seeing this.
+
+### 5. REVISED PRIORITIES (supersedes 20i sec 7 ordering)
+ (a) FREE, FIRST, UNCHANGED — per-chain I4 audit of `15149119`, `15159599`, AND the
+     2A scan, with the per-chain spread and tau-factor columns. For 2A report it
+     per (L, s) so we can see whether the low-s small-L points are contaminated.
+ (b) FREE — benchmark crossing stays unpromoted; add the sec-4 figure and one line
+     stating the L=10 baseline is not ergodic at low h.
+ (c) PROMOTED to the top of new compute — the 16-init L=10 test from 20i sec 7(c)
+     at h=0.3056 and h=0.322. It is cheap, it is pre-committed both ways, and it now
+     decides something bigger than the benchmark: whether PT-vs-more-chains is the
+     fix for every small-L point in this campaign, 2A included.
+ (d) 2A denser [0.325,0.350] sampling — HOLD until (a) reports on the 2A scan. If
+     the low-s small-L points are contaminated, the redesign is "add chains and/or
+     PT at L=8-16", not "add s-values". Same budget, different spend.
+ (e) 2B matched-grid rebuild — unchanged and still authorized, and sec 1 raises its
+     value: PT now has an independent corroboration at L=10, so the rebuild is
+     measuring something we have positive evidence for rather than hoping.
+ L=30, L=24: still HOLD. Step 3 unaffected (L=20 is clean, which also means the
+ step-3 rerun is fixing a stationarity issue, not a basin issue — do not conflate).
+
+### LOOP CONTAINMENT
+(a) and (b) free and immediate, then (c). Hold (d) on (a)'s result. Report the
+per-chain audit as a table with the spread column, L=10 and L=20 and 2A together.
