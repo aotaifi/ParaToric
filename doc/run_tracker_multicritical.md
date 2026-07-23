@@ -1,8 +1,44 @@
 # Multicritical Campaign Tracker — current-state card
 
-Updated: 2026-07-20 (rewrite this card in place; durable results -> plan/report).
+Updated: 2026-07-21 (rewrite this card in place; durable results -> plan/report).
 
 ## Status
+- STEP 2B L=10 PT speedup calibration submitted 2026-07-21 as one-node,
+  14-rank MPI job `15178251` under
+  `/scratch/a/A.Otaifi/paratoric_pt_speedup_l10_20260721/`. Fatal fixed-h
+  bookkeeping pre-check PASSED: each rank-local observable sample is aligned
+  with `ladder_index_by_sample`, so registered `scripts/ensemble_diagnostics.py`
+  reconstructs fixed-rung series with shape and unique-owner checks. The job
+  exactly reuses Lane-2 job `15140239`'s 14-rung h ladder and proven portable
+  MPI binary (`b0ce5242`), with L=beta=10, lmbda=0.3, mu=J=1, z basis, swap
+  period 2 sweeps, 16M thermalization plus 4M production sweeps, 2M full-series
+  samples at two-sweep cadence, no checkpoint, 14 CPUs, explicit 8G, and a 3h
+  cap. Proven timing gives about 95m/22.2 task-hours; budget line is 28
+  task-hours. Swap-period 1/5/10 variants are deferred because four full-depth
+  runs would cost about 89 task-hours and quadruple the priority measurement;
+  free swap-period-2 transport/acceptance/excursion diagnostics remain scoped.
+  Concise-alert submission failed on transient controller DNS and created no
+  notifier job.
+- STEP 2A self-dual locate-s* scan COMPLETED 2026-07-21 under
+  `/scratch/a/A.Otaifi/paratoric_selfdual_step2a_20260721/`: pilot array
+  `15177060` plus release array `15177203` produced 528/528 HDF5 files with
+  63,900 samples/chain for `L={8,12,16}`, uniform `s=0.200:0.025:0.450`, both
+  bases, and 4 cold+4 hot chains. Actual aggregate cost was 44.88305555555556
+  task-hours, below the 61.1 guarded estimate. The exact submitted/pilot
+  convention is fixed trailing 400-sample checkpoint windows; its final POP
+  curves do not give one clean common three-pair crossing. The higher-statistics
+  interval sensitivity puts all three crossings in `[0.325,0.350]`, so this is
+  only a SENSITIVITY-SUPPORTED PROVISIONAL bracket, not a precision result. Of
+  201 gate-eligible fixed-window I2/B5 comparisons, 200 pass and one isolated
+  `L=8,s=0.275`, 200k-sweep comparison flags at z=3.85577386115; it passes at
+  400k (z=0.0342393478699) and in the interval sensitivity at 200k
+  (z=0.497362160032), so no systematic implementation violation is found.
+  Thirteen of 66 per-point pair statuses remain NOT_GATED. All 528 fixed-window
+  energy histogram screens have no bimodality candidate; no stable-separated
+  energy gap occurs, while 14 trajectories show shrinking-to-zero under-
+  thermalization and every final gap has z<3. ORDER INCONCLUSIVE: absence of
+  bimodality at L=8--16 is never evidence for continuity. Durable readout:
+  `/scratch/a/A.Otaifi/paratoric_selfdual_step2a_20260721/STEP2A_READOUT.md`.
 - COMPLETED L=20 no-PT scale-up (2026-07-20): Slurm array `15159599` finished
   all 72/72 tasks; all HDF5 series have exactly 2,552,000 samples and every
   direct percolation-sector series has nonzero exchanges (minimum 26,046/chain).
@@ -286,17 +322,16 @@ Updated: 2026-07-20 (rewrite this card in place; durable results -> plan/report)
   check only has content for a NONLINEAR observable (the raw ratio). ACTION: the
   driver must REQUIRE an explicit observable and REFUSE the ratio for a linear one
   rather than printing a constant a future reader mistakes for a diagnostic.
-- **NEXT ACTION IS FREE: re-derive the crossing with all nine L=20 points.** Step 1
-  reported h=0.3244098 +/- 0.0000817, ~5 sigma from Linsel's 0.335(2) — but BOTH
-  excluded points were L=20 and one was h=0.339574, the steepest interval, leaving
-  the L=20 curve to jump 1.4832 (h=0.335363) straight to 1.7027 (h=0.343521). Those
-  points are no longer void. Re-derive with all nine; report WITH and WITHOUT side
-  by side; and do NOT publish the +/-0.0000817 — it is a crossing between two
-  interpolated curves, one (L=10) nonmonotonic near the crossing, and the
-  interpolation systematic dwarfs it (our PT-era crossings spanned 0.003, i.e. 37x
-  that bar). PRE-COMMITTED on the outcome: restoring h=0.339574 moves the crossing
-  UP toward 0.34. If it does, the exclusion caused the tension. If it stays near
-  0.324 with a defensible systematic, the tension is real and worth chasing.
+- **FREE CROSSING RE-DERIVATION DONE; UPWARD-SHIFT PREDICTION FAILED.** Restoring
+  all nine L=20 points leaves the data-bracketed linear crossing unchanged at
+  h=0.3244097798 (with/without are identical because the bracket is h=0.322--0.326).
+  The 18-choice interpolation/window scan is the controlling uncertainty: with all
+  points 0.3237135711--0.3349290674, full spread 0.0112154963; without the two
+  points 0.3237135711--0.3349354739, spread 0.0112219028. Thus the nominal crossing
+  stayed near 0.324, but the honest envelope reaches Linsel's 0.335(2) band and no
+  several-sigma tension is established. The repeated +/-0.0000817 was also a
+  decimal-place transcription error: the old TSV records +/-0.0008170099, still
+  far smaller than the interpolation systematic. Benchmark remains PROVISIONAL.
 - **tau_int ANOMALY EXPLAINED, not a bug.** L=20's near-h-independent tau ~18-27
   sweeps (Jarvis right to flag it) is IPS reporting the variance-weighted product
   (slow-mode amplitude x decay time) and truncating the tail: the amplitude FALLS
@@ -373,6 +408,10 @@ Updated: 2026-07-20 (rewrite this card in place; durable results -> plan/report)
 ## Gate log (append one line per gate decision)
 | date | gate | evidence | result | decision |
 |---|---|---|---|---|
+| 2026-07-21 | STEP 2A full-grid locate-s* readout | `/scratch/a/A.Otaifi/paratoric_selfdual_step2a_20260721/STEP2A_READOUT.md`; registered `scripts/ensemble_diagnostics.py selfdual-step2a`; arrays `15177060`/`15177203` | PROVISIONAL BRACKET / ORDER INCONCLUSIVE | 528/528 complete at 44.88305555555556 task-hours. Physical POP size ordering reverses in s=[0.325,0.350]; interpolated crossings 0.3295374649829121--0.3328006522747564. 164 eligible duality comparisons PASS, max z=2.45583807467; 18/66 point-pair checks NOT_GATED. No bimodality candidate and no stable-separated energy gap; absence is not continuity evidence. Refine/deepen before MCP production. |
+| 2026-07-21 | STEP 2A full-grid release after pilot | Pilot `15177060`; release array `15177203`; `/scratch/a/A.Otaifi/paratoric_selfdual_step2a_20260721/PRE_SUBMISSION_CHECK.md` | SUBMITTED | Remaining task IDs 0--447,464--527 released with max 64 concurrent tasks; pilot IDs excluded. Full measured budget 40.7 task-hours, guarded at 61.1. Concise-alert submission failed on transient DNS with no notifier job. |
+| 2026-07-21 | STEP 2A design, cost, and pilots-before-arrays gate | `/scratch/a/A.Otaifi/paratoric_selfdual_step2a_20260721/PRE_SUBMISSION_CHECK.md`; pilot readout `/scratch/a/A.Otaifi/paratoric_selfdual_step2a_20260721/readout_pilot15177060_interval`; `/scratch/a/A.Otaifi/paratoric_selfdual_step2a_20260721/submit_selfdual_step2a_scan_20260721.sbatch`; Slurm array `15177060` | PILOT PASS / RELEASE | 16/16 chains complete with 63,900 samples, 490--664s; common I5+stationarity by 200k; both probability dual pairs pass at every eligible depth (max z=2.10583830667); no persistent energy gap; unimodal histograms are INCONCLUSIVE. Measured all-grid cost 40.7 task-hours; release budget 61.1 task-hours. Submit remaining IDs 0--447,464--527. |
+| 2026-07-21 | All-nine-point L=10/L=20 raw-ratio crossing with with/without sensitivity and interpolation systematic | `doc/figures/linsel_no_pt_l10_l20_restored_diagnostics_20260721.tsv`; `doc/figures/linsel_raw_ratio_crossing_no_pt_l10_l20_restored_20260721.png`; `doc/benchmark_report.md` sections 4--6 | PREDICTION FAILED / PROVISIONAL | Linear h=0.3244097798 both ways; honest all-root interpolation spread 0.0112154963 reaches Linsel band, so neither an upward shift nor a several-sigma tension is established. |
 | 2026-07-20 | PI CORRECTION: round-trips NOT NECESSARY for low tau; run manual F3/F7 + harness G1.2 bars are WRONG as written | PI physics call, UPDATE 2026-07-20h | RULE CORRECTED | Gate is measured tau at the rung of interest. All 4 PT NO-GO calls used a non-gating metric and never measured tau at h_c — that evidence is weaker than treated. First-order caveat: round-trips likely necessary again at a coexistence barrier. |
 | 2026-07-20 | PT operational calibration PROMOTED to explicit 2B deliverable (swap-period optimum, sweeps-to-decorrelate vs L, harmonic acceptance, excursion stats) | PI instruction, UPDATE 2026-07-20h sec 5 | SCOPE ADDED | Bank the ladder-design experience in a pt_architecture.md calibration table. |
 | 2026-07-20 | L=20 VOID **CLEARED** on the corrected estimator; STEP 3 CANCELLED as scoped (~170-340 task-hrs saved) | Jarvis STEP 0 `blocking-validity`, 4 review rounds — `doc/figures/linsel_blocking_validity_l10_l20_20260720.md`: h=0.339574 p 0.026->0.20 z=0.42; h=0.305629 p=0.33 z=0.33 | CLEARED | Only TAU stays unresolved there, and no downstream decision reads it. Jarvis asked the question that cancelled the job. |

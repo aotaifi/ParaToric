@@ -86,11 +86,14 @@ doc/feynman_thesis_tojarvis.md (pilot envelope, worm on hold).
 ## 4. Ladder-health invariants (must all hold before trusting a pilot)
 
 H1 (genuine decorrelation, not label travel): swap_period >= O(1) sweep so real
-   local work happens between swaps (Sec 3). Round-trips are NECESSARY but NOT
-   SUFFICIENT: a label can round-trip with a frozen config. Verify with H2+H3.
+   local work happens between swaps (Sec 3). Round-trips are NEITHER NECESSARY NOR
+   SUFFICIENT: a replica can decorrelate through local excursions over a few rungs
+   without a full round-trip, while a label can round-trip with a frozen config.
+   When genuine they are sufficient evidence of mixing; verify decorrelation with
+   measured tau at the rung of interest (H2) and H3.
 H2 (strict round-trips): count only replicas that genuinely visited BOTH ladder
-   ends (coupledpinning "visited_both_ranks"), and require tau_ergodic (in
-   sweeps) small enough that several strict round-trips occur in the run.
+   ends (coupledpinning "visited_both_ranks") and report them as transport context.
+   The gate is measured tau at the rung of interest, not round-trip count.
 H3 (reservoir dwell): per strict round-trip, the sweeps spent at the deconfined
    reservoir rungs must exceed the LOCAL decorrelation time there — else the
    config zips through the fast phase without actually decorrelating the slow
@@ -110,6 +113,23 @@ H5 (first-order bottleneck watch): if the MCP is (weakly) first-order, the two
 H6 (reach the reservoir): the ladder must extend into the deconfined phase
    (POP>0 rungs). Ties to the deconfined-confirmation benchmark
    (feynman_thesis_tojarvis.md): confirm POP>0 at small s FIRST.
+
+Correction scope: round-trips being unnecessary applies when the slow mode is
+LOCAL, i.e. critical slowing at a CONTINUOUS transition; local excursions can then
+suffice and PT may be cheap. At a FIRST-ORDER point the slow mode is tunneling
+between coexisting phases, so escape requires reaching a rung where the coexistence
+gap has closed, a round-trip-like excursion in all but name. Round-trips then become
+close to necessary, and an acceptance hole at the barrier is physics, not a ladder
+defect. The self-dual MCP regime is thesis T1 and remains undecided: do not apply the
+unnecessary rule there in advance; it is established on the continuous-by-
+construction benchmark line.
+
+Retrospective: the four consecutive PT-ladder NO-GO calls recorded in `status.md`
+were judged by strict round-trip count, a metric that does not gate decorrelation;
+tau at h_c was not measured on any of the four attempts. They are therefore weaker
+evidence against PT than treated at the time, not evidence that those ladders were
+fine. The marker test's genuine 0.235%-acceptance barrier at h_c remains real; the
+round-trip verdict measured the wrong quantity.
 
 ## 5. What to port from coupledpinning (reference, do NOT copy blindly)
 

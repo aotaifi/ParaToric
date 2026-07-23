@@ -252,16 +252,28 @@ F2. PER-LINK (EDGE) swap acceptance, every link. Target ~20-40%. Any link < 1e-4
     s* it may be a first-order coexistence gap (H5), not just bad spacing.
 F3. STRICT ROUND-TRIPS (visited_both_ranks) — replicas that genuinely reached BOTH
     ends, NOT endpoint touches (touches overcount: real=6 vs touch=10 on job
-    14982619). Pilot bar: >=3 strict round-trips or the ladder is broken.
+    14982619). Report as transport CONTEXT; the actual gate is MEASURED TAU at the
+    rung of interest, not round-trip count.
 F4. UP/DOWN FLOW: visited-LOW and visited-HIGH per replica -> flow fraction f(rung);
     should be ~monotonic; non-monotonic f / plateau pins the bottleneck rung.
 F5. tau_ergodic (round-trip time, IN SWEEPS) — this, not raw sample count, sets the
     effective decorrelation at the s* rung. Budget Neff at s* in tau_ergodic units.
 F6. tau(percolation_strength) at s* — the PHYSICAL slow mode. PT GO requires it to
     actually DROP (>=5x vs no-PT baseline) AND replicas to change the winding sector.
-F7. KEY WARNING: round-trips are NECESSARY but NOT SUFFICIENT — a label can
-    round-trip on a frozen config (F1). Pair RT/flow (F2-F4) with genuine
-    decorrelation (F5-F6). Mechanism without physics = NO-GO.
+F7. KEY WARNING: round-trips are NEITHER NECESSARY NOR SUFFICIENT — when genuine,
+    they are sufficient evidence of mixing, but not required for a tau reduction:
+    a replica can decorrelate through local excursions over a few rungs without a
+    full round-trip. A label can also round-trip on a frozen config (F1), so
+    round-trips are not sufficient. Pair RT/flow (F2-F4) with genuine decorrelation
+    (F5-F6). Mechanism without physics = NO-GO. This correction holds when the slow
+    mode is LOCAL, i.e. critical slowing at a CONTINUOUS transition, where PT may
+    be cheap. It does not obviously hold at a FIRST-ORDER point: tunneling between
+    coexisting phases requires reaching a rung where the coexistence gap has closed,
+    a round-trip-like excursion in all but name; round-trips then become close to
+    necessary, and an acceptance hole at the barrier is physics, not a ladder defect.
+    The self-dual MCP regime remains undecided (thesis T1), so do not generalize the
+    unnecessary rule there in advance; it is established on the continuous-by-
+    construction benchmark line.
 F8. Reservoir & first-order (Part E): useful reservoir is JUST BELOW s*; a
     first-order MCP gives a central-rung acceptance hole (F2) + stalled strict
     round-trips (F3) + bimodal energy = sampling failure AND physics signal.

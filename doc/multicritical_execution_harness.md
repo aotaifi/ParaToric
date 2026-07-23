@@ -44,8 +44,8 @@ one line per gate: date, evidence path, PASS/FAIL, decision).
 - G1.2 PT swap weight: validate the O(1) cached log-weight ratio against
   brute-force recomputation (total_integrated_pot_energy + kink-count terms)
   at every swap in a debug run (L=8): max abs deviation < 1e-8. Swap acceptance
-  targeted 20-40% by ladder spacing; measure round-trip time — if no replica
-  completes >= 3 round trips in a pilot, the ladder is broken, do not proceed.
+  targeted 20-40% by ladder spacing; report round-trip time as transport context.
+  The gate is measured tau at the rung of interest, not round-trip count.
 - G1.3 PT physics: PT-on vs PT-off means agree (z < 3) at an easy point; each
   replica's marginal must reproduce the single-chain result.
 - G1.4 Winding-loop move (if implemented): (a) ΔE vs brute-force recompute at

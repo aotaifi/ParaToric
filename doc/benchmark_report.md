@@ -6,7 +6,7 @@ one minute that we are doing physics and not chasing an artifact. Come back here
 whenever a result looks strange: if this benchmark still passes, the machinery is
 sound and the strangeness is elsewhere.
 
-Status: 2026-07-20. PROVISIONAL; exact-size L=10/L=20 progress, benchmark not
+Status: 2026-07-21. PROVISIONAL; exact-size L=10/L=20 progress, benchmark not
 closed (see 5). Update on each new result.
 
 --------------------------------------------------------------------------------
@@ -56,9 +56,11 @@ L=20, both sampled every 25 sweeps.
 
 Analysis uses only stationary suffixes: after 16M sweeps at L=10; after 8M at
 L=20, except h=0.318989179906 after its validated 48M plateau entry. L=20
-h=0.305629247317 and h=0.339573841268 have no nontrivial stationary suffix and
-are explicitly excluded, not silently promoted. L=30 has not run. A finite-L
-L=10/L=20 crossing is not Linsel's extrapolated h_c.
+h=0.305629247317 and h=0.339573841268 are restored: the corrected blocking audit
+gives cold/hot z=0.3283/0.4188 and suffix p=0.3280/0.2021. Tau remains unresolved
+at h=0.339573841268 (blocking lower bound >=2157.001764 sweeps), but the mean and
+its bootstrap error pass the validity gates. L=30 has not run. A finite-L L=10/L=20
+crossing is not Linsel's extrapolated h_c.
 Trend first, number second.
 
 --------------------------------------------------------------------------------
@@ -71,7 +73,7 @@ Binder-cumulant crossings (pairwise, L=20/24/28). Spread = max-min across pairs.
 | A. PT, broken mechanism, uniform ladder | drifts, no convergence | — | NO-GO |
 | B. PT, mechanism FIXED, uniform dh=0.025 | 0.350(1) / 0.331(1) / 0.327(1) | 0.023 | NO-GO |
 | C. PT, mechanism fixed + ladder RESOURCED | **0.3406 – 0.3437** | **0.003** | PROVISIONAL |
-| D. Exact-size no-PT L=10/L=20, stationary suffixes | **formal crossing 0.32441(82)** | one pair | PROVISIONAL / FLAG |
+| D. Exact-size no-PT L=10/L=20, all nine L=20 points | **linear 0.3244097798; interpolation range 0.3237135711--0.3349290674** | **0.0112154963** | PROVISIONAL / FLAG |
 | target (Linsel) | **0.335(2)** | — | — |
 
 **The two fixes (short):**
@@ -88,63 +90,58 @@ Binder-cumulant crossings (pairwise, L=20/24/28). Spread = max-min across pairs.
    excess is the specific-heat enhancement L^(alpha/nu) near h_c) — use 1.69.
 
 Stage C's PT crossing spread collapsed 0.023 -> 0.003 after the two mechanism
-fixes, but zero strict round-trips prevented closure. Stage D is the requested
-existing-data exact-size deliverable. It does not confirm Stage C: the L=10 curve
-is nonmonotonic at low h, two L=20 points are void, and the only central linear
-sign-change is far below the published h_c. This negative result is retained
-rather than selecting a visually preferred near-h_c intersection.
+fixes, but it was not promoted. Stage D restores both formerly excluded L=20
+points. The local linear crossing is unchanged because its data bracket is
+h=0.322--0.326, below either restored point. Interpolation family and fit window,
+not pointwise Monte Carlo noise, now set the honest uncertainty.
 
 --------------------------------------------------------------------------------
 ## 5. Current result and HONEST status
 
-The raw-ratio autocorrelation time is defined from the delta-method influence
-series of r=<P^4>/<P^2>^2; it is not the tau of P itself. Values below are means
-of eight independent-chain tau estimates in sweeps, with delete-one-chain
-jackknife errors. Curve errors use a hierarchical bootstrap that resamples
-chains, then blocks no shorter than 2*tau. Full values, ratio means/errors,
-retained sample counts, and chain-tau ranges are in
-`doc/figures/linsel_no_pt_l10_l20_diagnostics_20260720.tsv`.
+Curve errors below are hierarchical chain/block-bootstrap standard errors from
+1,000 resamples (seed 20260720). Both formerly excluded L=20 means are restored;
+their ratio means and errors were never invalidated by the tau-estimator defect.
 
-| h | L=10 tau(raw ratio) | L=10 tau(base density) | L=20 tau(raw ratio) | L=20 tau(base density) |
-|---:|---:|---:|---:|---:|
-| 0.305629247317 | 9092 +/- 9071 | 20.631 +/- 0.614 | VOID | VOID |
-| 0.318989179906 | 33667 +/- 20154 | 19.108 +/- 0.370 | 18.402 +/- 0.243 | 20.961 +/- 0.088 |
-| 0.322000000000 | 71086 +/- 12650 | 19.026 +/- 0.265 | 18.512 +/- 0.121 | 20.929 +/- 0.102 |
-| 0.326000000000 | 35043 +/- 12949 | 18.519 +/- 0.139 | 18.763 +/- 0.155 | 20.767 +/- 0.136 |
-| 0.330615254621 | 22411 +/- 2888 | 18.710 +/- 0.095 | 18.658 +/- 0.422 | 20.680 +/- 0.117 |
-| **0.335362847648** | **11818 +/- 2312** | **18.760 +/- 0.086** | **58.88 +/- 17.78** | **21.475 +/- 0.227** |
-| 0.339573841268 | 3971 +/- 377 | 19.214 +/- 0.207 | VOID | VOID |
-| 0.343520981103 | 1946 +/- 328 | 20.023 +/- 0.433 | 243.6 +/- 34.5 | 25.44 +/- 1.56 |
-| 0.347398758564 | 846.3 +/- 55.7 | 23.486 +/- 0.722 | 26.85 +/- 2.78 | 20.696 +/- 0.240 |
+| h | L=10 raw ratio +/- bootstrap error | L=20 raw ratio +/- bootstrap error |
+|---:|---:|---:|
+| 0.305629247317 | 1.620594488 +/- 0.065789675 | **1.399854822 +/- 0.000403214** |
+| 0.318989179906 | 1.443357268 +/- 0.041930118 | 1.430742096 +/- 0.000596750 |
+| 0.322000000000 | 1.489079406 +/- 0.021437993 | 1.440026145 +/- 0.000346187 |
+| 0.326000000000 | 1.418993177 +/- 0.013435356 | 1.451363556 +/- 0.002472915 |
+| 0.330615254621 | 1.463439077 +/- 0.007419584 | 1.466906462 +/- 0.005133156 |
+| 0.335362847648 | 1.479757821 +/- 0.009856900 | 1.483203689 +/- 0.004081748 |
+| 0.339573841268 | 1.510839219 +/- 0.006959165 | **1.579050185 +/- 0.002549444** |
+| 0.343520981103 | 1.537532272 +/- 0.004333580 | 1.702697467 +/- 0.002274703 |
+| 0.347398758564 | 1.583705271 +/- 0.004110110 | 1.804171955 +/- 0.001492930 |
 
-At h=0.335362847648:
-- raw-ratio tau20/tau10 = **0.004983 +/- 0.001792**, apparent
-  z=log2(ratio) = **-7.649 +/- 0.519**;
-- base-density tau20/tau10 = **1.14472 +/- 0.01319**, apparent
-  z = **0.19499 +/- 0.01662**.
+The with/without comparison is direct:
 
-Neither independently measured tau ratio points toward steeper-than-z=2 slowing.
-They disagree sharply with the sector-exchange-rate result: 233,758 events/40M
-sweeps at L=10 versus 28,421/64M at L=20 gives slowdown **13.2** and apparent
-exponent **about 3.7**. These are not the same observable. Sector exchange counts
-threshold crossings of the direct percolation indicator, whose own distribution
-changes with L; the rate is therefore not a clean tau_int. Raw-ratio tau instead
-uses the plaquette-strength ratio estimator's influence series, while density is
-local. The disagreement must not be converted into a dynamical-exponent claim.
+| L=20 treatment | local linear crossing | bootstrap statistical error | interpolation range | full spread |
+|---|---:|---:|---:|---:|
+| all nine points | **0.3244097798** | 0.0008659348 | **0.3237135711--0.3349290674** | **0.0112154963** |
+| omit h=0.305629247317 and 0.339573841268 | **0.3244097798** | 0.0008649342 | **0.3237135711--0.3349354739** | **0.0112219028** |
 
-The formal L=10/L=20 linear-interpolation crossing is
-**h_x=0.32441 +/- 0.00082** (99.9% of hierarchical-bootstrap replicates retain a
-crossing in the search window). It lies 0.01059 below Linsel's 0.335(2), about
-4.9 combined sigma. This is not a successful reproduction: the L=10 curve is
-nonmonotonic near the formal bracket, and the missing L=20 h=0.339574 point blocks
-a trusted near-h_c bracket. It is quoted because it is the algorithmic pairwise
-crossing, not because it is physically preferred.
+The systematic scan uses 18 choices: linear, PCHIP, natural cubic, and unweighted
+degree-1/2/3 polynomial curves over all points, a window dropping only the lowest
+h, and the central six points. Natural cubic interpolation has multiple roots;
+all are retained in the quoted envelope. The narrower nearest-linear-root spread
+with all points is 0.3237135711--0.3311873879, but publishing only that selected
+branch would hide the spline ambiguity. The **full 0.0112154963 spread is the
+actual crossing uncertainty**, not the 0.0008659348 bootstrap-only bar.
 
-**Status remains PROVISIONAL.** This establishes an exact-size, reproducible
-negative readout from all presently usable existing data and rules out claiming
-benchmark closure from the L=10/L=20 overlay. It does not establish the published
-h_c, an Ising-line dynamical exponent, the L=20 full curve, or any MCP property.
-L=20's two targeted points must stabilize and L=30 remains unrun.
+The old source TSV actually records 0.3244097798 +/- 0.0008170099. The
+0.0000817 value repeated in narrative updates was a decimal-place transcription
+error; neither statistical bar is publishable as the total uncertainty.
+
+**Prediction check: FAILED.** Restoring h=0.339573841268 did not move the local
+linear crossing upward; it stayed at 0.3244097798 because the crossing is bracketed
+by h=0.322 and 0.326. But the honest interpolation envelope reaches Linsel's
+0.335(2) band, so the data also do **not** support a several-sigma tension. The
+nonmonotonic L=10 curve makes interpolation choice the dominant limitation.
+
+**Status remains PROVISIONAL.** This pass restores the complete L=20 curve and
+removes the false precision, but does not promote benchmark closure, establish a
+dynamical exponent, or say anything about the MCP. L=30 remains unrun.
 
 --------------------------------------------------------------------------------
 ## 6. The anchor plot
@@ -152,14 +149,15 @@ L=20's two targeted points must stabilize and L=30 remains unrun.
 **Current exact-size figure:**
 - x: h; y: raw ratio <P^4>/<P^2>^2 of plaquette percolation strength on a log
   scale, matching Linsel Fig. 4a's convention;
-- L=10 and L=20 with hierarchical chain/block-bootstrap error bars;
-- formal pairwise crossing with its bootstrap x error and Linsel's 0.335(2) band;
-- L=20 h=0.305629 and 0.339574 explicitly omitted; the L=20 line is broken at
-  the missing h=0.339574 point so the plot does not interpolate through void data.
+- L=10 and the restored nine-point L=20 curve with bootstrap error bars;
+- both formerly excluded L=20 points marked as validated, with the old omitted
+  curve shown dashed for direct comparison;
+- the coincident with/without linear crossings, the full interpolation envelope,
+  and Linsel's 0.335(2) band.
 
-CURRENT PLOT PATH: `doc/figures/linsel_raw_ratio_crossing_no_pt_l10_l20_20260720.png`
+CURRENT PLOT PATH: `doc/figures/linsel_raw_ratio_crossing_no_pt_l10_l20_restored_20260721.png`
 
-CURRENT TABLE PATH: `doc/figures/linsel_no_pt_l10_l20_diagnostics_20260720.tsv`
+CURRENT TABLE PATH: `doc/figures/linsel_no_pt_l10_l20_restored_diagnostics_20260721.tsv`
 
 ENTRYPOINT: registered `scripts/ensemble_diagnostics.py no-pt-benchmark`, seeded
 with `20260720`; inputs are jobs `15149119` and `15159599` under their scratch
@@ -172,13 +170,12 @@ SUPERSEDED U PLOT (retained): `doc/figures/linsel_binder_crossings_pt_resourced_
 --------------------------------------------------------------------------------
 ## 7. How to re-check / what would change the verdict
 
-- First clear the two L=20 void points on the prescribed geometric ladder. Only
-  after both have a nontrivial stationary suffix may they enter the registered
-  no-PT analysis and reconnect the plotted L=20 curve.
-- Re-run `scripts/ensemble_diagnostics.py no-pt-benchmark` with the same seed and
-  suffix rules. FULL PASS requires a stable near-h_c crossing compatible with
-  0.335(2), not merely a formal sign change on a nonmonotonic segment.
-- If the exact-size crossing remains incompatible after the L=20 void clears,
-  investigate the L=10 nonmonotonicity, suffix dependence, and finite-size
-  corrections before adding L=30. The observable itself remains statically
-  calibrated (doc/paratoric_run_manual.md G5).
+- The two former L=20 void points are now cleared and restored. Re-run the
+  registered `no-pt-benchmark` mode with the same seed, suffix rules, and
+  `--sensitivity-exclude` pair to reproduce both curves and the interpolation
+  envelope.
+- Promotion requires a fresh physics read of the complete result and the existing
+  "same trend, same crossing" bar; this edit does not promote it as a by-product.
+- Before adding L=30, investigate the L=10 nonmonotonicity, suffix dependence,
+  and finite-size corrections. The observable remains statically calibrated
+  (doc/paratoric_run_manual.md G5).

@@ -1153,3 +1153,134 @@ any PT run fits one walltime block.
 ### LOOP CONTAINMENT
 Do the sec-4 doc fixes with the sec-7(a) free crossing re-derivation from 20g, then
 run 2A and 2B in parallel with 2B carrying the sec-5 deliverables. Report per 20g.
+
+## UPDATE 2026-07-20i: VERDICT on 2A/2B. Jarvis's "inconclusive" calls are both correct, but I found the CAUSE underneath them and it is one disease, not three. The L=10 baseline FAILS I4 by four orders of magnitude in exactly the crossing region. 2B's "physics disagreement" flag is probably PT being RIGHT. New figure of merit for PT: ERGODICITY, not speed.
+
+Both readouts are honest and both stop in the right place. I am not overturning
+either call. I went underneath them and the three loose ends share one cause.
+
+### 1. THE FINDING: our L=10 benchmark baseline is not ergodic at low h
+Per-chain readout of job `15149119` (the trustworthy baseline everything leans on),
+raw ratio and tau_int per chain, 4 cold then 4 hot:
+
+  h=0.305629  ratios 1.7426 1.7245 1.7418 1.7421 | 1.2993 1.7397 1.7391 1.4531
+              tau/1e3    0.0    0.0    0.0    0.0 |    0.0    0.0    0.0  171.6
+
+Six chains sit at ~1.74, one at 1.30, one at 1.45. Seven report tau ~0 (white noise
+at 25-sweep spacing) while one reports 171,600 sweeps. These chains are not sampling
+the same distribution. **I4 requires per-chain tau within a FACTOR 2. Measured
+factors: 11,275x at h=0.305629; 8,042x at 0.318989; 4,595x at 0.326; 7x at 0.322.
+L=10 FAILS I4 at 8 of 9 points.** We have never enforced that clause, at any point,
+in this campaign.
+
+**And the crossing is bracketed by h=0.322/0.326** — inside the worst of it. So the
+benchmark crossing is being read off the part of the L=10 curve that is least
+entitled to be read.
+
+### 2. WHY EVERY EXISTING CHECK MISSED IT — this is the part worth internalizing
+The cold/hot means at h=0.305629 are 1.7377 vs 1.5578 and the I5 check PASSES. It
+passes BECAUSE the hot group is internally split (spread 0.4405): the heterogeneity
+that should raise the alarm instead inflates the group variance and drives z down.
+**I5 can be passed by a broken ensemble whose own dispersion hides the break.** The
+between-chain error cross-check from 20f is likewise fooled — it correctly reports a
+large error bar, and a large honest error bar on a bimodal population is still an
+average over two states neither of which is the answer. G1a/G1b/I5/I4 as we have
+been running them are all blind to this; only the PER-CHAIN table shows it.
+Add to the run manual: **report the per-chain table, not just the group summary.**
+
+### 3. THIS IS NOT MY REFUTED WINDING HYPOTHESIS. Do not let me resurrect it.
+I checked. Sector-exchange counts at h=0.305629 are 308214 309803 306432 308256 |
+147750 307440 306942 260468 — healthy everywhere. The 18b winding-sector-trapping
+hypothesis STAYS DEAD and the 2026-07-20 refutation stands. Worth noting honestly:
+the two anomalous chains (147,750 and 260,468) are the two with visibly SUPPRESSED
+exchange, so there is a correlation between reduced sector mobility and a deviant
+ratio. That is an observation, not a mechanism, and I am explicitly NOT building a
+hypothesis on it this time. Name it what it is: **unidentified basin structure on
+the low-h deconfined side.** E3 already told us that side freezes as you go deeper.
+
+### 4. 2B's "PHYSICS DISAGREEMENT" FLAG IS PROBABLY BACKWARDS, AND THAT IS THE BEST NEWS IN THE REPORT
+Jarvis correctly flagged that the PT crossing (0.336613) lands outside the no-PT
+envelope and said it needs investigating before PT is trusted. Right call. I did the
+investigation. I reconstructed the fixed-h ratios from the 14-rung PT run:
+
+  h    0.1500 0.1833 0.2167 0.2500 0.2712 0.2925 0.3137 0.3350 0.3563 0.3775 ...
+  PT   1.3026 1.3172 1.3377 1.3630 1.3828 1.4085 1.4408 1.4969 1.6908 1.9074 ...
+
+**Cleanly MONOTONIC, as the raw ratio must be.** The no-PT L=10 curve is NOT: it
+starts at 1.6206 (h=0.3056), falls to 1.4434, then wobbles up. PT interpolates to
+~1.42-1.43 at h=0.3056 against no-PT's 1.6206 — and no-PT's six frozen chains are
+sitting at 1.74. **The nonmonotonicity Jarvis identified as the dominant limitation
+is the basin contamination, not an interpolation-method problem.**
+=> Re-read the flag: PT is not shifting the crossing away from truth. PT is
+plausibly the BETTER-SAMPLED curve, and its crossing moves TOWARD Linsel's 0.335(2).
+NOT YET PROVEN, and I am marking the limit: PT still carries residual init memory at
+low h. PT cold/hot by origin-rank init, per rung: 0.0712 (h=0.2712), 0.0663, 0.0561,
+0.0386, 0.0240 (h=0.3563). Shrinking with h but nonzero. **PT is better here, not
+clean.** Both curves are contaminated at low h; PT less so.
+
+### 5. THE REFRAME THAT MATTERS: PT's figure of merit is ERGODICITY, not speed
+2B set out to measure tau reduction and came back censored on both sides — Jarvis is
+right that no honest factor is quotable and right to refuse to quote one. But that is
+a null on the metric we CHOSE, and it is now clear we chose the wrong one. The
+benefit PT demonstrably delivers on this data is repairing an ensemble that local
+updates cannot mix. That is worth more to this campaign than a speed factor:
+speed buys error bars, ergodicity buys CORRECTNESS, and an ergodicity failure is the
+one error class no amount of runtime fixes. This also answers the PI's question about
+what PT experience we bank — the answer is bigger than swap-period tuning.
+Note this cuts against my own 20h framing: I said the gate is measured tau at the
+rung of interest. Insufficient. **A chain frozen in a basin reports LOW tau** (7 of
+8 chains above report tau~0 while being demonstrably stuck). tau alone cannot detect
+this failure in either direction. The gate must be tau AND per-chain agreement.
+
+### 6. WHAT I AM RATIFYING
+2A's order call (INCONCLUSIVE, zero STABLE-SEPARATED, all histograms unimodal) is
+exactly right and exactly what I told you to expect at L=8-16; reported correctly
+under the asymmetry rule. The duality result is genuinely reassuring: 200/201 PASS
+with the one flag resolving by 400k says the instrument is sound on the self-dual
+line. 2B's decision-rule call (NOT TRIGGERED, both taus censored, 144x/64x explicitly
+not speedup bounds) is correct and I am glad you refused to quote them. The 20g
+crossing prediction was mine and it FAILED as you say: restoring the points moved
+nothing, because the crossing sits at h=0.322/0.326, nowhere near them. Your
+interpolation-systematic scan was the right instinct and it found the real symptom.
+The transcription-error self-report is exactly the right reflex; thank you.
+
+### 7. NEXT — ordered, and the first item is free
+ (a) FREE, DO FIRST. Per-chain I4 audit of everything we have: `15149119`,
+     `15159599`, and the 2A scan. Report the PER-CHAIN table (ratio and tau per
+     chain, cold and hot labelled) at every point, plus the tau max/min factor, and
+     mark every point that violates the factor-2 clause. Expect much of L=10 to fail.
+     This reprices the benchmark and possibly 2A's bracket, and it costs nothing.
+     Add per-chain tau-factor as a standing column in `ensemble_diagnostics.py`, and
+     make I4's factor-2 clause a HARD per-point gate rather than documentation.
+ (b) DO NOT promote the benchmark crossing, and do not report 0.3244 as our value.
+     It is read off points that fail I4 by ~10^3-10^4. `benchmark_report.md` stays
+     PROVISIONAL and should now say WHY in one line: the L=10 baseline is not
+     ergodic at low h. This supersedes "consistent with Linsel within honest
+     systematics" — we cannot yet claim consistency OR tension from these points.
+ (c) TEST THE SEC-4 HYPOTHESIS DIRECTLY, cheap and decisive. It is falsifiable:
+     if PT's curve is the better-sampled one, then a no-PT L=10 run at h=0.3056 and
+     h=0.322 started from MANY independent random inits (say 16 chains, not 8) will
+     spread across the same basins, and its properly-pooled ratio will move DOWN
+     toward PT's ~1.43 rather than sit at 1.62. If instead it reproduces 1.62 with
+     tight agreement, PT's low-h rungs are the contaminated ones and I am wrong.
+     Pre-committed both ways, before either is treated as the baseline.
+ (d) 2A: your denser [0.325,0.350] sampling is the right next step and I approve it,
+     with one addition — carry the per-chain gate from (a) into it, because a bracket
+     from a primary method that "found no common three-size crossing" while 13 pairs
+     came back NOT_GATED may be the same ergodicity disease at small L on the low-s
+     side. Check that before spending more on resolution.
+ (e) 2B redesign: your (a)/(b)/(c) are all correct and I authorize the matched-grid
+     rebuild. Reorder them — your (c), the crossing shift, is no longer a worry to
+     clear before spending, it is the most interesting measurement on the list, so do
+     it FIRST via sec 7(c). And add ergodicity repair (per-chain agreement restored
+     at fixed cost) to the deliverables beside the speed factor.
+ STILL HOLD: L=30, L=24. Step 3 unaffected.
+
+### 8. FOR THE RECORD
+I have spent two updates arguing about error bars on a dataset whose chains were not
+sampling the same distribution. The error bars were never the problem. Nobody had
+printed the per-chain table. It cost one command.
+
+### LOOP CONTAINMENT
+(a) and (b) are free and immediate — do them and report before any new compute.
+Then (c), then (d)/(e) in parallel. Report the per-chain I4 audit as a table.
