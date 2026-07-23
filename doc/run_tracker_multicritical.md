@@ -350,6 +350,31 @@ Updated: 2026-07-21 (rewrite this card in place; durable results -> plan/report)
   pseudo-critical location". Do NOT enter it in benchmark_report.md as a dynamical
   determination. Same for the L=10 rise toward small h: suggestive of the
   frozen-winding mode, but every L=10 point is tau-unresolved too.
+- **THE DISEASE IS SIZE-DEPENDENT: L=20 IS CLEAN, L=10 IS BROKEN (UPDATE 20j).**
+  Per-chain ratio spread (max-min over 8 chains) across the window:
+  L=10: 0.4433 0.3671 0.1613 0.0752 0.0881 0.0886 0.0467 0.0361 0.0270
+  L=20: 0.0029 0.0028 0.0023 0.0250 0.0445 0.0278 0.0209 0.0172 0.0105
+  L=20 clean at every point; L=10 broken at 6 of 9, worst at low h — a factor 150
+  at h=0.3056. Cause is ordinary self-averaging (more plaquettes => basin identity
+  matters less). **The disease gets BETTER with L, so the M2 program at L=120-192 is
+  NOT threatened.** Corroboration that PT is right at L=10: no-PT L=10 = 1.6478,
+  PT L=10 ~ 1.42-1.43, no-PT L=20 = 1.3999 at h=0.3056 — PT agrees with the clean
+  larger size and plain L=10 is the outlier; two independent routes land together.
+- **MOST EXPOSED RESULT IS NOW 2A's s* BRACKET.** 2A scanned L=8/12/16 — all at or
+  below the failing regime, on the low-s side where freezing is worst. Its own
+  symptoms fit (primary method found no common three-size crossing; 13 pairs
+  NOT_GATED). [0.325,0.350] rests on sizes we now know need a per-chain check that
+  was never run. 2A's duality result (200/201 PASS) and order call (INCONCLUSIVE)
+  are UNAFFECTED and stand.
+- **BENCHMARK CONSEQUENCE: L=10 is one of Linsel's three sizes and is exactly the
+  size plain local updates cannot sample correctly.** Depth does not fix a basin
+  problem, so the overlay needs PT at L=10 and/or many more chains — the first hard
+  reason the benchmark NEEDS PT, and a different reason from the transport/
+  round-trip one abandoned in Decision 1 (which is NOT reopened for the answer).
+- **FIGURE:** `doc/figures/l10_chain_disagreement_and_pt_repair_20260721.png` —
+  per-chain dots at every h for both sizes with the crossing window shaded, and
+  plain-L10 vs PT-L10 vs plain-L20 curves. Put it beside the crossing figure in
+  benchmark_report.md so the crossing is never read without it.
 - **2A/2B REPORTED AND VERDICT ISSUED (UPDATE 2026-07-20i). Root cause found under
   all three loose ends: THE L=10 BASELINE IS NOT ERGODIC AT LOW h.** Per-chain
   readout of job `15149119` at h=0.305629: ratios 1.7426 1.7245 1.7418 1.7421 |
@@ -469,6 +494,9 @@ Updated: 2026-07-21 (rewrite this card in place; durable results -> plan/report)
 ## Gate log (append one line per gate decision)
 | date | gate | evidence | result | decision |
 |---|---|---|---|---|
+| 2026-07-21 | Disease is SIZE-DEPENDENT: L=20 per-chain spread <=0.045 everywhere vs L=10 up to 0.4433; self-averaging fixes it with L | Per-chain audit of `15149119` vs `15159599`; figure `doc/figures/l10_chain_disagreement_and_pt_repair_20260721.png` | GOOD NEWS / M2 NOT THREATENED | Large-L MCP program unaffected; small-L results are the exposed ones. |
+| 2026-07-21 | 2A s* bracket [0.325,0.350] flagged MOST EXPOSED — scanned L=8/12/16, all in the failing regime on the low-s side | UPDATE 20j sec 2; 2A job `15177203` primary method found no common crossing, 13 pairs NOT_GATED | AT RISK / HOLD | Denser [0.325,0.350] sampling HELD pending per-chain audit of the 2A scan. |
+| 2026-07-21 | Benchmark needs PT at L=10 for a NEW reason (basin sampling, not transport); depth cannot fix it | UPDATE 20j sec 3 | SCOPE NOTE | Decision 1 not reopened for the answer; L=10 specifically needs PT and/or many more chains. |
 | 2026-07-21 | ROOT CAUSE: L=10 benchmark baseline FAILS I4 (per-chain tau within factor 2) at 8/9 points, by up to 11,275x, in the crossing region | Per-chain audit of job `15149119`: h=0.305629 ratios 1.30/1.45/1.74 across 8 chains, tau 0 to 171,600 sweeps | FAIL / GATE NEVER ENFORCED | Crossing 0.3244 NOT promotable; I4 factor-2 clause becomes a hard per-point gate. |
 | 2026-07-21 | I5 cold/hot can PASS on a broken ensemble — hot-group internal split inflates variance and drives z down | h=0.305629 cold 1.7377 vs hot 1.5578, hot spread 0.4405, z passes | METHOD DEFECT | Report per-chain tables, not group summaries. |
 | 2026-07-21 | 2B 'physics disagreement' REREAD: PT curve MONOTONIC, no-PT L=10 nonmonotonic; PT plausibly better-sampled and moves toward Linsel 0.335(2) | Fixed-h reconstruction of job `15178251` 14 rungs vs job `15149119`; PT residual init memory 0.0712->0.0240 | HYPOTHESIS / PRE-COMMITTED TEST SET | PT figure of merit reframed to ERGODICITY not speed; 20h tau-only gate corrected to tau AND per-chain agreement. |
