@@ -350,6 +350,72 @@ Updated: 2026-07-21 (rewrite this card in place; durable results -> plan/report)
   pseudo-critical location". Do NOT enter it in benchmark_report.md as a dynamical
   determination. Same for the L=10 rise toward small h: suggestive of the
   frozen-winding mode, but every L=10 point is tau-unresolved too.
+- **BENCHMARK VERDICT (UPDATE 20k sec 2): HALF-ANCHORED. TREND PASS, CROSSING FAIL.**
+  TREND is the strongest it has ever been — L=20 rises cleanly 1.3999 -> 1.8043 with
+  all 8 chains agreeing to <=0.045 everywhere, vindicating the observable, the
+  rotated-slice measurement, the plaquette channel and the Binder convention.
+  CROSSING fails STRUCTURALLY: a crossing is a two-size statement and we have exactly
+  ONE trustworthy size. L=10 is contaminated where it matters and PT-L10 is better
+  but not clean (init memory 0.0712 -> 0.0240). The tightness of 0.32441 +/- 0.00082
+  was a warning sign we read as a strength.
+- **THE FIX IS 2B — SAME RUN, NOT A DETOUR.** A clean L=10 costs tens of task-hours
+  (14-rank PT run = 1h27m; a no-PT chain ~1.5h). The run that delivers it IS PT at
+  L=10 on the benchmark line, and a PT run that produces a clean L=10 curve has by
+  that fact demonstrated the ergodicity repair 20i named as PT's real figure of
+  merit. One run, three payoffs: closes the benchmark, measures PT's benefit,
+  validates PT before we bet the MCP on it.
+  ON RUNTIME (PI's point that Linsel did L=10 without PT): correct in principle, but
+  **more chains does NOT fix this** — independent chains populate basins by which one
+  they fall into, not by thermodynamic weight, so adding chains converges to a
+  PRECISE WRONG NUMBER; only moving chains BETWEEN basins fixes the weights. And at
+  L=10 the PT run is CHEAPER than the no-PT ensemble it replaces.
+- **PT LADDER REDESIGN FOR 2B, measured not guessed (20k sec 4).** The fast-mixing
+  reservoir is the HIGH-h end: measured L=10 tau is 759 sweeps at h=0.3474 vs 88,826
+  at h=0.3190 (factor ~117). Low h is the FROZEN end (E3), so the 4 of 14 rungs (29%)
+  below h=0.26 are not a reservoir, they are the disease — and with mean excursion
+  1.33 rungs a replica at h=0.31 never reaches the fast end, which is why init memory
+  is worst at low rungs. DROP rungs below ~0.28 and respend them inside ~0.29-0.42:
+  same rank count, same cost, denser spacing, higher acceptance, longer excursions,
+  reservoir at the fast end. Keep N fixed (A~23% is the tau_RT optimum).
+  VALIDITY GATE replacing round-trips: per-rung agreement at fixed h plus init-memory
+  driven to within its own error.
+- **NEW FREE FIRST-ORDER DIAGNOSTIC (20k sec 6): per-chain spread vs L, calibrated
+  by the benchmark.** At a KNOWN CONTINUOUS transition in this code with this
+  observable the spread collapses with L (0.4433 at L=10 -> 0.0029 at L=20, factor
+  153, by self-averaging). At a FIRST-ORDER transition trapping does NOT self-average
+  away — the barrier grows like exp(2*sigma*L^2), so chains stay apart harder as L
+  grows. **Spread vs L at s* therefore discriminates the scenarios, free, from data
+  we would take anyway.** Same asymmetry rule as bimodality: PERSISTING or GROWING =>
+  strong first-order evidence; COLLAPSING => consistent with continuous (and now
+  quantitatively — does it collapse as fast as factor 153 per doubling?), NEVER proof
+  of continuity. Corollary: do NOT "fix" a persistent cold/hot spread at s* with more
+  depth before checking how it scales with L — at a first-order MCP that spread is
+  the SIGNAL, not the bug.
+- **s* PRECISION, stated honestly (20k sec 5b):** FSS at the MCP needs s* to ~0.001
+  (rounding ~L^(-1/nu) = 0.00079 at L=120 for nu=0.67, 0.00055 at L=192; if
+  FIRST-ORDER, ~L^-3 ~ 1e-6). Linsel's prior is 0.020 wide; 2A's provisional bracket
+  is 0.025 wide. **2A's bracket is NO NARROWER THAN THE PRIOR WE STARTED WITH.** Do
+  NOT chase 0.001 now: get a trustworthy bracket at small L (~0.01 is plenty), THEN
+  refine at larger L where self-averaging helps. A precise number from contaminated
+  small-L data is worse than an honest wide bracket — we would spend L=120 compute
+  sitting at the wrong s.
+- Next action (per UPDATE 2026-07-20k sec 7), first two items FREE and decide the rest:
+  1. FREE — re-derive the L=10/L=20 crossing using ONLY the h-window where BOTH sizes
+     pass a per-chain spread gate. Report: crossing from the clean window with the
+     window stated; the 18-choice interpolation-systematic scan re-run INSIDE that
+     window (does the 0.0112 envelope COLLAPSE?); and crossing vs gate threshold
+     (0.10/0.05/0.03) so we see whether the answer is stable or moves with the cut.
+     PRE-COMMITTED: do NOT tune the gate to land on Linsel's 0.335 — report the
+     threshold curve and let it say what it says. If the envelope collapses, the
+     benchmark may close with NO new compute.
+  2. FREE — per-chain audit of the existing 2A scan reported per (L, s); decides
+     whether 2A's data is salvageable or must be re-run.
+  3. Then PT at L=10 with the redesigned ladder (= 2B = benchmark closure).
+  4. Then 2A redesign per item 2: if contaminated, the fix is per-chain gating plus
+     PT at L=8-16, NOT more s-values (same budget, different spend); if clean, the
+     denser [0.325,0.350] sampling is approved as originally proposed.
+  5. Fold the sec-6 spread-vs-L diagnostic into every subsequent multi-L run, free.
+  Step 3 (L=20 rerun) unaffected and still authorized. L=30, L=24 still HOLD.
 - **THE DISEASE IS SIZE-DEPENDENT: L=20 IS CLEAN, L=10 IS BROKEN (UPDATE 20j).**
   Per-chain ratio spread (max-min over 8 chains) across the window:
   L=10: 0.4433 0.3671 0.1613 0.0752 0.0881 0.0886 0.0467 0.0361 0.0270
@@ -494,6 +560,10 @@ Updated: 2026-07-21 (rewrite this card in place; durable results -> plan/report)
 ## Gate log (append one line per gate decision)
 | date | gate | evidence | result | decision |
 |---|---|---|---|---|
+| 2026-07-21 | BENCHMARK VERDICT: half-anchored — TREND PASS (L=20 clean, monotonic 1.3999->1.8043), CROSSING FAIL (a two-size statement with only one trustworthy size) | UPDATE 20k sec 2 | PROVISIONAL RETAINED | Fix is cheap and is the same run as 2B; not a detour. |
+| 2026-07-21 | PT ladder redesign from measurement: drop the 4/14 rungs below h=0.26, respend inside 0.29-0.42; reservoir is the HIGH-h end (tau 759 vs 88,826 sweeps) | UPDATE 20k sec 4; excursion mean 1.33 rungs from job `15178251` | DESIGN FIXED | Same N and cost, better transport; validity gate = per-rung agreement + init memory, not round-trips. |
+| 2026-07-21 | NEW FREE FIRST-ORDER DIAGNOSTIC: per-chain spread vs L, calibrated against the benchmark's continuous baseline (factor 153 collapse L=10->20) | UPDATE 20k sec 6 | METHOD ADDED | Spread persisting/growing with L => strong first-order evidence; collapsing => consistent with continuous, never proof. |
+| 2026-07-21 | s* precision stated: need ~0.001 for L=120-192 FSS; Linsel prior 0.020 wide, 2A bracket 0.025 wide — NO NARROWER THAN THE PRIOR | UPDATE 20k sec 5b | GAP QUANTIFIED | Do not chase 0.001 yet; trustworthy ~0.01 bracket at small L first, then refine at larger L. |
 | 2026-07-21 | Disease is SIZE-DEPENDENT: L=20 per-chain spread <=0.045 everywhere vs L=10 up to 0.4433; self-averaging fixes it with L | Per-chain audit of `15149119` vs `15159599`; figure `doc/figures/l10_chain_disagreement_and_pt_repair_20260721.png` | GOOD NEWS / M2 NOT THREATENED | Large-L MCP program unaffected; small-L results are the exposed ones. |
 | 2026-07-21 | 2A s* bracket [0.325,0.350] flagged MOST EXPOSED — scanned L=8/12/16, all in the failing regime on the low-s side | UPDATE 20j sec 2; 2A job `15177203` primary method found no common crossing, 13 pairs NOT_GATED | AT RISK / HOLD | Denser [0.325,0.350] sampling HELD pending per-chain audit of the 2A scan. |
 | 2026-07-21 | Benchmark needs PT at L=10 for a NEW reason (basin sampling, not transport); depth cannot fix it | UPDATE 20j sec 3 | SCOPE NOTE | Decision 1 not reopened for the answer; L=10 specifically needs PT and/or many more chains. |
