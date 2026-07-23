@@ -6,8 +6,9 @@ one minute that we are doing physics and not chasing an artifact. Come back here
 whenever a result looks strange: if this benchmark still passes, the machinery is
 sound and the strangeness is elsewhere.
 
-Status: 2026-07-21. PROVISIONAL; exact-size L=10/L=20 progress, benchmark not
-closed (see 5). Update on each new result.
+Status: 2026-07-23. PROVISIONAL; the clean-window audit leaves the exact-size
+L=10/L=20 crossing undefined, so the benchmark is not closed (see 5). Update on
+each new result.
 
 --------------------------------------------------------------------------------
 ## 1. The benchmark source (the paper)
@@ -73,7 +74,8 @@ Binder-cumulant crossings (pairwise, L=20/24/28). Spread = max-min across pairs.
 | A. PT, broken mechanism, uniform ladder | drifts, no convergence | — | NO-GO |
 | B. PT, mechanism FIXED, uniform dh=0.025 | 0.350(1) / 0.331(1) / 0.327(1) | 0.023 | NO-GO |
 | C. PT, mechanism fixed + ladder RESOURCED | **0.3406 – 0.3437** | **0.003** | PROVISIONAL |
-| D. Exact-size no-PT L=10/L=20, all nine L=20 points | **linear 0.3244097798; interpolation range 0.3237135711--0.3349290674** | **0.0112154963** | PROVISIONAL / FLAG |
+| D. Exact-size no-PT L=10/L=20, all nine points, before the per-chain gate | **linear 0.3244097798; interpolation range 0.3237135711--0.3349290674** | **0.0112154963** | SUPERSEDED: contaminated L=10 points |
+| E. Exact-size no-PT L=10/L=20, per-chain-spread gated | **no data-bracketed crossing at spread gates <0.10, <0.05, or <0.03** | **undefined** | PROVISIONAL / NOT ANCHORED |
 | target (Linsel) | **0.335(2)** | — | — |
 
 **The two fixes (short):**
@@ -90,10 +92,12 @@ Binder-cumulant crossings (pairwise, L=20/24/28). Spread = max-min across pairs.
    excess is the specific-heat enhancement L^(alpha/nu) near h_c) — use 1.69.
 
 Stage C's PT crossing spread collapsed 0.023 -> 0.003 after the two mechanism
-fixes, but it was not promoted. Stage D restores both formerly excluded L=20
-points. The local linear crossing is unchanged because its data bracket is
-h=0.322--0.326, below either restored point. Interpolation family and fit window,
-not pointwise Monte Carlo noise, now set the honest uncertainty.
+fixes, but it was not promoted. Stage D restored both formerly excluded L=20
+points, but its local linear crossing is bracketed by h=0.322--0.326. The
+per-chain audit subsequently showed that the L=10 endpoint at h=0.322 fails even
+the loosest pre-committed spread gate. Stage E therefore supersedes Stage D:
+there is no measured clean-window crossing to which an interpolation uncertainty
+can honestly be attached.
 
 --------------------------------------------------------------------------------
 ## 5. Current result and HONEST status
@@ -101,6 +105,8 @@ not pointwise Monte Carlo noise, now set the honest uncertainty.
 Curve errors below are hierarchical chain/block-bootstrap standard errors from
 1,000 resamples (seed 20260720). Both formerly excluded L=20 means are restored;
 their ratio means and errors were never invalidated by the tau-estimator defect.
+The table is retained as source evidence, not as permission to cross contaminated
+L=10 points.
 
 | h | L=10 raw ratio +/- bootstrap error | L=20 raw ratio +/- bootstrap error |
 |---:|---:|---:|
@@ -114,7 +120,7 @@ their ratio means and errors were never invalidated by the tau-estimator defect.
 | 0.343520981103 | 1.537532272 +/- 0.004333580 | 1.702697467 +/- 0.002274703 |
 | 0.347398758564 | 1.583705271 +/- 0.004110110 | 1.804171955 +/- 0.001492930 |
 
-The with/without comparison is direct:
+The earlier with/without-L=20 comparison is retained for provenance only:
 
 | L=20 treatment | local linear crossing | bootstrap statistical error | interpolation range | full spread |
 |---|---:|---:|---:|---:|
@@ -124,24 +130,44 @@ The with/without comparison is direct:
 The systematic scan uses 18 choices: linear, PCHIP, natural cubic, and unweighted
 degree-1/2/3 polynomial curves over all points, a window dropping only the lowest
 h, and the central six points. Natural cubic interpolation has multiple roots;
-all are retained in the quoted envelope. The narrower nearest-linear-root spread
-with all points is 0.3237135711--0.3311873879, but publishing only that selected
-branch would hide the spline ambiguity. The **full 0.0112154963 spread is the
-actual crossing uncertainty**, not the 0.0008659348 bootstrap-only bar.
+all are retained. On the contaminated full window this produced
+0.3237135711--0.3349290674, width 0.0112154963; that range is now superseded, not
+a current crossing uncertainty.
 
 The old source TSV actually records 0.3244097798 +/- 0.0008170099. The
 0.0000817 value repeated in narrative updates was a decimal-place transcription
 error; neither statistical bar is publishable as the total uncertainty.
 
-**Prediction check: FAILED.** Restoring h=0.339573841268 did not move the local
-linear crossing upward; it stayed at 0.3244097798 because the crossing is bracketed
-by h=0.322 and 0.326. But the honest interpolation envelope reaches Linsel's
-0.335(2) band, so the data also do **not** support a several-sigma tension. The
-nonmonotonic L=10 curve makes interpolation choice the dominant limitation.
+The spread thresholds were pre-committed before looking at proximity to Linsel's
+0.335(2); they were not tuned. Strict `<` is used. Gate membership comes from
+the ratified per-chain spread audit in `doc/feynman_thesis_tojarvis.md` UPDATE
+2026-07-20j; curve means come from the current source TSV:
 
-**Status remains PROVISIONAL.** This pass restores the complete L=20 curve and
-removes the false precision, but does not promote benchmark closure, establish a
-dynamical exponent, or say anything about the MCP. L=30 remains unrun.
+| max per-chain spread gate | jointly passing h data (both sizes) | clean-window crossing | 18-choice in-window scan |
+|---:|---|---|---|
+| <0.10 | 0.326000000000--0.347398758564 (6 points) | **NONE**: L=10 minus L=20 is negative at all 6 measured points | 8/18 choices create higher-order overshoot roots; conditional all-root range 0.3286115324--0.3354936738, width 0.0068821414; 10/18 have no root |
+| <0.05 (default) | 0.339573841268--0.347398758564 (3 points) | **NONE**: no sign change | 0/18 choices have a root; envelope undefined |
+| <0.03 | h=0.347398758564 only (1 point) | **NONE**: not estimable from one point | 18-choice scan structurally unavailable; envelope undefined |
+
+Thus the old 0.0112154963 envelope does **not** collapse into a clean result; the
+crossing itself disappears when contaminated low-h points are excluded. The
+numerically narrower `<0.10` conditional root span is not an uncertainty envelope:
+linear and shape-preserving PCHIP have no root, and every measured clean point has
+the same sign. Quoting one of the overshoot roots would be model extrapolation
+between non-bracketing data.
+
+**Window-convention check.** Reproducing the ratified spread values requires the
+L=10 per-chain audit's 400000-sample discard, whereas the crossing curve above
+uses its validated 632000-sample stationary-suffix discard. Recomputing spreads
+on that same 632000-sample suffix leaves the `<0.10` field set unchanged, tightens
+`<0.05` to h=0.343520981103--0.347398758564, and leaves no point at `<0.03`.
+Every retained difference still has the same sign, so the no-crossing verdict is
+unchanged; the primary threshold table follows the ratified audit as directed.
+
+**Status remains PROVISIONAL.** The earlier statement that `0.3244097798` was
+"consistent within honest systematics" is superseded because it was read from
+contaminated L=10 points. This pass does not promote benchmark closure, establish
+a dynamical exponent, or say anything about the MCP. L=30 remains unrun.
 
 --------------------------------------------------------------------------------
 ## 6. The anchor plot
@@ -159,6 +185,16 @@ CURRENT PLOT PATH: `doc/figures/linsel_raw_ratio_crossing_no_pt_l10_l20_restored
 
 CURRENT TABLE PATH: `doc/figures/linsel_no_pt_l10_l20_restored_diagnostics_20260721.tsv`
 
+**The L=10 baseline is not ergodic at low h: its per-chain spread is up to 150x
+larger than L=20 at the same h.**
+
+| Superseded full-window crossing (shown for provenance) | Per-chain disagreement and PT repair |
+|---|---|
+| ![L=10/L=20 full-window raw-ratio crossing](figures/linsel_raw_ratio_crossing_no_pt_l10_l20_restored_20260721.png) | ![L=10 chain disagreement and PT repair](figures/l10_chain_disagreement_and_pt_repair_20260721.png) |
+
+CHAIN-DISAGREEMENT PLOT PATH:
+`doc/figures/l10_chain_disagreement_and_pt_repair_20260721.png`
+
 ENTRYPOINT: registered `scripts/ensemble_diagnostics.py no-pt-benchmark`, seeded
 with `20260720`; inputs are jobs `15149119` and `15159599` under their scratch
 roots stated in sec. 3.
@@ -173,9 +209,11 @@ SUPERSEDED U PLOT (retained): `doc/figures/linsel_binder_crossings_pt_resourced_
 - The two former L=20 void points are now cleared and restored. Re-run the
   registered `no-pt-benchmark` mode with the same seed, suffix rules, and
   `--sensitivity-exclude` pair to reproduce both curves and the interpolation
-  envelope.
-- Promotion requires a fresh physics read of the complete result and the existing
-  "same trend, same crossing" bar; this edit does not promote it as a by-product.
-- Before adding L=30, investigate the L=10 nonmonotonicity, suffix dependence,
-  and finite-size corrections. The observable remains statically calibrated
+  envelope retained for historical provenance. Then apply the pre-committed
+  per-chain spread gates and restrict every root search to the jointly passing
+  fields to reproduce the clean-window table in sec. 5.
+- Promotion requires a clean second-size curve that restores an in-window,
+  data-bracketed crossing; no interpolation choice can substitute for that.
+- Before adding L=30, repair or replace the non-ergodic L=10 baseline and repeat
+  the same per-chain gate. The observable remains statically calibrated
   (doc/paratoric_run_manual.md G5).

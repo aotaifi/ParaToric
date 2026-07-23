@@ -1582,3 +1582,88 @@ is gated by 1B. Do not run Phases 2 and 3 before Phase 1 lands.
 ### PROCESS NOTE (your own lesson, and I agree with it)
 Split "submit" from "readout" into separate dispatches, per the orphaned-process
 issue you hit on 2A/2B. Do not bundle submit+wait+analyze into one call again.
+
+## UPDATE 2026-07-20n: FAILURE-MODE ANALYSIS (PI asked for the root cause). It is NOT miscommunication and it is NOT your execution — it is that we review AGGREGATES while the errors live in the AGGREGATION. Six process changes. Full analysis: doc/failure_modes.md.
+
+The PI asked why a certain class of statistical error keeps surviving until a second
+or third pass. I went through the whole campaign record rather than guess. Answer and
+the changes that follow from it. Full write-up in `doc/failure_modes.md`.
+
+### 1. THE NUMBER THAT SETTLES IT
+Job `15149119` was handled ~15 times across our two channel files and this campaign
+has invoked Martina/Clark review 27 times. **The per-chain table was never printed
+until 2026-07-21, and printing it took one command and exposed the problem
+immediately.**
+That is not a competence result. **Aggregation is irreversible**: once 8 chains
+become `mean +/- error`, the fact that they disagreed is GONE FROM THE ARTIFACT. A
+reviewer downstream cannot recover it because it is not there. Two reviews of a
+pooled number cannot find a pooling error, and neither could two hundred. Adding
+reviewers to this class has a guaranteed return of zero, which is exactly what we
+observed.
+
+### 2. NOT MISCOMMUNICATION — AND THE PART THAT IS, IS MINE
+Your record is strong and I want it stated plainly: you caught the circular
+calibration, refused a pre-authorized 3,919 task-hour job, correctly excluded the
+void points, refused to quote 144x/64x as speedup bounds when it would have been
+easier to hand me a headline number, and self-reported your own transcription error
+unprompted. None of the class-B failures are transmission failures.
+The communication-shaped failure is MINE: **my directives specified what to CONCLUDE
+and not what to PRINT.** I asked for cold/hot z and stationarity p — aggregates. You
+delivered exactly that, correctly. The per-chain table was never withheld; it was
+never requested. It looks like a worker problem and it is an instruction problem.
+
+### 3. WHAT ACTUALLY RESOLVES THINGS HERE (sorted by the record)
+Resolved in ONE round by a NEW MEASUREMENT: the sector-exchange counter, the marker
+test, the static-config calibration, the depth ramp, the between-chain error, the
+per-chain table. Resolved by REVIEWING EXISTING NUMBERS: the L=10 ergodicity failure
+(~15 handlings, never), the round-trip rule (4 failed ladders, never), the Binder
+convention (never — the SOURCE comparison did it).
+**Reviews check that a number was computed correctly from its input. Probes check
+whether the input means what we think.** Nearly every expensive failure here was the
+second kind and we spent the review budget on the first.
+
+### 4. SIX CHANGES — adopt these, they cost nothing
+ 1. **MANDATORY DISAGGREGATION.** Every pooled number ships with its per-unit table:
+    pooled mean -> per-chain values; per-chain tau -> its block count; fitted
+    exponent -> its points and residuals. Automate in `ensemble_diagnostics.py`;
+    never ad hoc on request. This alone would have caught the two most recent
+    failures at zero cost. Fold into the 20m Phase-1C standing changes.
+ 2. **SPECS NAME THE EVIDENCE, NOT ONLY THE VERDICT.** My job, my fix. From now on
+    every directive I write states what must be PRINTED, not only what must be
+    DECIDED. Hold me to it — if a directive of mine asks for a conclusion without
+    naming the evidence table, push back before running it.
+ 3. **RULES CARRY PROVENANCE.** Every invariant in the harness or run manual cites
+    the measurement that established it, or is marked UNVALIDATED. F3/F7/G1.2 were
+    unvalidated rules that became authoritative purely by being cited, and they
+    scored four ladder attempts NO-GO. **Please audit the remaining invariants for
+    others of the same kind** — that is a real task and I expect it to find more.
+ 4. **CONVENTION CHECK AGAINST SOURCE.** Anything compared to literature states the
+    source's exact definition beside ours before comparing. That is the Binder-
+    convention class.
+ 5. **ONE NEW PROBE BEATS TWO MORE REVIEWS.** When something is uncertain the first
+    question is "what is the cheapest NEW measurement that discriminates?", not "who
+    else should look at this?".
+ 6. **A REVIEW THAT SEES ONLY AGGREGATES SHOULD DECLINE.** If Martina is handed a
+    pooled number without its disaggregation, the correct response is to ask for the
+    table, not to approve. Reviewing what cannot contain the error manufactures false
+    confidence, which is worse than no review. Please pass this to the reviewers as a
+    standing instruction.
+
+### 5. WHAT I AM *NOT* CHANGING
+Code review stays as is — it works. The swap-partner and MPI_Bcast bugs were both
+found by reading code against intent, and that is the right tool for that class.
+Your process fix on splitting submit from readout is yours and correct; keep it.
+
+### 6. HONEST NOTE ON MY OWN SHARE
+The reasoning-from-assumption failures in the record are mine: the frozen-base
+prediction, s* mis-derived four times, the winding-sector hypothesis, the circular
+z=2 calibration, "benchmark-line z sets the M2 budget", "PT delivers a speedup", and
+most recently the error-bar defect claim I refuted myself in 20f — where I had
+written the exact warning against my own mistake one UPDATE earlier. Those are real
+and I am not filing them under "structural". But that class HAS a working detection
+record: you and the PI catch it. The aggregation class had a zero detection record
+until we changed what gets printed. That is the one worth fixing structurally.
+
+### LOOP CONTAINMENT
+No change to the 20m GO. Fold change 1 into Phase 1C, treat change 3 (invariant
+provenance audit) as a new free Phase-1 item, and pass change 6 to the reviewers.
