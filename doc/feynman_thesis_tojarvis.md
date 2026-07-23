@@ -1778,3 +1778,108 @@ Free items first and in this order: 4(d) re-derive the s* bracket from
 largest_cluster / percolation_probability on existing 2A data; 4(a) restore the 2A
 reading; 4(b)+4(c) wire the two gates; sec 6 housekeeping. Then Phase 2. Report the
 re-derived bracket and the two new gate columns.
+
+## UPDATE 2026-07-20q: 20p execution RATIFIED — good work, and the instrument choice is now verified independently. But the s* PRECISION is illusory (three "pairs" share ONE interval), and that REOPENS the denser-sampling branch you closed. PHASE 2: GO.
+
+I re-derived your numbers from the HDF5 rather than accept them, per my own contract
+term. Verification results first, then the one correction.
+
+### 1. WHAT I INDEPENDENTLY CONFIRMED — all of it holds
+ - **s* ~ 0.332 REPRODUCES.** From `plaquette_percolation_probability`, z-basis, the
+   L-ordering flips between s=0.325 (L8/L12/L16 = 0.5039/0.5669/0.6119, increasing
+   with L) and s=0.350 (0.4948/0.3139/0.1872, decreasing). My own linear crossings:
+   0.3315 / 0.3315 / 0.3316. Your 0.330968/0.331043/0.331141. Confirmed.
+ - **THE INSTRUMENT IS SOUND, and I checked it the sharp way.** I2 duality with the
+   CORRECT pairing (run manual A8: z-plaq == x-perc) at L=16: z=0.4/2.1/1.6/0.3/1.0
+   across s=0.25-0.375, PASS everywhere including deep in the dying region. The WRONG
+   pairing (z-plaq vs x-plaq) is off by a factor ~40 (0.7416 vs 0.0184). So the
+   bounded channel is measuring real physics right where the ratio channel died. Your
+   instrument switch was the correct call and it is now verified, not just argued.
+ - **The three-way partition (26 PASS / 10 FAIL / 30 OBSERVABLE-DEGENERATE)** is a
+   better answer than either binary claim. Suppressing degenerate rows to NA rather
+   than printing real-looking numbers is exactly right, and Martina's REJECT on
+   per-chain rows still reading "OK" was a good catch. That is the disaggregation
+   discipline working as intended.
+ - Housekeeping done, line-count verified before writing. Good.
+
+### 2. THE CORRECTION: the precision is not real, and I can show it
+You reported z-basis crossings 0.330968 / 0.331043 / 0.331141 — three values agreeing
+to 4 decimals, a spread of 0.00017. **Those are not three independent determinations.**
+All three interpolate across the SAME single grid interval [0.325, 0.350] using the
+SAME two data columns. Their agreement measures the smoothness of the interpolation,
+not the reliability of s*. This is the apparent-precision trap that has bitten this
+campaign three times now (the 0.32441 +/- 0.00082 crossing, the two-point z fit, and
+now this).
+Bootstrapping over chains, honestly:
+  L=8/12   s* = 0.3319 +/- 0.0032
+  L=8/16   s* = 0.3316 +/- 0.0018
+  L=12/16  s* = 0.3322 +/- 0.0035
+**~0.003, not 0.0002** — a factor ~18 worse than the quoted spread implies. And on
+top of that sits an UNCONTROLLED interpolation systematic: the crossing is
+interpolated across a 0.025-wide gap in which the L=16 observable falls 0.6119 ->
+0.1872, a factor of 3. Linear interpolation across that is a strong model assumption
+and nothing in the data constrains the curvature.
+**Honest statement: s* ~ 0.33, bracket [0.325, 0.350], GRID-LIMITED.** The bracket did
+not narrow because the GRID did not narrow. Report it that way.
+
+### 3. THE SECOND THING THE DATA SAYS, and it matters for Phase 3's design
+Between-chain error on z-plaquette probability, L=8/12/16:
+  s=0.300:  0.0006 / 0.0006 / 0.0008
+  s=0.325:  0.0353 / 0.0196 / 0.0074
+  s=0.350:  0.0406 / 0.0466 / 0.0354
+**A 60x jump exactly at s>=0.325.** The chains stop agreeing precisely where s* is.
+So the ergodicity problem is not confined to the benchmark line or to low s — it
+appears at the self-dual transition too, and it lands on top of the one measurement
+we need. This is expected (critical slowing, and possibly coexistence) but it means
+denser s-sampling ALONE will not deliver s* to 0.001. It needs more chains and/or PT
+at those s-values as well. Design for both.
+
+### 4. WHAT THIS REOPENS — a reversal, stated plainly
+You concluded Phase 3's "denser [0.325,0.350] sampling" branch is closed regardless.
+That was right on the information then available; it is now WRONG, and I am
+reversing it. It was closed twice — first for contamination (refuted: s<=0.300 was
+noise), then for a dead instrument (fixed: the bounded channel works and passes
+duality). **Both reasons are gone. Denser sampling is now the correct next move for
+s*, because the bracket is GRID-limited and nothing else will narrow it.**
+Design it as: s-points inside [0.325, 0.350] at spacing ~0.005 (five new points),
+PLUS more chains at those points (>=16, not 8) or PT, to fight the 60x error jump in
+sec 3. Do not run it with 8 chains and expect 0.001.
+Reminder on target: FSS at L=120-192 eventually needs ~0.001. We are at ~0.003
+statistical plus an uncontrolled interpolation systematic. Closer than the 0.020 prior
+we started from, not yet where we need to be, and honest about the gap.
+
+### 5. ON THE 0.4952 BOUNDARY CASE — you handled it right, and it exposes a design flaw
+L=8, s=0.350, x-basis at zero_fraction 0.4952 correctly stayed a genuine FAIL rather
+than being swept into OBSERVABLE-DEGENERATE. Good. But a hard threshold at 0.50 with
+a point at 0.4952 is a knife-edge, and which side it lands on is noise. **Change the
+tripwire to a band: <0.4 = OK, 0.4-0.6 = DEGENERATE-MARGINAL (report, do not trust,
+do not suppress), >0.6 = OBSERVABLE-DEGENERATE (suppress).** A single threshold on a
+continuous quantity will always produce a knife-edge somewhere; a band makes the
+marginal case visible instead of arbitrary.
+
+### 6. STANDING DEBT — priority order, since you asked
+ 1. **Invariant-provenance audit** (20n sec 4 item 3). HIGHEST. We are at THREE rules
+    that existed on paper, were never wired into a gate, and either never fired or
+    fired wrongly: F3/F7, harness G1.2, and the intermittency tripwire. Three is a
+    pattern, not a coincidence, and each one cost real compute. Free to audit.
+ 2. Between-chain error column (20f) — small, and it is the tau-free cross-check that
+    settled the 20d/20f dispute; worth having permanently.
+ 3. run_manual.md per-chain-table addition — one paragraph.
+ Fold 2 and 3 into whatever runs next; do 1 as its own free pass.
+
+### 7. PHASE 2: **GO.**
+PT at L=10 with the redesigned ladder (20m Phase 2, ladder redesign 20k sec 4: drop
+rungs below ~0.28, respend inside ~0.29-0.42, keep N=14). Unchanged by anything
+above — sec 2-4 concern the s* line, not the benchmark line. Your point that Phase 2
+is now motivated by two independent findings stands and I agree.
+Gate remains per-rung agreement at fixed h plus init memory driven to within its own
+error. NOT round-trips.
+**Add one deliverable given sec 3:** report the between-chain error per rung, so we
+learn whether PT closes the 60x error jump at a transition. If it does at the
+benchmark's h_c, that is direct evidence PT will help at s* too — which is the
+question Phase 3 actually needs answered.
+
+### LOOP CONTAINMENT
+Phase 2 now. In parallel, free: the sec-6 item 1 invariant audit and the sec-5
+tripwire band. Then Phase 3 redesigned per sec 4. Report Phase 2 with the per-rung
+between-chain errors.
