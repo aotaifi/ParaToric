@@ -1883,3 +1883,64 @@ question Phase 3 actually needs answered.
 Phase 2 now. In parallel, free: the sec-6 item 1 invariant audit and the sec-5
 tripwire band. Then Phase 3 redesigned per sec 4. Report Phase 2 with the per-rung
 between-chain errors.
+
+## UPDATE 2026-07-20r: MILESTONE RECORDED — first defensible s* on the self-dual line, with the anchor figure. Filed under M1, NOT under the benchmark, and here is why that distinction matters.
+
+The PI asked for this to be marked as a milestone with a figure. Done. One filing
+decision I made deliberately and want on the record.
+
+### 1. FIGURE
+`doc/figures/selfdual_sstar_crossing_duality_20260723.png` — bounded percolation
+probability vs s, L=8/12/16, with the order-swap (the transition) between s=0.325 and
+0.350, the duality partners overlaid (filled z-plaquette, open x-direct) so the
+validation is visible IN the measurement, the grid-limited bracket shaded, and an
+inset showing the zero-fraction climbing past 50% which is why the old ratio
+instrument had to be abandoned. One plot, one story, per the campaign's one-anchor-
+plot rule.
+
+### 2. WHERE I FILED IT, AND WHY NOT SIMPLY "THE BENCHMARK"
+The s* NUMBER is filed as a **partial M1 deliverable** in
+`doc/multicritical_universality_plan.md`, because that is exactly what M1 is
+("Locate the multicritical point... Deliverable: s* with error bar"). This is the
+campaign's first real result ON the target line.
+`doc/benchmark_report.md` gets a new **sec 8**, clearly headed as the SELF-DUAL line
+and NOT the benchmark line, recording only what the result says about the INSTRUMENT.
+Reason: the benchmark is lmbda=0.30 FIXED (off-diagonal, continuous 3D Ising); the
+MCP is (s*,s*) on the diagonal. Their critical h agree to two digits — 0.335 vs
+~0.332 — and that near-coincidence is a standing trap in this campaign. Filing a
+self-dual result inside the benchmark report as if it were a benchmark result would
+blur exactly the distinction we have worked hardest to keep sharp. So: cross-
+referenced, explicitly firewalled, with both coordinates written out at the top of
+the section.
+
+### 3. THE PART THAT IS GENUINELY STRONGER THAN THE BENCHMARK — worth saying out loud
+The duality check on the self-dual line is a better instrument test than the Linsel
+comparison, and I do not think we have credited it properly. Duality there is an
+EXACT SYMMETRY, so it is a test with no adjustable anything: z-plaq must equal
+x-perc, full stop. It passes at z = 0.4 / 2.1 / 1.6 / 0.3 / 1.0 across s=0.25-0.375,
+while the WRONG pairing is off by a factor 40. That single check simultaneously
+validates the observable, the basis mapping, the rotated-slice measurement, and the
+duality bookkeeping — and it keeps passing in the region where the old ratio
+observable had died completely.
+Compare: the benchmark compares one number to a published number with a 40% error bar
+on nu. The symmetry test is sharper. It does not REPLACE the benchmark (an external
+anchor answers a different question — "are we simulating the same model as the
+literature?"), but it means **the instrument is in better shape than the unresolved
+benchmark crossing makes it look.** Do not read the open benchmark as doubt about the
+machinery; the machinery has passed an exact test.
+
+### 4. WHAT I ALSO RECORDED — the limits, in the same place as the number
+The M1 entry carries the honest limits alongside the value, deliberately not in a
+separate section where they can be dropped when the number gets quoted: grid-limited
+bracket, the fake-precision correction (~0.003 not 0.0002), the uncontrolled
+interpolation systematic across an interval where the observable falls 3x, the 60x
+between-chain error jump at s>=0.325, and the ~0.001 requirement for L=120-192 FSS.
+Also recorded: ORDER remains UNDECIDED and correctly INCONCLUSIVE, with the asymmetry
+rule restated so a future reader cannot mistake 528 unimodal histograms for evidence
+of continuity.
+
+### 5. NO CHANGE TO THE PLAN
+Phase 2 (PT at L=10, redesigned ladder) is still GO per 20q sec 7, including the
+added per-rung between-chain-error deliverable. Phase 3 denser sampling stays
+reopened per 20q sec 4 (~0.005 spacing, >=16 chains and/or PT). Standing debt
+priority unchanged: invariant-provenance audit first.
