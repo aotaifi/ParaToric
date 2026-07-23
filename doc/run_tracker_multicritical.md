@@ -350,6 +350,67 @@ Updated: 2026-07-21 (rewrite this card in place; durable results -> plan/report)
   pseudo-critical location". Do NOT enter it in benchmark_report.md as a dynamical
   determination. Same for the L=10 rise toward small h: suggestive of the
   frozen-winding mode, but every L=10 point is tau-unresolved too.
+- **2A/2B REPORTED AND VERDICT ISSUED (UPDATE 2026-07-20i). Root cause found under
+  all three loose ends: THE L=10 BASELINE IS NOT ERGODIC AT LOW h.** Per-chain
+  readout of job `15149119` at h=0.305629: ratios 1.7426 1.7245 1.7418 1.7421 |
+  1.2993 1.7397 1.7391 1.4531, with seven chains reporting tau~0 and one 171,600
+  sweeps. **I4 requires per-chain tau within a FACTOR 2; measured factors are
+  11,275x (h=0.305629), 8,042x (0.318989), 4,595x (0.326), 7x (0.322) — L=10 FAILS
+  I4 at 8 of 9 points.** That clause has never been enforced in this campaign. The
+  benchmark crossing is bracketed by h=0.322/0.326, i.e. read off the worst of it.
+- **WHY EVERY CHECK MISSED IT:** cold/hot at h=0.305629 (1.7377 vs 1.5578) PASSES I5
+  *because* the hot group is internally split (spread 0.4405) — the heterogeneity
+  that should alarm us inflates the group variance and drives z down. I5 can be
+  passed by a broken ensemble whose own dispersion hides the break; the 20f
+  between-chain error is fooled the same way (an honest large bar on a bimodal
+  population still averages two states, neither of which is the answer). Only the
+  PER-CHAIN table shows it. Run manual: report per-chain, not just group summary.
+- **NOT the refuted winding hypothesis — do not resurrect it.** Sector exchanges at
+  h=0.305629 are 308214/309803/306432/308256/147750/307440/306942/260468, healthy;
+  the 18b refutation STANDS. Honest note: the two deviant chains are the two with
+  suppressed exchange (147,750 and 260,468), a correlation only. Call it
+  UNIDENTIFIED BASIN STRUCTURE on the low-h deconfined side (cf. E3).
+- **2B's "physics disagreement" flag is probably BACKWARDS, and it is the best news
+  in the report.** Fixed-h reconstruction of the 14-rung PT run gives a cleanly
+  MONOTONIC curve (1.3026 1.3172 1.3377 1.3630 1.3828 1.4085 1.4408 1.4969 1.6908
+  1.9074 ... over h=0.15->0.3775), while no-PT L=10 is nonmonotonic (1.6206 at
+  h=0.3056 falling to 1.4434). PT interpolates to ~1.42-1.43 at h=0.3056 vs no-PT's
+  1.6206, and no-PT's six frozen chains sit at 1.74. The nonmonotonicity that made
+  interpolation underdetermined IS the basin contamination. So PT plausibly has the
+  BETTER-SAMPLED curve and its crossing moves TOWARD Linsel's 0.335(2). NOT PROVEN:
+  PT still carries residual init memory at low h (cold/hot by origin init per rung:
+  0.0712/0.0663/0.0561/0.0386/0.0240 over h=0.2712->0.3563). PT is better here, not
+  clean; both curves are contaminated at low h.
+- **REFRAME: PT's figure of merit is ERGODICITY, not speed.** 2B's censored tau
+  bounds are a null on the metric we CHOSE. The benefit PT demonstrably delivers is
+  repairing an ensemble local updates cannot mix — worth more than a speed factor,
+  since speed buys error bars and ergodicity buys CORRECTNESS. This also corrects
+  20h: "the gate is measured tau at the rung of interest" is INSUFFICIENT, because a
+  chain frozen in a basin reports LOW tau (7 of 8 above). **Gate = tau AND per-chain
+  agreement.**
+- Next action (per UPDATE 2026-07-20i sec 7):
+  (a) FREE, DO FIRST — per-chain I4 audit of `15149119`, `15159599` and the 2A scan:
+      per-chain ratio and tau (cold/hot labelled), tau max/min factor, and a mark on
+      every point violating the factor-2 clause. Add per-chain tau-factor as a
+      standing column in `ensemble_diagnostics.py`; make I4's factor-2 clause a HARD
+      per-point gate, not documentation.
+  (b) FREE — do NOT promote the benchmark crossing; do not report 0.3244 as our
+      value. `benchmark_report.md` stays PROVISIONAL and now states WHY: the L=10
+      baseline is not ergodic at low h. This supersedes "consistent with Linsel
+      within honest systematics" — neither consistency NOR tension is claimable.
+  (c) CHEAP, DECISIVE, PRE-COMMITTED BOTH WAYS — test the sec-4 hypothesis: a no-PT
+      L=10 run at h=0.3056 and h=0.322 from 16 independent random inits. If PT is
+      better-sampled, the pooled ratio moves DOWN toward ~1.43; if it reproduces
+      1.62 with tight agreement, PT's low-h rungs are the contaminated ones and
+      Feynman is wrong.
+  (d) 2A denser [0.325,0.350] sampling APPROVED, with the per-chain gate from (a)
+      carried into it — "no common three-size crossing" plus 13 NOT_GATED pairs may
+      be the same disease at small L on the low-s side.
+  (e) 2B matched-grid rebuild AUTHORIZED (Jarvis's a/b/c), REORDERED: the crossing
+      shift is no longer a worry to clear first, it is the most interesting
+      measurement — do it first via (c). Add ergodicity repair to the deliverables
+      beside the speed factor.
+  L=30, L=24: still HOLD. Step 3 unaffected.
 - **PI CORRECTION (UPDATE 2026-07-20h): ROUND-TRIPS ARE NOT NECESSARY for low
   autocorrelation.** Run manual F7's "NECESSARY but NOT SUFFICIENT" is WRONG on the
   first half. A round trip is SUFFICIENT evidence of decorrelation (it guarantees a
@@ -408,6 +469,10 @@ Updated: 2026-07-21 (rewrite this card in place; durable results -> plan/report)
 ## Gate log (append one line per gate decision)
 | date | gate | evidence | result | decision |
 |---|---|---|---|---|
+| 2026-07-21 | ROOT CAUSE: L=10 benchmark baseline FAILS I4 (per-chain tau within factor 2) at 8/9 points, by up to 11,275x, in the crossing region | Per-chain audit of job `15149119`: h=0.305629 ratios 1.30/1.45/1.74 across 8 chains, tau 0 to 171,600 sweeps | FAIL / GATE NEVER ENFORCED | Crossing 0.3244 NOT promotable; I4 factor-2 clause becomes a hard per-point gate. |
+| 2026-07-21 | I5 cold/hot can PASS on a broken ensemble — hot-group internal split inflates variance and drives z down | h=0.305629 cold 1.7377 vs hot 1.5578, hot spread 0.4405, z passes | METHOD DEFECT | Report per-chain tables, not group summaries. |
+| 2026-07-21 | 2B 'physics disagreement' REREAD: PT curve MONOTONIC, no-PT L=10 nonmonotonic; PT plausibly better-sampled and moves toward Linsel 0.335(2) | Fixed-h reconstruction of job `15178251` 14 rungs vs job `15149119`; PT residual init memory 0.0712->0.0240 | HYPOTHESIS / PRE-COMMITTED TEST SET | PT figure of merit reframed to ERGODICITY not speed; 20h tau-only gate corrected to tau AND per-chain agreement. |
+| 2026-07-21 | 2A order INCONCLUSIVE + duality 200/201 PASS RATIFIED; 2B decision rule NOT TRIGGERED ratified (censored taus, 144x/64x correctly refused) | Jarvis jobs `15177203`, `15178251` | RATIFIED | Both stop calls correct; denser 2A sampling and matched-grid 2B rebuild authorized. |
 | 2026-07-21 | STEP 2A full-grid locate-s* readout | `/scratch/a/A.Otaifi/paratoric_selfdual_step2a_20260721/STEP2A_READOUT.md`; registered `scripts/ensemble_diagnostics.py selfdual-step2a`; arrays `15177060`/`15177203` | PROVISIONAL BRACKET / ORDER INCONCLUSIVE | 528/528 complete at 44.88305555555556 task-hours. Physical POP size ordering reverses in s=[0.325,0.350]; interpolated crossings 0.3295374649829121--0.3328006522747564. 164 eligible duality comparisons PASS, max z=2.45583807467; 18/66 point-pair checks NOT_GATED. No bimodality candidate and no stable-separated energy gap; absence is not continuity evidence. Refine/deepen before MCP production. |
 | 2026-07-21 | STEP 2A full-grid release after pilot | Pilot `15177060`; release array `15177203`; `/scratch/a/A.Otaifi/paratoric_selfdual_step2a_20260721/PRE_SUBMISSION_CHECK.md` | SUBMITTED | Remaining task IDs 0--447,464--527 released with max 64 concurrent tasks; pilot IDs excluded. Full measured budget 40.7 task-hours, guarded at 61.1. Concise-alert submission failed on transient DNS with no notifier job. |
 | 2026-07-21 | STEP 2A design, cost, and pilots-before-arrays gate | `/scratch/a/A.Otaifi/paratoric_selfdual_step2a_20260721/PRE_SUBMISSION_CHECK.md`; pilot readout `/scratch/a/A.Otaifi/paratoric_selfdual_step2a_20260721/readout_pilot15177060_interval`; `/scratch/a/A.Otaifi/paratoric_selfdual_step2a_20260721/submit_selfdual_step2a_scan_20260721.sbatch`; Slurm array `15177060` | PILOT PASS / RELEASE | 16/16 chains complete with 63,900 samples, 490--664s; common I5+stationarity by 200k; both probability dual pairs pass at every eligible depth (max z=2.10583830667); no persistent energy gap; unimodal histograms are INCONCLUSIVE. Measured all-grid cost 40.7 task-hours; release budget 61.1 task-hours. Submit remaining IDs 0--447,464--527. |
