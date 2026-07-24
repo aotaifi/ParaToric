@@ -1944,3 +1944,58 @@ Phase 2 (PT at L=10, redesigned ladder) is still GO per 20q sec 7, including the
 added per-rung between-chain-error deliverable. Phase 3 denser sampling stays
 reopened per 20q sec 4 (~0.005 spacing, >=16 chains and/or PT). Standing debt
 priority unchanged: invariant-provenance audit first.
+
+## UPDATE 2026-07-20s: TWO MINI-TODOS for the next GO (both FREE, fold into Phase-1-style free work). (A) extrapolate the benchmark crossings to L->inf and finalize benchmark_report.md with ONE combined plot. (B) the Binder cumulant question — answered from data: it is the DEAD instrument at s*, use the energy Binder as the independent cross-check instead.
+
+### MINI-TODO A — extrapolate the benchmark crossing, one plot, provisional
+Finite-L crossings are NOT h_c; Linsel's 0.335(2) is an L->inf extrapolation and ours
+are finite pairs. To compare like with like, extrapolate ours.
+ - Take the finite-L crossings we have (PT-resourced set: 20/24=0.3437, 20/28=0.3416,
+   24/28=0.3406) and fit crossing vs 1/L_eff (L_eff = geometric mean of the pair, or
+   the standard successive-size convention — state which). Report the L->inf intercept
+   with an honest bar.
+ - ONE combined figure for `benchmark_report.md`: the three finite-L crossing points,
+   the 1/L extrapolation line, the extrapolated intercept, and Linsel's 0.335(2) band.
+   Caption states plainly whether the intercept lands in the band.
+ - MANDATORY CAVEATS in the caption and sec 5, do not bury: (i) this uses the
+   PROVISIONAL PT set (0 round-trips, and sizes 20/24/28 not Linsel's 10/20/30);
+   (ii) three crossings from three sizes is one triangle, so the extrapolation has
+   ~zero redundancy — it is indicative, not a measurement; (iii) it does NOT close the
+   benchmark, because the clean no-PT L=10/20 analysis gave NO usable crossing (L=10
+   ergodicity), and that is the real open blocker. The point of this todo is "does the
+   trend, extrapolated, point at 0.335?" — a sanity check, not a promotion.
+ - PRE-COMMITTED: if the intercept lands in/near 0.335(2), report "consistent,
+   extrapolation points home, benchmark still provisional pending a clean L=10". If it
+   lands stable at ~0.341, report "possible residual tension, flag for post-Phase-2
+   recheck". Do NOT tune L_eff convention to move it.
+
+### MINI-TODO B — the Binder cumulant at s* (PI asked; answered from the data)
+The PI's instinct is right in general: a dimensionless crossing (Binder-type) locates
+a critical point more sharply than reading a curve off a value. But on THIS line it
+does not help, and here is why, measured on job `15177203`, z-basis:
+  Binder(strength) = raw ratio <P^4>/<P^2>^2 near s*:
+    s=0.325: L8 2.37+/-0.32,  L12 2.03+/-0.16,  L16 1.84+/-0.06   (zero-frac 0.50/0.43/0.39)
+    s=0.350: L8 2.54+/-0.54,  L12 4.39+/-1.65,  L16 7.79+/-3.16   (zero-frac 0.51/0.69/0.81)
+The Binder cumulant IS the raw ratio, i.e. exactly the instrument that dies at the
+transition: its error is already +/-0.3 at s=0.325 and it does not cross, it just
+climbs as the observable degenerates. **Binder-of-strength is unusable at s*.**
+KEY POINT, so nobody thinks we are missing accuracy: **percolation_probability is
+ALREADY a dimensionless RG-invariant crossing** — the same KIND of sharp crossing as a
+Binder cumulant, on a quantity that survives (bounded in [0,1], no divide-by-vanishing
+moment). Our three pairwise probability crossings agree to 0.3316-0.3322, i.e. a
+near-common crossing point, which is the signature of exactly the RG-invariance that
+makes a Binder crossing accurate. So we already have the accurate-crossing method; we
+are not leaving sharpness on the table by not using Binder-of-strength.
+WHAT TO ACTUALLY ADD (cheap, free, do it): the **energy Binder cumulant** crossing as
+an INDEPENDENT locator. Energy is not an order parameter and does not degenerate, so
+its Binder is well-defined through the transition. If the energy-Binder crossing lands
+on ~0.332 too, that is a second, independent confirmation of s* from a non-percolation
+observable — which is worth more than re-deriving s* from a degenerate strength Binder.
+Report the energy-Binder crossing beside the probability crossing on the existing 2A
+data. Document in the run manual: on the self-dual line near s*, use probability
+(and/or energy Binder) for LOCATION; the strength Binder is degenerate there.
+
+### ORDERING
+Both are free, both are analysis-only on existing data. Do them alongside the Phase-1
+standing-debt items (invariant-provenance audit, between-chain-error column). None of
+this gates or delays Phase 2 (PT at L=10), which remains the next COMPUTE.

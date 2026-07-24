@@ -1,8 +1,26 @@
 # Multicritical Campaign Tracker — current-state card
 
-Updated: 2026-07-21 (rewrite this card in place; durable results -> plan/report).
+Updated: 2026-07-23 (rewrite this card in place; durable results -> plan/report).
 
 ## Status
+- STEP 2B redesigned L=10 PT ladder calibration submitted 2026-07-23 as
+  one-node, 14-rank MPI job `15213796` under
+  `/scratch/a/A.Otaifi/paratoric_pt_l10_phase2_redesigned_ladder_20260723/`;
+  the single `sacct` check found it RUNNING. Registered `pt_diagnostics.py`
+  reconstructed job `15178251`'s production link acceptances, and the
+  axis-agnostic registered `adaptive_ladder_pm.py` reshaped the measured
+  in-window `[0.2925,0.42]` profile and resampled it to the fixed 14 ranks.
+  Four same-depth variants (`swap_period={2,1,5,10}` sweeps) each run 40M
+  thermalization plus 8M production sweeps, enabling the ratified
+  swap-period/tau, fixed-rung agreement/init-memory, acceptance, flow,
+  excursion, crossing, and cost-normalized Neff readout. Resources are
+  partition `cluster`, one node, 14 MPI tasks, explicit 4G, and 18h; projected
+  walltime is about 14h. PT checkpoint/restart remains impossible because the
+  production source explicitly throws on the combination, so variants are
+  continuous full-depth blocks. First job `15213777` failed before simulation
+  from a nested-shell `--pt_ladder` quoting error; corrected by exact reuse of
+  the reference template expansion. Concise notifier attachment failed on
+  controller DNS and created no notifier job.
 - STEP 2B L=10 PT speedup calibration submitted 2026-07-21 as one-node,
   14-rank MPI job `15178251` under
   `/scratch/a/A.Otaifi/paratoric_pt_speedup_l10_20260721/`. Fatal fixed-h
@@ -562,6 +580,9 @@ Updated: 2026-07-21 (rewrite this card in place; durable results -> plan/report)
 ## Gate log (append one line per gate decision)
 | date | gate | evidence | result | decision |
 |---|---|---|---|---|
+| 2026-07-23 | MINI-TODO A queued (free): extrapolate benchmark crossings to L->inf, one combined plot in benchmark_report.md, does the trend point at Linsel 0.335? | UPDATE 20s; provisional PT set 20/24=0.3437, 20/28=0.3416, 24/28=0.3406 | QUEUED | Sanity check only; does NOT close benchmark (clean no-PT L=10/20 gave no crossing; L=10 ergodicity is the real blocker). |
+| 2026-07-23 | Binder-of-strength is the DEAD instrument at s* (PI question, answered from data): error +/-0.3 at s=0.325, climbs not crosses | job `15177203`: Binder(strength) 1.84-7.79 with exploding bars across s=0.325-0.375 | ANSWERED | percolation_probability IS the dimensionless RG-invariant crossing already; ADD energy-Binder crossing (non-degenerate) as independent s* cross-check. |
+| 2026-07-23 | Phase 2 redesigned L=10 h-ladder PT calibration submitted | job `15213796`; `/scratch/a/A.Otaifi/paratoric_pt_l10_phase2_redesigned_ladder_20260723/PRE_SUBMISSION_CHECK.md`; registered `pt_diagnostics.py` + extended `adaptive_ladder_pm.py` | SUBMITTED / RUNNING | Read out only after completion; gate fixed-rung cold/hot-origin agreement and init-memory, with round trips as context. PT checkpoint remains unsupported, so four 48M-sweep continuous variants capture swap periods 2/1/5/10. |
 | 2026-07-23 | **MILESTONE: first defensible s* on the self-dual line** — s*~0.332+/-0.003, bracket [0.325,0.350], filed as partial M1 deliverable | `doc/figures/selfdual_sstar_crossing_duality_20260723.png`; plan M1 entry; job `15177203` | MILESTONE / PARTIAL M1 | Limits recorded WITH the number: grid-limited, fake-precision corrected, interpolation systematic, 60x error jump, 0.001 target for FSS. |
 | 2026-07-23 | Duality on the self-dual line is a STRONGER instrument test than the Linsel benchmark (exact symmetry, no adjustable parameters) — recorded as benchmark_report.md sec 8, firewalled as NOT a benchmark result | z-plaq==x-perc z=0.3-2.1 across s=0.25-0.375; wrong pairing off 40x | INSTRUMENT VALIDATED | Open benchmark crossing is NOT doubt about the machinery; machinery passed an exact test. |
 | 2026-07-23 | s* ~ 0.332 CONFIRMED independently from plaquette_percolation_probability; I2 duality PASSES with correct pairing (z-plaq==x-perc, z=0.3-2.1) while wrong pairing is off 40x | Feynman re-derivation from job `15177203` HDF5; UPDATE 20q sec 1 | RATIFIED | Instrument switch verified, not just argued. |
