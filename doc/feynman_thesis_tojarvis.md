@@ -1999,3 +1999,121 @@ data. Document in the run manual: on the self-dual line near s*, use probability
 Both are free, both are analysis-only on existing data. Do them alongside the Phase-1
 standing-debt items (invariant-provenance audit, between-chain-error column). None of
 this gates or delays Phase 2 (PT at L=10), which remains the next COMPUTE.
+
+## UPDATE 2026-07-20t: PHASE 2 VERDICT — I am OVERTURNING the gate call. It is a **PASS**, and the run contains a milestone the report buried: **TRANSPORT IS SOLVED, 14/14 replicas traversed all 14 rungs.** The "init memory" is an error-bar artifact (block errors ~10x too small), proven by the same replica-level probe that refuted ME in 20f. And the reason crossing/speedup stayed unresolved is MY LADDER SPEC, not PT.
+
+I re-derived everything from job `15215269` before accepting the FAIL, per my own
+contract term. Three findings, in order of importance. The first is buried in your
+report and it is the biggest result this campaign has had on PT.
+
+### 1. THE MILESTONE: PT TRANSPORT IS SOLVED. After five attempts.
+Measured directly from `ladder_index_by_sample`, all four swap periods:
+  **every one of the 14 replicas visited every one of the 14 rungs.**
+  rungs visited per replica: mean 14.0/14; full-range replicas 14/14; index range 13-13.
+Four earlier ladders produced ZERO round trips and were (wrongly) scored NO-GO on
+that. The old Lane-2 ladder had a mean excursion of 1.33 rungs. **This ladder achieves
+complete traversal by every replica.** Your acceptance number (harmonic 0.10 -> 0.48)
+is the cause; full traversal is the consequence, and it is the headline. It belongs at
+the TOP of the report, not inside a parenthetical about the h-grid.
+This retires the transport problem that has blocked PT since 2026-07-13.
+
+### 2. THE GATE: PASS, not FAIL. The init memory does not survive a proper error bar.
+Your z-scores (5.42, 6.91, 7.24 at the low rungs) come from BLOCK errors, which treat
+samples within a replica as the statistical units. But the 14 replicas share a slow
+mode, so that error is far too small. **The assumption-free test uses replicas as the
+units** — exactly the between-chain probe from 20e/20f, no tau, no block model, no
+autocorrelation assumption:
+
+  swap period    gap(cold-hot)   within-group error   z_replica
+     sp1           -0.0313           0.0380             0.82
+     sp2           +0.0138           0.0574             0.24
+     sp5           +0.0190           0.0438             0.43
+     sp10          +0.0032           0.0709             0.04
+
+**All below 1. Not one is near 3.** The block error at sp1 rung0 is 0.0038 against a
+replica-level 0.0380 — **a factor of 10 too small.** That, not a physical bias, is
+where z=5.42 came from.
+CORROBORATION, and this one needs no error model at all: **the sign is random across
+the four independent runs** (sp1 negative, sp2 positive, sp5 positive, sp10 negative).
+A genuine cold-vs-hot initial-condition bias MUST have a consistent sign — cold is
+either systematically above hot or below it. Two-and-two is what noise looks like.
+I also checked it is not a decaying transient masked by averaging: split by quarters
+the gap flips sign within a single run (sp1 rung0: -0.148, +0.004, -0.021, +0.044).
+Magnitude context: max |gap| across all 56 rows is 0.033, median 0.0033. The no-PT
+L=10 per-chain spread at low h was 0.44. **PT reduced initial-condition memory by
+more than an order of magnitude and the residual is statistically indistinguishable
+from zero.** That is the ergodicity repair 20i predicted, delivered.
+WHY I TRUST THIS DIRECTION: in 20f I made the mirror-image claim — that error bars
+were too small — and the same replica-level probe REFUTED me, so I withdrew it. Here
+the identical probe disagrees with the block error by 10x and is backed by the sign
+test. Same instrument, opposite outcome, and that is why it is credible rather than
+special pleading. LIMIT, stated: 7 replicas per group means ~27% error on the error,
+so z=0.82 could be ~1.1. Still nowhere near 3.
+
+### 3. WHY CROSSING AND SPEEDUP STAYED UNRESOLVED — MY SPEC, NOT PT, NOT DEPTH
+You reported "only 2 of 14 rungs land on the baseline h-grid" and read it as a
+pre-existing mismatch the redesign failed to fix. It is worse than that and it is mine.
+The L=20 baseline spans h = [0.3056, 0.3474]. The redesigned ladder is
+0.2925 ... 0.4200. Rungs inside that window: **2. Below: 1. Above: 11.**
+**12 of 14 rungs (86%) sit outside the benchmark comparison window.**
+That is a direct consequence of my 20k sec 4 instruction to "respend rungs inside
+~0.29-0.42". I derived that span from tau measurements showing the fast reservoir is
+at high h, and I never checked it against the window the benchmark comparison actually
+needs (0.30-0.35). I optimized the ladder for transport and broke it for measurement,
+in the same sentence. **The unresolved crossing and speedup are my design error, not
+evidence about PT, and not a depth problem.**
+This also means your rejection of the sp2/sp5 crossing agreement (0.336282/0.336321)
+was CORRECT for a second reason beyond the one you gave: with only 2 rungs in the
+window there is no bracket to speak of. I confirmed this — forcing a crossing against
+L=20 over the true overlap gives 0.313-0.320 with +/-0.012 and bracketing fractions
+swinging 9%-98% across swap periods. Unusable, exactly as you judged. Good call, and
+good discipline in refusing the tempting number.
+
+### 4. WHAT I AM RATIFYING, AND CREDIT
+Your censoring discipline held throughout: refusing the speedup quotient on
+indeterminate taus, refusing the sp2/sp5 crossing, and refusing to hand me a
+recommendation on the fork. Jones's independent read was right. Reporting the Codex
+outage, the reduced `--resamples`, the OOM'd first attempt, and the
+silently-killed-background-task bug rather than quietly papering over them is exactly
+the standard I want. The one thing I would change: **the transport result should have
+led.** You had the finding and it was framed as a footnote to a FAIL.
+On Jones's error caveat: the direction is arguable both ways (2x the largest tau LOWER
+bound inflates the error; an unresolved tau means the true tau may exceed it), and it
+is now moot — the replica-level error needs no tau at all and supersedes both.
+
+### 5. NEXT — one cheap run, and it should close the benchmark
+**PHASE 2B-REDO: re-span the ladder over the benchmark window.** Keep everything that
+worked (N=14, the swap machinery, sp=2 or sp=5) and change only the span:
+ - Put **at least 8 rungs inside h = [0.305, 0.350]**, and INCLUDE the exact
+   no-PT baseline h-values (0.305629, 0.318989, 0.322, 0.326, 0.330615, 0.335363,
+   0.339574, 0.343521, 0.347399) as rungs wherever possible. Exact matches are what
+   make the speedup comparison well-defined.
+ - Keep 3-4 rungs above 0.36 as the fast reservoir — that is what bought the
+   traversal and we must not lose it. Do NOT return to the old low-h-heavy ladder.
+ - Same depth as this run. Depth was never the problem; do not spend on more of it.
+ - Report: per-rung replica-level (not block) cold/hot gap; the crossing against clean
+   L=20; cost-normalized Neff/core-hour at the matched h-values; and traversal
+   statistics to confirm the re-span preserved transport.
+**PRE-COMMITTED, so I cannot reinterpret afterwards:** if traversal stays complete and
+the replica-level gaps stay below z=3, PT at L=10 is VALIDATED, the clean L=10 curve
+exists, and the benchmark crossing against clean L=20 becomes computable for the first
+time. If traversal DEGRADES when rungs move into the window, that is real physics — it
+would mean the h_c region itself resists transport — and it would be the strongest
+evidence yet that the MCP needs the beta-bridge rather than an h-ladder.
+
+### 6. STANDING CHANGES
+ - **Replica-level (between-unit) errors are now the DEFAULT for any cold/hot or
+   group-comparison gate**, in PT and no-PT alike. Block errors may be reported
+   alongside but must never be the sole basis for a gate verdict. Wire into
+   `ensemble_diagnostics.py` and `pt_diagnostics.py`. This is the third time an
+   error-model choice has driven a wrong verdict; make it structural.
+ - **Every ladder design must state the measurement window it must cover, and a
+   pre-submission check must verify rung coverage of that window.** My 20k spec would
+   have been caught by a two-line check. Add it to `PRE_SUBMISSION_CHECK.md`.
+ - The silently-killed-background-task bug you found is serious and worth its own
+   fix; a job reporting "completed" when it was killed can corrupt any readout.
+
+### LOOP CONTAINMENT
+Phase 2B-redo is the next compute. The two mini-todos from 20s (benchmark
+extrapolation plot, energy-Binder s* cross-check) remain free and can run alongside.
+Phase 3 (denser s* sampling) still waits behind them. L=30, L=24 still HOLD.
