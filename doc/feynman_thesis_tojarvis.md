@@ -2507,3 +2507,77 @@ Job `15232180` is RUNNING and unaffected by all of the above. The window-coverag
 check working (PASS 9-inside/5-outside on the new ladder, correctly FAILING the old
 one 3-inside/11-outside as a negative control) is exactly right, and the negative
 control is the part that makes it trustworthy. Good.
+
+## UPDATE 2026-07-20y: **THE BENCHMARK EXTRAPOLATION, DONE PROPERLY: h_c(inf) = 0.3359 +/- 0.0049 vs Linsel 0.335(2) — agreement at 0.2 sigma.** New figure with real error bars. Also answers the PI's question of why the raw crossing plot does NOT sit on Linsel's value: it should not, and that is the physics.
+
+The PI's point is right and I am acting on it: choosing p = omega + 1/nu is NOT
+tuning, because that exponent is fixed a priori by the universality class rather than
+fitted to our data. The p = 1 fit was the actual error. Redone properly.
+
+### 1. THE RESULT
+Crossings recomputed from the PT-resourced data (`paratoric_pt_linsel_resourced_20260716`,
+jobs 15118635/36/37) with bootstrap-over-replica errors, then an inverse-variance
+weighted fit:
+  L=20/24:  0.3458 +/- 0.0044
+  L=20/28:  0.3421 +/- 0.0012
+  L=24/28:  0.3411 +/- 0.0005
+  fit, p = omega+1/nu = 2.4166 (3D Ising: nu = 0.63002(10), omega = 0.832(6)):
+  **h_c(inf) = 0.3359 +/- 0.0047 (fit) +/- 0.0012 (exponent, p in 2-3)
+             = 0.3359 +/- 0.0049 combined**
+  **Linsel: 0.335(2).  Difference 0.0009 = 0.2 sigma.**
+Note the exponent systematic is now SMALL (+/-0.0012 over p in 2 to 3), because the
+weighted fit is anchored by the precise 24/28 crossing. That is a real improvement over
+the unweighted version in 20x, where the p-choice swung the answer by 0.012. **Honest
+error bars did not just decorate the result, they stabilized it.**
+FIGURE: `doc/figures/linsel_crossing_extrapolation_ising_exponent_20260725.png`
+(supersedes `linsel_crossing_extrapolation_pt_20260725.png`, which used p=1).
+
+### 2. ANSWERING THE PI DIRECTLY: why the raw crossing plot does NOT show Linsel's value
+`linsel_raw_ratio_crossings_pt_resourced_20260716.png` shows crossings at
+0.3406-0.3458, visibly ABOVE the 0.335(2) band, and the PI asked why.
+**Because a finite-L crossing is not h_c, and it is not supposed to sit on it.** The
+crossing approaches h_c only as L -> inf, from above on this line, drifting as
+L^-2.42. Our three crossings drift monotonically downward with L
+(0.3458 -> 0.3421 -> 0.3411) and extrapolate to 0.3359. **The offset in that figure IS
+the finite-size correction, and its size and its L-dependence are both consistent with
+3D Ising.** So that plot is not evidence of disagreement; read correctly it is evidence
+of the right universality class.
+Linsel sees the same behaviour and says so, for the lambda-sweep: *"We observe a shift
+in the crossing points toward lower lambda which is a clear sign of strong finite-size
+effects. We conjecture that the crossing points approach the known critical value."*
+ACTION: add one sentence to that figure's caption in benchmark_report.md stating that
+finite-L crossings lie ABOVE h_c by construction and pointing to the extrapolation
+figure. As it stands the figure invites exactly the misreading the PI flagged, and a
+reader coming to it cold would conclude we disagree with the literature.
+
+### 3. HOW THIS SITS WITH MY 20x SEC 2 (the tension I flagged)
+In 20x I said that IF Linsel's 0.335(2) is itself a finite-L crossing estimate at
+L~20-30, then our finite-L crossings should match it directly and the ~0.006 gap is a
+3-4 sigma tension. That remains the open branch and this update does NOT close it:
+ - If their 0.335(2) is an INFINITE-L estimate, our 0.3359 +/- 0.0049 agrees at
+   0.2 sigma and the benchmark is in good shape.
+ - If it is a FINITE-L crossing at L~20-30, our comparable crossings are 0.341-0.346
+   and there is a real ~3 sigma discrepancy to explain.
+The paper does not state which. **This is now the single most valuable thing to
+resolve about the benchmark, and it costs nothing but reading.** Their supplement
+reports hc = 0.3301(17) at lambda=0 and hc = 0.332 at lambda=0.2 alongside a data
+collapse figure at L = 20/25/30; comparing those three numbers against their own
+plotted finite-L crossings would settle whether their quoted hc sits at or below their
+crossings. Do that before we spend anything else on the benchmark.
+
+### 4. STANDING CAVEAT ON THE INPUT DATA
+These crossings come from the PROVISIONAL PT set: zero strict round-trips, and the
+24/28 crossing is bracketed in only 32% of bootstrap resamples (the curves are close
+and nearly parallel there, so the root is fragile). The agreement at 0.2 sigma is
+therefore encouraging, NOT final, and benchmark_report.md sec 5 stays PROVISIONAL.
+Job `15232180` (M2) will give a better-sampled L=10 curve, and the same machinery
+should be re-run on it.
+
+### 5. WHAT TO DO
+ (a) Put the new figure in benchmark_report.md as the benchmark result, with the full
+     error budget written out (fit + exponent) and the sec-4 caveat.
+ (b) Add the one-sentence caption fix from sec 2 to the raw-crossing figure.
+ (c) Resolve the sec-3 branch by reading their supplement figures. Free.
+ (d) Keep p = omega + 1/nu documented as the CORRECT drift exponent for a
+     dimensionless-ratio crossing, with the note that it is available here only
+     because the class is known — and NOT available at the MCP (20x sec 6).
