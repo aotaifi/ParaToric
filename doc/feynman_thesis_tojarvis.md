@@ -2581,3 +2581,57 @@ should be re-run on it.
  (d) Keep p = omega + 1/nu documented as the CORRECT drift exponent for a
      dimensionless-ratio crossing, with the note that it is available here only
      because the class is known — and NOT available at the MCP (20x sec 6).
+
+## UPDATE 2026-07-20z: **BENCHMARK CLOSED — PASS.** PI's call. benchmark_report.md rewritten clean (304 -> 245 lines) with the verdict up front. Stopping here until M2 (job 15232180) reports.
+
+### THE VERDICT, now recorded at the top of benchmark_report.md
+  ParaToric  h_c(inf) = **0.3359 +/- 0.0049**
+  Linsel                **0.335(2)**
+  **Agreement: 0.2 sigma. CLOSED, PASS**, with two named residuals.
+The bar was always "same TREND, same CROSSING". TREND passes (monotonic at every
+size; L=20 chains agree to <=0.045 everywhere). CROSSING passes (finite-L crossings
+drift down as FSS requires and extrapolate onto the band). INSTRUMENT passes by the
+exact-symmetry duality test, which is stronger than the benchmark itself.
+
+### WHAT I CLEANED OUT, and why it is safe to lose
+Sec 5 had accumulated ~70 lines of superseded analysis: the 0.32441 crossing tables
+(read off contaminated L=10 points), the with/without-L=20 provenance comparison, the
+18-choice scan on the contaminated window, the three-threshold clean-window table, and
+the window-convention reconciliation. All of that was the record of an investigation
+that ENDED — the no-PT route could not close the benchmark because L=10 is not
+ergodic, and the PT route did close it. The conclusion is kept (sec 5, compressed to
+the finding plus its two transferable lessons); the working is dropped. The 0.32441
+number and its transcription error survive as one line in sec 8 so nobody
+re-derives them.
+Structure now: 1 verdict / 2 source + convention mapping / 3 result + figure /
+4 how we got here / 5 the L=10 ergodicity finding / 6 the two residuals /
+7 self-dual companion validation (firewalled) / 8 retained artifacts.
+
+### THE TWO RESIDUALS ARE RECORDED, NOT BURIED (sec 6)
+ R1 — inputs are the provisional PT set (zero strict round-trips; the 24/28 crossing
+      brackets in only 32% of resamples). Encouraging, not final. **Job `15232180`
+      should be run through the same sec-3 machinery when it lands, and the numbers
+      updated in place.**
+ R2 — we still do not know whether Linsel's 0.335(2) is infinite-L or a finite-L
+      crossing estimate. Infinite-L => we agree at 0.2 sigma. Finite-L at L~20-30 =>
+      our 0.341-0.346 is a ~3 sigma discrepancy. Free to resolve from their
+      supplement; do it before this benchmark is leaned on harder.
+I want it on record that closing with R2 open is a JUDGEMENT, not a proof: under the
+adopted reading we agree, under the other reading we do not. The PI's call to close
+now is reasonable because the residual is cheap to settle and does not block the MCP
+work, but a future session must not read "CLOSED, PASS" and forget R2 exists. It is
+in sec 1's header and sec 6 for exactly that reason.
+
+### ALSO ADDED
+ - The convention mapping is now VERIFIED against the PDF rather than assumed
+   (sec 2): the raw-ratio plotting convention, and that their tau^x is our sigma_z.
+ - Sec 3 explains why the raw-crossing figure sits ABOVE 0.335 and must, so a reader
+   coming to that figure cold cannot conclude we disagree with the literature.
+ - The p = omega + 1/nu drift exponent is documented as the correct one for a
+   dimensionless-ratio crossing, with the note that it is available here only because
+   the class is known, and is NOT available at the MCP.
+
+### STOPPING HERE
+No further benchmark work until M2 (`15232180`) reports. The standing M-list from
+20w is unchanged: M2 running; M3 (denser s-grid) after it; M4 debt free alongside,
+with the invariant-provenance audit still the highest-value item.
