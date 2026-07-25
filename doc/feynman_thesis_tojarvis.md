@@ -2404,3 +2404,106 @@ and measure PT's speedup honestly for the first time.**
 ### LOOP CONTAINMENT
 M1 and M4 are free — do them alongside M2. Report M2 with its four named deliverables
 and the three-leg gate. Then M3. Stop and report before M3.
+
+## UPDATE 2026-07-20x: THE EXTRAPOLATION IS ASSUMPTION-DRIVEN, NOT A MEASUREMENT — with the correct exponent it lands INSIDE Linsel's band (0.3342 vs 0.335(2)). And I went to the SOURCE PDF: **the paper never says 0.335(2) is an L->inf extrapolation.** Three source-check findings that change how we compare. My "extrapolated" framing was an assumption I repeated for weeks.
+
+The PI asked whether Linsel really extrapolated and whether our value can be trusted.
+I read the actual PDF (`/project/theorie/a/A.Otaifi/downloads/2401.08770.pdf`) rather
+than keep asserting. This is the convention-check-against-source rule from 20n, and
+running it found three things.
+
+### 1. THE EXPONENT: our fit used the WRONG one, and it decides the answer
+A dimensionless-ratio (Binder-type) crossing does NOT drift as 1/L. FSS theory gives
+  h_c(L) - h_c(inf)  ~  L^-(omega + 1/nu)
+where nu is the correlation-length exponent and omega the leading correction-to-scaling
+exponent. On this line the universality class is 3D Ising, for which the high-precision
+values are nu = 0.63002(10) and omega = 0.832(6), giving **p = omega + 1/nu = 2.42**.
+Refitting the same three crossings (0.3437 / 0.3416 / 0.3406):
+
+  p = 1.00  (1/L, what our fit assumed)  ->  h_c(inf) = 0.3236   rms resid 0.00029
+  p = 1.59  (1/nu only)                  ->  h_c(inf) = 0.3303   rms resid 0.00027
+  **p = 2.42  (omega + 1/nu, correct)    ->  h_c(inf) = 0.3342   rms resid 0.00025**
+  p = 3.00                               ->  h_c(inf) = 0.3357   rms resid 0.00023
+  Linsel: 0.335(2)
+
+**With the theoretically correct exponent the extrapolation lands INSIDE the published
+band.** With 1/L it misses by 0.011.
+**BUT — and this is the part that must not be skipped — the residuals are essentially
+IDENTICAL across every exponent (0.00023-0.00029).** Three points have zero power to
+determine p. The extrapolated value is therefore set almost entirely by an ASSUMED
+exponent, and it swings 0.3236 -> 0.3357 across plausible choices.
+**CONCLUSION: this extrapolation is not evidence either way.** It does not confirm
+Linsel and it does not contradict him. Reporting "extrapolation failed to confirm" was
+reporting an artifact of the assumed p=1. Reporting "it confirms at p=2.42" would be
+the same error with the opposite sign. The honest statement is that the data cannot
+support an extrapolation at all, and the figure must say so.
+
+### 2. SOURCE CHECK, FINDING A: the paper does NOT say 0.335(2) is extrapolated
+Main text: *"we present a crossing-point analysis of the percolation strength Binder
+cumulant U_P above the self-duality line at lambda = 0.3 ... The critical electric
+field h_c = 0.335(2) is in very good agreement with previous studies."*
+Supplement: *"we first perform a crossing point analysis of the percolation strength
+Binder cumulant U_P(h,L) = <P^4>/<P^2>^2 to extract an estimate for h_c."*
+The word "extrapolat" appears exactly ONCE in the whole paper, and it is about the
+percolation probability in Fig 4b, NOT about h_c.
+**So 0.335(2) is a crossing-point ESTIMATE, and the paper does not claim an L->inf
+extrapolation.** I have written "Linsel's extrapolated 0.335(2)" repeatedly in the
+tracker, the channel, and benchmark_report.md. **That was my assumption, not the
+paper's statement, and I never checked it.** Correct it everywhere.
+CONSEQUENCE, and it is a big one: if 0.335(2) is a crossing estimate at L ~ 20-30,
+then the correct comparison is our FINITE-L crossings (0.3406-0.3437) directly against
+it, with NO extrapolation. That comparison is a ~0.006-0.009 discrepancy, i.e. roughly
+3-4 sigma against their +/-0.002. That is a real, modest tension — not the "we are
+comparing different quantities" story I have been telling.
+
+### 3. SOURCE CHECK, FINDING B: an internal size discrepancy that we must resolve
+ - Fig 4a legend (lambda = 0.3): **L = 10, 20, 30**  -- matches what benchmark_report.md says.
+ - Supplement methods, h-sweeps: *"We set T = 1/L, lambda = 0, 0.1, 0.2, 0.3 and
+   L^2 = 20^2, 25^2, 30^2"*  -- i.e. **L = 20, 25, 30.**
+These disagree. Either the figure plots one set while the FSS/crossing analysis used
+another, or one of the two is an error in the paper. **This matters directly**: if the
+h_c=0.335(2) crossing analysis used L=20/25/30, then our PT set L=20/24/28 is nearly
+the right size set and our long-running "wrong sizes" self-criticism is overstated;
+and the L=10 effort is aimed at a size that may not enter the published number at all.
+ACTION: do NOT resolve this by assumption. Record both readings in benchmark_report.md
+sec 2 as an open source ambiguity, and note which of our comparisons depend on it.
+
+### 4. SOURCE CHECK, FINDING C: basis convention — probably fine, but state it
+*"Unless explicitly stated otherwise, we sample snapshots in the tau^x-basis"*, and the
+abstract calls this the **"electric field basis"**. In OUR convention sigma_z is the
+electric field and the z-basis is the electric sector. So **their tau^x is our sigma_z**:
+the axis LABELS differ, the physical content matches. No mismatch, but it is exactly
+the kind of thing that produced the Binder-convention error, so put the mapping
+explicitly in benchmark_report.md sec 2 rather than leaving it inferred.
+
+### 5. WHAT TO DO — all free, no new compute
+ (a) **Fix the figure and the claim.** Re-issue the extrapolation plot showing the
+     BAND of intercepts across p = 1 to 3 rather than a single line at p = 1, with the
+     p = 2.42 (3D Ising omega + 1/nu) case highlighted as the theoretically motivated
+     one. Caption states plainly: three points cannot determine p; the intercept spans
+     0.3236-0.3357; this is not a measurement of h_c(inf).
+ (b) **Correct "extrapolated" everywhere** it describes Linsel's 0.335(2) — channel,
+     tracker, benchmark_report.md. Replace with "crossing-point estimate (paper does
+     not state an L->inf extrapolation)". My error, campaign-wide.
+ (c) **Record the size ambiguity and the basis mapping** in benchmark_report.md sec 2.
+ (d) **Re-frame the honest comparison**: our finite-L crossings 0.3406-0.3437 vs their
+     0.335(2) is a ~3-4 sigma tension under the direct reading. State it as a tension
+     to be resolved, not as agreement and not as failure.
+
+### 6. WHY THIS DOES NOT TRANSFER TO THE MCP — the important forward-looking point
+We can pick p = omega + 1/nu here ONLY because the benchmark line is known 3D Ising
+(the pure gauge model maps to the 2D transverse-field Ising model, and Linsel's own
+nu = 0.65(27) is consistent). **At the MCP we do NOT know nu or omega — determining the
+universality class IS the campaign.** So this extrapolation route is unavailable at s*
+by construction: any crossing extrapolation there would have to fit the exponent from
+the data, and we have just demonstrated that three crossings cannot do that.
+**PRACTICAL CONSEQUENCE FOR M3: the s*-grid design must be sized to fit an exponent,
+not just to locate a crossing.** That needs more sizes than three and a wider L range,
+and it is a stronger requirement than the 20w M3 spec currently states. Do not treat
+this as a detail; it is the difference between locating s* and characterizing it.
+
+### 7. STATUS OF M2
+Job `15232180` is RUNNING and unaffected by all of the above. The window-coverage
+check working (PASS 9-inside/5-outside on the new ladder, correctly FAILING the old
+one 3-inside/11-outside as a negative control) is exactly right, and the negative
+control is the part that makes it trustworthy. Good.

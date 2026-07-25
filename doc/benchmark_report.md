@@ -172,6 +172,28 @@ a dynamical exponent, or say anything about the MCP. L=30 remains unrun.
 --------------------------------------------------------------------------------
 ## 6. The anchor plot
 
+### Provisional PT finite-size extrapolation
+
+Using the pre-existing geometric-mean convention
+`L_eff = sqrt(L1 L2)`, an unweighted linear fit of the three already-computed
+PT crossings gives **h_c(infinity) = 0.323577469188 +/- 0.004242914403**
+(one-standard-error OLS fit bar; one residual degree of freedom). The intercept
+lies below Linsel's `0.335 +/- 0.002` band, so this sanity check shows possible
+residual tension rather than confirmation. The fit bar is conditional on the
+three rounded crossing inputs and does not include their shared-data correlation
+or the unresolved PT validity systematic.
+
+![Provisional PT finite-size crossing extrapolation](figures/linsel_crossing_extrapolation_pt_20260725.png)
+
+*Finite-size crossings `20/24=0.3437`, `20/28=0.3416`, and
+`24/28=0.3406` versus `1/L_eff`, with `L_eff=sqrt(L1 L2)`, their linear
+fit and intercept, and Linsel's `0.335(2)` band. This is a provisional
+PT-derived crossing set; the sizes are `20/24/28`, not Linsel's `10/20/30`;
+three points leave approximately zero redundancy for a linear fit; and this
+does not close the benchmark.*
+
+ENTRYPOINT: registered `scripts/ensemble_diagnostics.py crossing-extrapolation`.
+
 **Current exact-size figure:**
 - x: h; y: raw ratio <P^4>/<P^2>^2 of plaquette percolation strength on a log
   scale, matching Linsel Fig. 4a's convention;
@@ -236,6 +258,17 @@ INSTRUMENT.
 
 FIGURE: `doc/figures/selfdual_sstar_crossing_duality_20260723.png`
 DATA: `/scratch/a/A.Otaifi/paratoric_selfdual_step2a_20260721/` (job `15177203`)
+
+**Energy-Binder cross-check: negative.** On the same full-series convention
+used for the existing probability-derived `s* = 0.333 +/- 0.004` result, the
+conventional uncentered energy cumulant
+`U_E = 1 - <E^4> / (3 <E^2>^2)` has **no crossing** for any of the six
+`L=8/12/16` size-pair and x/z-basis combinations anywhere on the measured
+`s=0.200--0.450` grid. Restricting to the final 32,000-sample interval gives
+the same no-crossing result. Thus energy is non-degenerate but this particular
+cross-check does **not** independently confirm `s* ~ 0.333`; the negative result
+is retained in `doc/figures/selfdual_energy_binder_step2a_20260725.tsv`.
+ENTRYPOINT: registered `scripts/ensemble_diagnostics.py selfdual-energy-binder`.
 
 ### What it validates
 1. **Duality (I2/B5) passes on the self-dual line with the CORRECT channel pairing.**

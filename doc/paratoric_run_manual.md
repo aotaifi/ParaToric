@@ -59,6 +59,24 @@ G6. CHECKPOINT LADDERS MUST BE GEOMETRIC, FIRST CHECKPOINT WELL BELOW EXPECTED
     coarseness masked it. Fix: space checkpoints geometrically (e.g. x2 per step)
     starting well before the best available depth estimate, not just under it.
 
+G7. REPORT THE PER-CHAIN/PER-REPLICA TABLE, NEVER ONLY THE GROUP SUMMARY — AND USE
+    REPLICA-LEVEL (BETWEEN-UNIT) ERRORS AS THE DEFAULT BASIS FOR ANY COLD/HOT OR
+    GROUP-COMPARISON GATE. Block errors (treating samples within one chain/replica
+    as the statistical units) may be reported ALONGSIDE but must never be the SOLE
+    basis for a gate verdict — when replicas share a slow mode (as PT replicas do),
+    block errors can be an order of magnitude too small. Cost: Phase 2 of the PT-at-
+    L=10 campaign (job 15215269, 2026-07-24) was first scored a gate FAIL from block-
+    error z-scores of 5.4-7.2 at the low-h rungs; the assumption-free replica-level
+    test (14 replicas as the statistical units, no tau, no block model) gave z=0.04-
+    0.82 at the SAME rungs — the block error was ~10x too small. Corroborating check
+    that needed no error model at all: the cold-minus-hot gap's SIGN was random
+    across four independent swap-period runs (+,+,-,-) — a genuine initial-condition
+    bias must have a consistent sign. A pooled/group-only summary cannot expose
+    either the block-vs-replica discrepancy or a sign-randomness check; both require
+    the per-unit table. See `doc/failure_modes.md` for the general "aggregation is
+    irreversible" principle this rule operationalizes for the cold/hot gate
+    specifically.
+
 --------------------------------------------------------------------------------
 ## PART A — Picking run parameters
 
