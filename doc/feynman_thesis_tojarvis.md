@@ -2206,3 +2206,101 @@ swap-period curve here) the number existed in the output and had to be extracted
 me afterwards. The gate answer is not a substitute for the requested evidence. This is
 the reporting-side twin of my own "specs name the evidence" obligation: I must ask for
 the evidence, and the report must surface it as evidence.
+
+## UPDATE 2026-07-20v: I FOUND THE MISTAKE IN THE SWAP-PERIOD APPROACH, and it retires the question rather than re-running it. **We scanned the wrong decade.** Also: full confidence budget for s*. NO new swap-period scan — cancel that spend.
+
+The PI asked whether to re-measure swap period or approach it differently, and asked
+for the mistake in our approach. There is one, it is clean, and it means we should
+NOT spend another run on this.
+
+### 1. THE MISTAKE: the tested values are all 500-5000x below the scale that matters
+Swap acceptance is decided by ENERGY. If the configuration's energy has not changed
+since the last attempt, the next attempt reproduces the same accept/reject decision —
+**it carries no new information.** So the natural swap period is set by the local
+energy relaxation time. Measured, job `15215269`:
+
+  sp    tau(energy)   residence   swap attempts per tau(energy)   tau(ladder index)
+   1    5140 sweeps    2.0 sw            5140                        65,120 sweeps
+   2    5446           3.9               2723                        67,005
+   5    5703           9.8               1141                        68,779
+  10    5442          19.5                544                        67,527
+
+**tau(energy) ~ 5,400 sweeps and is INDEPENDENT of swap period.** We tested sp = 1, 2,
+5, 10 — every one of them attempts swaps between 544 and 5,140 times per energy
+relaxation time. **All four sit deep in the same over-attempting regime.** That is why
+the spread was only 1.2x and the optimum shallow: we were not scanning an optimum, we
+were scanning noise inside one regime.
+THE SMOKING GUN: **tau(ladder index) is FLAT at ~67,000 sweeps across all four.**
+A 10x change in attempt frequency produces NO change in rung-space diffusion measured
+in sweeps. That is only possible if diffusion is limited by energy decorrelation
+rather than by attempt rate — exactly the mechanism above. The PI's physical objection
+was not merely correct, it was correct by a larger margin than the scan revealed.
+
+### 2. WHY THIS RETIRES THE QUESTION INSTEAD OF RE-RUNNING IT
+The criterion is now PREDICTIVE and needs no scan: **swap_period should sit well below
+tau(energy) (so rung diffusion is not starved) but well above the point where attempts
+are pure repetition.** tau(energy) is measurable from ANY existing run, including no-PT
+baselines, and we already have it: ~5,400 sweeps at L=10 on this line.
+Practical choice for the redo: **sp in the range ~50-200 sweeps.** That is 1-2 orders
+above the wasteful regime and 1-2 orders below tau(energy). Since tau(ladder index) is
+flat, raising sp from 5 to ~100 costs NOTHING in mixing and saves a large amount of
+MPI communication and I/O (sample interval = swap period in this harness, so it also
+shrinks the output by ~20x).
+**DO NOT run a 4-variant swap-period scan again.** It cost 4x the compute and, because
+all four points were in one regime, returned a 1.2x non-result. Run ONE swap period.
+If you want a check, run TWO that are an order of magnitude apart (e.g. 50 and 500),
+not four inside one decade. Fold the freed budget into the ladder re-span, which is
+the first-order problem.
+
+### 3. CORRECTION TO MY OWN 20u
+I reported "optimum at sp=5" from tau_config. I am withdrawing that as a physical
+optimum. With tau(ladder index) flat and all four variants in the over-attempting
+regime, the sp=5 minimum is a shallow, ~1.6-sigma feature inside one regime, not a
+located optimum. **The honest statement: over the tested range the swap period barely
+matters, and the reason is that the whole tested range is wrong.** My 20u sec 5
+instruction to "use sp=5" is superseded by sec 2 above.
+FURTHER HONEST LIMIT, which I want on the record because it bounds what Phase 2 proved:
+I could not cleanly separate genuine configuration decorrelation from rung-jitter in
+the replica-following series. tau(observable) ~ 2,800-3,500 sweeps is fast, but a
+replica changes rung every ~10 sweeps and the observable varies strongly along the
+ladder (1.39 -> 2.13), so part of that apparent decorrelation is the replica moving,
+not the configuration relaxing. **Therefore I do NOT have a trustworthy PT tau at
+fixed h, and PT's speedup remains genuinely unmeasured.** The 20t sec-2 gate PASS
+(replica-level init memory) stands — that test does not depend on tau. But nobody
+should read Phase 2 as having demonstrated fast PT mixing. Only the matched-grid redo
+can do that, which is one more reason it is the right next spend.
+
+### 4. s* CONFIDENCE BUDGET (PI asked for a confidence level)
+Full envelope over 18 independent analysis choices — 2 bases x 3 size-pairs x 3
+interpolation schemes (linear/PCHIP/cubic), each bootstrapped over replicas:
+  z-basis: 0.3313 0.3321 0.3322 0.3314 0.3326 0.3326 0.3323 0.3338 0.3335
+  x-basis: 0.3355 0.3366 0.3370 0.3318 0.3333 0.3331 0.3296 0.3316 0.3307
+  ENVELOPE 0.3296 - 0.3370, width 0.0073. Central 0.3328.
+  Per-choice statistical error: 0.0008 - 0.0047.
+**QUOTE THIS: s* = 0.333 +/- 0.004, where the error is dominated by the interpolation
+and basis systematic (+/-0.0037), not by statistics (~0.003).** The two error sources
+are comparable; neither can be neglected, and quoting statistics alone would understate
+by ~2x.
+CONFIDENCE, plainly stated:
+ - HIGH confidence the transition lies in 0.325 - 0.350. Both bases, all three sizes,
+   two independent observables, and the exact duality check all agree. This is solid.
+ - MODERATE confidence in 0.333 +/- 0.004. It is stable across every analysis choice
+   tried, and the x/z bases agree within the envelope, which is a real consistency
+   check rather than a restatement.
+ - LOW confidence in any digit beyond the third. The earlier 0.330968/0.331043/0.331141
+   agreement to 1e-4 remains an artifact of one shared grid interval, as I said in 20q.
+ - NOT YET FIT FOR PURPOSE: L=120-192 FSS needs ~0.001. We are at 0.004. The gap is a
+   factor ~4 and it is now SYSTEMATIC-dominated, so more chains at the same s-values
+   will NOT close it. Only a denser s-grid can, which is Phase 3 as reopened in 20q.
+
+### 5. NET RESOURCE VERDICT
+ CANCEL: the swap-period re-scan (would have been ~4x a run for a question now
+   answered analytically).
+ SPEND: the ladder re-span (Phase 2B-redo), single swap period ~50-200 sweeps.
+ SPEND NEXT: Phase 3 denser s-grid, since s* is systematic-limited and only a finer
+   grid moves it.
+ The two free mini-todos from 20s remain free and still open.
+
+### LOOP CONTAINMENT
+Phase 2B-redo at ONE swap period. Report tau(energy) for the new ladder as a
+by-product so the criterion is re-checked, not re-scanned.
