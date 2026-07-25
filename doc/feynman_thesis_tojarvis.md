@@ -2117,3 +2117,92 @@ evidence yet that the MCP needs the beta-bridge rather than an h-ladder.
 Phase 2B-redo is the next compute. The two mini-todos from 20s (benchmark
 extrapolation plot, energy-Binder s* cross-check) remain free and can run alongside.
 Phase 3 (denser s* sampling) still waits behind them. L=30, L=24 still HOLD.
+
+## UPDATE 2026-07-20u: SWAP-PERIOD OPTIMUM — MEASURED at last (the 20h sec-5(i) deliverable, which the run produced but the report never extracted). PI's physical objection to sp=1 is CORRECT: it is the WORST of the four. Optimum is sp=5. Also a REQUIRED SOFTENING of my own "transport solved" claim.
+
+The PI challenged sp=1 on physical grounds: one sweep of local updates barely changes
+the configuration, so the replica cannot relax at its new rung. That objection is
+correct, the data confirms it, and the answer had been sitting in job `15215269`
+unextracted. **You ran all four swap periods but reported them only as gate variants,
+never as the swap-period CURVE that 20h sec 5(i) asked for.** Same pattern as the
+traversal result in 20t: the measurement was made, the deliverable was not reported.
+
+### 1. THE CURVE (all 14 replicas; tau_config = decorrelation following one replica, SWEEPS)
+  sp    residence/rung    tau_IPS         tau_blocking
+   1        2.0 sweeps    7468 +/- 961    3452 +/- 282
+   2        3.9 sweeps    4945 +/- 745    3188 +/- 318
+   5        9.8 sweeps    3910 +/- 738    **2833 +/- 278**   <- optimum
+  10       19.5 sweeps    5178 +/- 1456   3552 +/- 380
+**Both estimators put sp=1 worst and sp=5 best, with sp=10 rising again — a genuine
+interior optimum.** Residence at the optimum is ~10 sweeps, i.e. the configuration
+does need real time at a rung, exactly as the PI argued.
+HONESTY ON EFFECT SIZE: by blocking (our more trustworthy estimator) sp1 -> sp5 is
+3452 -> 2833, about 1.2x and only ~1.6 sigma. IPS shows 1.9x and ~2.9 sigma. So the
+DIRECTION is consistent and physically motivated, the MAGNITUDE is modest and not
+decisively resolved. Do not quote "sp5 is 2x better"; quote "sp=5 is the measured
+optimum, the effect over the tested range is modest, and sp=1 is measurably worst."
+
+### 2. WHY sp=1 IS NOT CATASTROPHIC, WHICH IS THE SUBTLE PART
+The PI's reasoning would suggest sp=1 is useless. It is not, and the reason matters:
+**PT swaps satisfy detailed balance at ANY swap period, so the stationary distribution
+is exactly correct regardless.** Swap frequency is purely an EFFICIENCY knob, never a
+correctness one. Frequent swapping does not corrupt the ensemble at each rung; it just
+makes the replica's h random-walk faster than its configuration relaxes, so the
+excursions buy less decorrelation per unit time. Hence "worse", not "wrong".
+This is worth having straight because C7/F1 in the run manual warn about label travel
+in language that reads like a correctness failure. It is not. It is a DIAGNOSTIC
+failure (round trips stop implying mixing) plus mild inefficiency.
+
+### 3. THE PART THAT FORCES ME TO SOFTEN 20t — the PI's deeper point
+At sp=1, residence is 2 sweeps/rung, so a full ladder traversal costs ~200 sweeps of
+random walk, while the configuration's own decorrelation time is ~3450 sweeps.
+**The replica traverses the ladder roughly 17x faster than its configuration
+decorrelates.** So at sp=1, a completed traversal does NOT by itself imply the
+configuration mixed — many traversals occur within one decorrelation time. That is
+precisely the C7/F1 "label travel" caveat and precisely the "NOT SUFFICIENT" half of
+the corrected F7 rule.
+**Therefore my 20t headline needs restating, and I am restating it:**
+ WRONG (my 20t wording): "transport is solved" full stop, evidenced by traversal.
+ RIGHT: transport is solved AND the configuration is genuinely decorrelating —
+ traversal is complete at every sp (14/14 replicas, all 14 rungs), AND tau_config is
+ finite and short (~2800-3500 sweeps), AND the replica-level init-memory test passes.
+ **It is the CONJUNCTION that retires the blocker, not the traversal count.**
+The milestone stands — all three legs hold — but I stated it on the weakest leg, which
+is exactly the error the corrected F7 rule exists to prevent. The PI caught it.
+
+### 4. A STRONGLY POSITIVE INDICATION ON SPEEDUP — deliberately NOT quoted as a number
+PT (sp5) tau_blocking at fixed rung: 579 / 415 / 252 / 175 sweeps at
+h = 0.2925 / 0.3130 / 0.3335 / 0.3476. The no-PT L=10 baseline at comparable low h was
+88,826 (h=0.3190), 53,630 (0.322), 48,548 (0.326) sweeps.
+Taken at face value that is a factor of order 100-200. **I am NOT quoting it as a
+speedup and neither should you.** Two reasons: (i) the per-rung PT series is a
+CONCATENATION of disjoint visits, and concatenating non-contiguous segments breaks
+correlations artificially, so this tau is biased LOW and the implied speedup biased
+HIGH; (ii) the h-values are not matched. The defensible statement is the
+replica-following comparison — ~2833 sweeps against 48k-89k at the slow rungs, order
+17-31x — and even that is not apples-to-apples.
+**Conclusion: indications are strongly positive, order 10-100x, and the honest
+measurement still requires the matched-grid redo.** This is the same trap as the
+rejected 144x/64x and the 0.32441 crossing; we do not get to keep a number just
+because we like its direction.
+
+### 5. CONSEQUENCES FOR THE PHASE 2B-REDO (amends 20t sec 5)
+ - **Use sp = 5**, not sp = 2 or 1. Measured optimum, and residence ~10 sweeps gives
+   the configuration real relaxation time at each rung.
+ - When re-spanning into the benchmark window, RE-MEASURE the curve: the optimum is
+   set by the ratio of residence time to local relaxation time, and local tau varies
+   strongly with h, so the optimum can move when the rungs move. Test sp = 5 and 10
+   at minimum. Do not assume sp=5 transfers.
+ - Report the swap-period curve AS A CURVE this time, in the pt_architecture.md
+   calibration table, in sweeps, with both estimators. That is the standing 20h
+   deliverable and it is still open.
+ - Gate wording, final: **traversal completeness AND tau_config AND replica-level
+   agreement.** All three, reported together. Never traversal alone.
+
+### 6. STANDING RULE, from this and from 20t
+**If a run produces a measurement that a directive asked for, report it as that
+deliverable — not folded into a gate verdict.** Twice now (traversal in 20t, the
+swap-period curve here) the number existed in the output and had to be extracted by
+me afterwards. The gate answer is not a substitute for the requested evidence. This is
+the reporting-side twin of my own "specs name the evidence" obligation: I must ask for
+the evidence, and the report must surface it as evidence.
