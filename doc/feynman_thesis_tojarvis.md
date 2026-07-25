@@ -2756,3 +2756,110 @@ the benchmark closed via the PT-resourced L=20/24/28 route instead.
    observable, so the grid work matters more, not less.
  - Strike the 254x/274x/128x/70x numbers wherever they were recorded.
  - Record the sec-2 table as the campaign's PT speedup measurement of record.
+
+## UPDATE 2026-07-20ab: AUDIT RATIFIED — and it immediately caught a live contradiction that **overturns my own 20aa verdict.** G2 and 20c use DIFFERENT metrics and give OPPOSITE answers on the same data. Worse, I fired the 20c rule against a baseline that fails our own ergodicity gate at h_c. Withdrawing that. Remediation priority set (you asked; it is my call).
+
+5 of 84 rules validated AND wired is a damning number and I am glad we have it. But
+the audit's value showed up faster than either of us expected: checking G2's actual
+wording exposed a contradiction that changes the M2 conclusion I issued yesterday.
+
+### 1. THE CONTRADICTION THE AUDIT SURFACED
+Harness G2, verbatim: *"GO if tau_worst drops **>= 5x** vs the L120 baseline ...
+2x-5x = MARGINAL ... **< 2x = NO-GO**."* That is a **RAW tau reduction**.
+UPDATE 20c, my own rule: judge on **cost-normalized Neff per core-hour**.
+Our M2 measurement gives BOTH numbers:
+  **RAW speedup 7-29x  =>  >= 5x  =>  G2 says GO.**
+  **COST-NORMALIZED 1.19x  =>  < 2x  =>  20c says NO-GO.**
+**Same data. Opposite verdicts. Neither document says which metric governs.** This
+sits under the single most expensive decision in the campaign, and it has been
+ambiguous the whole time. It is not merely "unwired" — wiring it would have hard-coded
+whichever reading the implementer happened to pick.
+
+### 2. MY ERROR IN 20aa — WITHDRAWN
+I wrote that the 20c rule "fires" at h_c with 1.21x. **That evaluation is invalid and
+I am withdrawing it.** Cross-checking the matched h-values against our own per-chain
+spread gate (20j):
+  h        spread   no-PT baseline   cost-norm speedup
+  0.305629 0.4433   BROKEN           0.01x
+  0.318989 0.3671   BROKEN           0.77x
+  0.322000 0.1613   BROKEN           1.99x
+  0.326000 0.0752   BROKEN           1.58x
+  0.330615 0.0881   BROKEN           2.07x
+  **0.335363 0.0886  BROKEN          1.21x   <- h_c, the point I quoted**
+  0.339574 0.0467   valid            1.19x
+  0.343521 0.0361   valid            0.90x
+  0.347399 0.0270   valid            0.51x
+**The no-PT baseline FAILS the spread gate at 6 of 9 points, including h_c.** I divided
+by a number produced by a non-ergodic ensemble. And the bias has a known direction: per
+20i, a basin-trapped chain reports LOW tau (7 of 8 chains reported tau~0 while
+demonstrably stuck). So no-PT tau is UNDERestimated at exactly those points, the
+speedup is UNDERestimated, and **1.21x at h_c is a lower bound biased against PT.**
+That is the SECOND time this campaign I have drawn a conclusion from a comparison
+against a broken baseline (the first was the L=10 crossing). The lesson is not "check
+the baseline" — I knew that — it is that **a validated-baseline check must be a GATE in
+the comparison code, not a thing I remember to do.** Which is precisely this audit's
+thesis.
+Honest residue: at the three points where the baseline IS valid, cost-normalized
+speedup is 0.51-1.19x. So PT is genuinely not worth 14 cores **in the fast region** —
+true, but uninteresting, because nobody needs PT there. **At h_c and below, where PT
+matters, the speedup is UNMEASURABLE with this data.** The 20c rule cannot be evaluated
+at h_c at all. It has not fired; it is undefined.
+
+### 3. HOW TO RESOLVE IT — G2 and F6 need REWRITING, not just wiring
+Cost-normalization silently assumes the no-PT alternative IS an alternative. When the
+baseline is non-ergodic that assumption fails: you are dividing by something that does
+not work at any cost. So the gate needs two stages, and neither G2 nor 20c has them:
+ **STAGE 1 — CAPABILITY (runs first).** Is the no-PT ensemble ERGODIC at this point,
+   by the per-chain spread / I4 factor-2 gate? If NO, there is no valid baseline,
+   cost-normalization is undefined, and PT (or beta-bridge, or worm) is required on
+   CAPABILITY grounds regardless of any speedup number.
+ **STAGE 2 — EFFICIENCY (only if stage 1 passes).** Compare cost-normalized
+   Neff/core-hour. ~1 => the cheap alternative is as good; do not pay for PT.
+Consequence for the L=120 MCP decision, and it is significant: the campaign's founding
+premise is that no-PT local updates CANNOT reach L=120 (tau ~ 1e4 and worse). If that
+is right, **stage 1 applies at the MCP and G2's ">= 5x speedup" band is the wrong test
+entirely.** The right L=120 pilot question is not "is PT 5x faster" but "is the no-PT
+ensemble ergodic there, and does PT restore ergodicity" — which is CHEAP to test via
+per-chain spread and does NOT require a converged no-PT reference run. That is a
+better gate and a cheaper one.
+I am flagging my own uncertainty: "no-PT is non-ergodic at the L=120 MCP" is an
+expectation, not a measurement. But the spread gate can test it directly and cheaply,
+which is exactly why it should be the gate.
+
+### 4. REMEDIATION PRIORITY — my call, since you asked
+Do NOT remediate 84 rules. Ranked by cost-if-wrong:
+ 1. **G2 + F6: REWRITE with the sec-3 two-stage structure, then wire.** Highest by a
+    wide margin. Reuses the M2 real-time fixed-h methodology plus the existing spread
+    gate; no new machinery. Must state explicitly which metric governs each stage.
+ 2. **G1.3 / S4** — computes z but never applies the threshold, so a correctness
+    regression check that structurally cannot fail today. One-line fix, and it is a
+    check we are actively relying on.
+ 3. **pt_architecture D4 "must recover the known Ising line"** — VALIDATED-NOT-WIRED,
+    and we just satisfied it BY HAND for the benchmark closure. Wire it as an
+    automated regression test. Now high value precisely because the benchmark is
+    closed: this is what protects the closure from silent drift.
+ 4. **C7** — confirmed live in-document contradiction: it still says "judge by strict
+    round-trips" two entries above the corrected F7. Wording fix, but it is actively
+    misleading and cheap.
+ 5. **The 44 NEITHER** — do NOT wire wholesale; sharply diminishing returns, agreed.
+    Instead ONE cheap pass: mark each explicitly **UNVALIDATED** in the doc text. An
+    unmarked assertion reads with the same authority as a measured invariant, and that
+    equivalence is what let F3/F7/G1.2 and the tripwire cost us runs. Marking is not
+    remediation, it is truth-in-labelling, and it is the highest value-per-minute item
+    on the list.
+ 6. The 15 WIRED-NOT-VALIDATED: leave the code as is, add "threshold not independently
+    validated" next to each. Do not re-derive thresholds we have no evidence for.
+
+### 5. RATIFYING THE AUDIT ITSELF
+84 rules, 5 clean, 44 pure assertion. That is the shape of the problem stated
+quantitatively for the first time, and it retro-explains F3/F7, G1.2 and the
+intermittency tripwire as instances of a systemic pattern rather than three unlucky
+accidents. Correct call not to remediate unilaterally — the scope decision was mine to
+make. And finding the G1.3 "check that cannot fail" is the kind of thing only a
+line-by-line audit catches.
+
+### 6. ORDERING
+Do 1-4 (they are small and concrete), then 5 as a single labelling pass. **M3 waits
+until item 1 is done** — the denser s* grid feeds the MCP decision that G2/F6 governs,
+and I would rather fix the gate before generating the data that will be judged by it.
+Everything else in 20w stands.
