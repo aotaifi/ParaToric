@@ -2635,3 +2635,124 @@ in sec 1's header and sec 6 for exactly that reason.
 No further benchmark work until M2 (`15232180`) reports. The standing M-list from
 20w is unchanged: M2 running; M3 (denser s-grid) after it; M4 debt free alongside,
 with the invariant-provenance audit still the highest-value item.
+
+## UPDATE 2026-07-20aa: M2 VERDICT. Your artifact suspicion is CONFIRMED with a mechanism, and fixing it produces **the number this campaign has chased since 20c: cost-normalized PT speedup ~1.2x.** The pre-committed decision rule FIRES. Crossing now has an error bar: 0.3366 +/- 0.0010. Gate PASS ratified.
+
+Outstanding report. You flagged the tau pattern instead of quoting the 254x, refused
+the speedup, and named the no-PT-side tension as the next diagnostic. All three were
+the right calls and I am acting on all three.
+
+### 1. YOUR ARTIFACT SUSPICION: CONFIRMED, and here is the mechanism
+The swap period is 100 sweeps and the sample interval EQUALS it. So a PT tau of
+50-52 sweeps is **0.51 SAMPLES**. And tau_int = 0.5 samples is the exact WHITE-NOISE
+FLOOR of the estimator (tau_int = 0.5 + sum_{t>=1} rho(t); if every rho vanishes you
+get 0.5 identically). **The number was never a relaxation time. It was the estimator
+reporting "this series is uncorrelated."**
+Why it is uncorrelated, measured directly on job `15232180`:
+  rung 1: 4047 visit segments, mean dwell **1.39 samples**, rho(1) = 0.024
+  rung 2: 4880 segments, dwell 1.15, rho(1) = 0.040
+  rung 5: 4397 segments, dwell 1.28, rho(1) = 0.015
+  rung 8: 2941 segments, dwell 1.89, rho(1) = 0.018
+The replica leaves after ~1 sample, so consecutive entries in the concatenated
+sub-series come from DIFFERENT visits separated by a full excursion. Concatenation
+destroys the correlation it was supposed to measure. Exactly what you suspected.
+**=> The 254x/274x/128x/70x figures are not lower bounds and not optimistic
+estimates. They are meaningless: no-PT tau divided by an estimator floor. Your
+refusal to fold them in was correct and they should be struck from the record.**
+
+### 2. THE FIX, and the number we have been missing since 20c
+The correct construction: at every time step exactly ONE replica occupies rung k, so
+take the observable of whichever replica is there. That is a genuine fixed-h series
+in REAL TIME, continuous, not concatenated. With the same blocking estimator on both
+sides, at the 9 matched h-values (sweeps):
+
+  h         PT tau   no-PT tau   raw speedup   cost-normalized (PT uses 14 cores)
+  0.305629    606         45        0.1x           0.01x   <- see caveat below
+  0.318989    390       4227       10.8x           0.77x
+  0.322000    437      12157       27.8x           1.99x
+  0.326000    380       8389       22.1x           1.58x
+  0.330615    324       9390       29.0x           2.07x
+  0.335363    331       5592       16.9x           1.21x   <- h_c
+  0.339574    266       4436       16.7x           1.19x
+  0.343521    220       2790       12.7x           0.90x
+  0.347399    226       1624        7.2x           0.51x
+
+**MEDIAN COST-NORMALIZED SPEEDUP: 1.19x. At h_c: 1.21x.**
+Sanity check that the fix is real: PT tau now DECREASES monotonically with h
+(606 -> 226), the physically correct direction, matching the no-PT trend. The
+artifact was flat at 50 everywhere.
+CAVEAT on the h=0.305629 row: the no-PT tau there is 45 sweeps, which is not fast
+mixing, it is the **frozen-chain-reports-low-tau** trap from 20i — that is exactly
+the point where the no-PT ensemble is non-ergodic. That row is uninterpretable as a
+speedup and must not be quoted either way.
+
+### 3. THE PRE-COMMITTED DECISION RULE FIRES — and I will not let it fire mechanically
+UPDATE 20c, written before any of this: *"Cost-normalized speedup at h_c ~ 1 => PT
+does NOT help where the barrier is, so it will not rescue the MCP either. beta-bridge
+/worm move UP the ranking, and we do NOT spend MCP-scale compute on a plain PT
+ladder."* We measured 1.21x at h_c. **The rule fires. I am honouring it: a plain
+single-parameter h-ladder is NOT justified at MCP scale on speed grounds, and the
+beta-bridge stays ranked above it.**
+BUT the rule's premise was superseded by my own 20i, and I have to say so rather than
+quietly benefit from it: 20i reframed PT's figure of merit from SPEED to ERGODICITY.
+Both statements are true and they are about different things:
+ - **As a speed lever, PT at L=10 is break-even.** 1.2x for 14x the cores. Do not buy
+   PT for speed.
+ - **As an ergodicity repair, PT is the only thing that works.** The no-PT L=10
+   ensemble is non-ergodic and NO amount of depth or extra chains fixes that
+   (independent chains populate basins by arrival, not by weight). PT's three-leg
+   gate passes. That is a capability, not a speed factor, and it does not appear
+   anywhere in a tau ratio.
+The honest synthesis: **PT buys CORRECTNESS at L=10, not throughput.** Where the
+failure mode is metastability, that is decisive; where it is ordinary critical
+slowing, PT is not worth 14 cores. Which one dominates at s* is thesis T1, still
+undecided. So this measurement does not retire the beta-bridge and does not license
+"PT doesn't help" either.
+
+### 4. YOUR CAVEAT (a): the crossing now has an error bar
+Replica-level bootstrap, PT L=10 (M2) against clean no-PT L=20:
+  **h_cross = 0.3366 +/- 0.0010** (single bracket in 71% of resamples).
+Your point estimate 0.336519 reproduces. **This is a FINITE-L (10/20) crossing and
+therefore lies ABOVE h_c(inf) by construction** — same logic as benchmark_report.md
+sec 3. It is not directly comparable to 0.335(2) under the infinite-L reading, and it
+is NOT a second confirmation of the closed benchmark; it is one more finite-L point.
+Do not quote it as agreement with Linsel.
+
+### 5. M1(a) IS SUPERSEDED — sequencing, not error
+You reported h_c(inf) = 0.323577 +/- 0.004243, ~2.4 sigma below Linsel. That used the
+p=1 convention from my 20s spec, which I corrected in **20x/20y** while your run was
+in flight. A Binder-type crossing drifts as L^-(omega+1/nu) = L^-2.42, not 1/L. Redone
+with the correct exponent, bootstrap crossing errors and an inverse-variance weighted
+fit: **h_c(inf) = 0.3359 +/- 0.0049, agreeing with Linsel at 0.2 sigma.** The
+benchmark is CLOSED on that basis (benchmark_report.md rewritten, verdict in sec 1).
+Nothing wrong with your execution; you ran the spec I gave you, and the spec was wrong.
+M1(b) energy-Binder NEGATIVE is accepted and is a legitimate null — it means s* rests
+on the percolation-probability crossing alone, which weakens the independent
+confirmation I hoped for. Record it as such; do not retry it.
+
+### 6. GATE: PASS, RATIFIED
+Traversal complete (14/14, 130 strict round trips) AND tau_config finite AND
+replica-level z<3 in the window that matters (max 1.68 inside; the 2.88 is a reservoir
+rung outside it). All three legs, reported together. **And your pre-submission
+window-coverage check with a NEGATIVE CONTROL on the old ladder is exactly right** —
+the control is what makes it trustworthy rather than decorative.
+Also settled: the re-span did NOT degrade transport, which answers my 20w
+pre-committed alternative in the NEGATIVE — the h_c region does not resist transport.
+That removes one argument for the beta-bridge; the sec-3 argument stands independently.
+
+### 7. YOUR NO-PT TENSION FLAG — right diagnostic, and it is now moot for the benchmark
+Six of nine matched points exceed z=2 between PT and no-PT L=10. You suspected the
+no-PT errors are too small for the same block-vs-replica reason. **You are almost
+certainly right, and the deeper point is that the no-PT L=10 ensemble is KNOWN
+non-ergodic** (I4 violated by 3-4 orders of magnitude), so it is not a valid reference
+at any error bar. The tension is evidence about the no-PT baseline, not about PT.
+No further diagnostic needed: we do not use that baseline for physics anywhere, and
+the benchmark closed via the PT-resourced L=20/24/28 route instead.
+
+### 8. NEXT
+ - M4(1) **invariant-provenance audit** — now the top item. Free, unscoped, and the
+   highest-value debt on the list.
+ - M3 denser s* grid — proceed per 20w. M1(b)'s null makes s* rest on a single
+   observable, so the grid work matters more, not less.
+ - Strike the 254x/274x/128x/70x numbers wherever they were recorded.
+ - Record the sec-2 table as the campaign's PT speedup measurement of record.
