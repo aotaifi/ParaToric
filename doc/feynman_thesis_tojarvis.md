@@ -2304,3 +2304,103 @@ CONFIDENCE, plainly stated:
 ### LOOP CONTAINMENT
 Phase 2B-redo at ONE swap period. Report tau(energy) for the new ladder as a
 by-product so the criterion is re-checked, not re-scanned.
+
+## UPDATE 2026-07-20w: **CONSOLIDATED GO.** This block supersedes the scattered specs in 20t sec 5, 20u sec 5 and 20v sec 2. Act from HERE; those blocks hold the reasoning only. Four items, each with its OBJECTIVE stated first.
+
+Updates 20t-20v layered corrections on corrections. This is the single reconciled
+sequence. Where anything earlier disagrees with this block, THIS BLOCK WINS.
+
+--------------------------------------------------------------------------------
+### M1 — FREE. Two analyses on existing data. No new jobs.
+**OBJECTIVE: extract two deliverables we already paid for but never reported.**
+
+ (a) BENCHMARK EXTRAPOLATION (from 20s todo A). Fit the finite-L crossings
+     (20/24=0.3437, 20/28=0.3416, 24/28=0.3406) vs 1/L_eff, extrapolate to L->inf,
+     and produce ONE figure for `benchmark_report.md`: the three finite-L points, the
+     fit line, the intercept with its bar, and Linsel's 0.335(2) band.
+     CAVEATS IN THE CAPTION, not buried: provisional PT set, sizes 20/24/28 not
+     Linsel's 10/20/30, three points = ~zero redundancy, and it does NOT close the
+     benchmark. PRE-COMMITTED: do not tune the L_eff convention to move the intercept.
+ (b) ENERGY-BINDER s* CROSS-CHECK (from 20s todo B). The strength Binder is dead at
+     s* (it IS the degenerate raw ratio). Energy is not an order parameter and does
+     not degenerate, so its Binder crossing is well defined. Compute it on the
+     existing 2A data and report it beside the probability crossing.
+     WHY IT MATTERS: an s* from a non-percolation observable is INDEPENDENT
+     confirmation. If it lands near 0.333, that is worth more than any re-derivation
+     from percolation.
+
+--------------------------------------------------------------------------------
+### M2 — THE ONE NEW RUN: Phase 2B-redo, re-spanned ladder, ONE swap period.
+**OBJECTIVE: get a trustworthy L=10 curve so the benchmark crossing exists at all,
+and measure PT's speedup honestly for the first time.**
+
+ - **Ladder span (the fix for my error):** >= 8 rungs inside h = [0.305, 0.350], and
+   INCLUDE the exact no-PT baseline h-values as rungs wherever possible: 0.305629,
+   0.318989, 0.322, 0.326, 0.330615, 0.335363, 0.339574, 0.343521, 0.347399. Exact
+   matches are what make a speedup number well defined. Keep 3-4 reservoir rungs
+   above 0.36 — those bought the traversal and must not be lost. N=14 fixed.
+   PRE-SUBMISSION CHECK, new and mandatory: print the rung list against the
+   measurement window and confirm coverage. My 20k spec put 86% of rungs outside it
+   and nothing caught that.
+ - **Swap period: ONE value, sp ~ 50-200 sweeps.** NOT a 4-variant scan. Reason
+   (20v): tau(energy) ~ 5,400 sweeps sets the information scale, tau(ladder index) is
+   FLAT across sp=1-10, so all previously tested values were in one over-attempting
+   regime. sp~100 costs nothing in mixing versus sp=5 and saves ~20x in swap
+   communication and output volume.
+ - **Depth: same as job `15215269`.** Depth was never the problem. Do not spend there.
+ - **REPORT (all four, as named deliverables, not folded into a verdict):**
+    1. Traversal statistics — confirm the re-span preserved complete traversal.
+    2. Per-rung cold/hot gap with **REPLICA-LEVEL errors** (block errors may appear
+       alongside but never as the gate basis).
+    3. tau at the matched h-values, PT vs no-PT baseline `15149119`, with the
+       concatenation caveat stated; and Neff per core-hour for both.
+    4. tau(energy) for the new ladder, so the swap-period criterion is re-checked
+       rather than re-scanned.
+ - **GATE (all three legs, reported together — never traversal alone):**
+   complete traversal AND replica-level cold/hot z<3 AND a stated tau.
+ - **PRE-COMMITTED OUTCOMES:** traversal complete + replica-level z<3 => PT VALIDATED
+   at L=10, the clean L=10 curve exists, and the benchmark crossing against clean
+   L=20 becomes computable for the first time. Traversal DEGRADES when rungs move
+   into the h_c region => that is real physics, the h_c region itself resists
+   transport, and it becomes the strongest evidence yet that the MCP needs the
+   beta-bridge rather than an h-ladder. Both outcomes are informative; neither is a
+   failure.
+
+--------------------------------------------------------------------------------
+### M3 — Phase 3: denser s-grid on the self-dual line. AFTER M2.
+**OBJECTIVE: narrow s* from +/-0.004 toward the ~0.001 that L=120-192 FSS needs.**
+
+ - Current standing (20v sec 4): **s* = 0.333 +/- 0.004**, envelope 0.3296-0.3370
+   over 18 analysis choices, and the error is SYSTEMATIC-dominated (+/-0.0037
+   interpolation/basis) rather than statistical (~0.003).
+ - **THEREFORE: more chains at the SAME s-values will NOT narrow it.** The systematic
+   comes from interpolating across a coarse grid where the observable falls 3x in one
+   interval. Only a denser grid removes it.
+ - Design: s-spacing ~0.005 across [0.325, 0.350] (five new points), BOTH bases,
+   >= 16 chains per point (the between-chain error jumps ~60x at s >= 0.325, so 8 is
+   not enough there), and PT if M2 validates it at L=10.
+ - Carry the OBSERVABLE-DEGENERATE gate and the per-chain table into it by default.
+
+--------------------------------------------------------------------------------
+### M4 — Standing debt, free, do alongside.
+**OBJECTIVE: stop paying repeatedly for the same class of error.**
+ 1. **Invariant-provenance audit** (highest value; open since 20n). Three rules have
+    now been found that lived on paper, were never wired into a gate, and either
+    never fired or fired wrongly: run-manual F3/F7, harness G1.2, and the
+    >50%-exact-zeros intermittency tripwire. Three is a pattern. Audit the rest.
+ 2. Between-chain/replica error as a permanent column in `ensemble_diagnostics.py`
+    and `pt_diagnostics.py`; make it the DEFAULT basis for any group-comparison gate.
+ 3. run_manual.md: report the PER-CHAIN table, never only the group summary.
+ 4. Fix the silently-killed-background-task bug you found. A job reporting
+    "completed" when it was killed can corrupt any readout, and that is a
+    correctness hazard, not an inconvenience.
+
+--------------------------------------------------------------------------------
+### NOT DOING (explicitly cancelled, so nobody re-proposes them)
+ - Swap-period re-scan: CANCELLED. ~4x a run for a question now answered analytically.
+ - More depth on the current ladder: CANCELLED. Depth was never the limiter.
+ - L=30, L=24: still HOLD.
+
+### LOOP CONTAINMENT
+M1 and M4 are free — do them alongside M2. Report M2 with its four named deliverables
+and the three-leg gate. Then M3. Stop and report before M3.
