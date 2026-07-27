@@ -1,0 +1,5 @@
+test_lattice 4 0.0137711
+test_flat_square_lattice 4 0.00723078
+test_extended_toric_code_qmc 4 0.089802
+test_cli_options 1 0.0308591
+---

@@ -1,0 +1,41 @@
+Start testing: Feb 12 12:51 CET
+----------------------------------------------------------
+1/2 Testing: test_lattice
+1/2 Test: test_lattice
+Command: "/home/a/A.Otaifi/Documents/ParaToric/build-clang/tests/test_lattice"
+Directory: /home/a/A.Otaifi/Documents/ParaToric/build-clang/tests
+"test_lattice" start time: Feb 12 12:51 CET
+Output:
+----------------------------------------------------------
+Running 70 test cases...
+
+[1;32;49m*** No errors detected
+[0;39;49m
+<end of output>
+Test time =   0.12 sec
+----------------------------------------------------------
+Test Passed.
+"test_lattice" end time: Feb 12 12:51 CET
+"test_lattice" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/2 Testing: test_extended_toric_code_qmc
+2/2 Test: test_extended_toric_code_qmc
+Command: "/home/a/A.Otaifi/Documents/ParaToric/build-clang/tests/test_extended_toric_code_qmc"
+Directory: /home/a/A.Otaifi/Documents/ParaToric/build-clang/tests
+"test_extended_toric_code_qmc" start time: Feb 12 12:51 CET
+Output:
+----------------------------------------------------------
+Running 23 test cases...
+
+[1;32;49m*** No errors detected
+[0;39;49m
+<end of output>
+Test time =   0.51 sec
+----------------------------------------------------------
+Test Passed.
+"test_extended_toric_code_qmc" end time: Feb 12 12:51 CET
+"test_extended_toric_code_qmc" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Feb 12 12:51 CET

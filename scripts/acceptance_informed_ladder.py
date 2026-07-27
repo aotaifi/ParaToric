@@ -168,6 +168,39 @@ def build_ladder(
     }
 
 
+def locally_refine_ladder(
+    ladder: Sequence[float], *, window_lo: float, window_hi: float, factor: int
+) -> dict[str, object]:
+    """Subdivide only links wholly contained in a measured bottleneck window."""
+    validate(ladder, [0.5] * (len(ladder) - 1), len(ladder))
+    if not math.isfinite(window_lo) or not math.isfinite(window_hi) or window_hi <= window_lo:
+        raise ValueError("local refinement window must be finite and increasing")
+    if factor < 2:
+        raise ValueError("local refinement factor must be at least two")
+    proposed = [float(ladder[0])]
+    refined_links: list[int] = []
+    tolerance = 1.0e-12
+    for link, (left, right) in enumerate(zip(ladder, ladder[1:])):
+        if left >= window_lo - tolerance and right <= window_hi + tolerance:
+            refined_links.append(link)
+            gap = (right - left) / factor
+            proposed.extend(left + part * gap for part in range(1, factor))
+        proposed.append(float(right))
+    if not refined_links:
+        raise ValueError("local refinement window contains no complete ladder link")
+    return {
+        "method": "sharp_local_link_subdivision",
+        "input_rung_count": len(ladder),
+        "target_rung_count": len(proposed),
+        "window_lo": window_lo,
+        "window_hi": window_hi,
+        "refinement_factor": factor,
+        "refined_links": refined_links,
+        "input_ladder": list(ladder),
+        "proposed_ladder": proposed,
+    }
+
+
 def self_test() -> int:
     ladder = [0.0, 0.25, 0.50, 0.75, 1.0]
     acceptance = [0.30, 0.04, 0.30, 0.30]
@@ -180,6 +213,13 @@ def self_test() -> int:
     central = [right - left for left, right in zip(proposed, proposed[1:]) if 0.25 <= 0.5 * (left + right) <= 0.50]
     outer = [right - left for left, right in zip(proposed, proposed[1:]) if 0.75 <= 0.5 * (left + right)]
     assert central and outer and statistics.mean(central) < statistics.mean(outer)
+    local = locally_refine_ladder(
+        ladder, window_lo=0.25, window_hi=0.75, factor=3
+    )["proposed_ladder"]
+    assert isinstance(local, list)
+    assert len(local) == 9
+    assert local[:2] == [0.0, 0.25]
+    assert local[-2:] == [0.75, 1.0]
     print("acceptance_informed_ladder self-test PASS")
     return 0
 
@@ -196,22 +236,39 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output", type=Path, help="write full JSON result to this path")
     parser.add_argument("--ladder-output", type=Path, help="write proposed rungs, one per line")
     parser.add_argument("--self-test", action="store_true")
+    parser.add_argument(
+        "--local-refinement",
+        nargs=3,
+        metavar=("WINDOW_LO", "WINDOW_HI", "FACTOR"),
+        help="sharply subdivide only complete links within the given window",
+    )
     args = parser.parse_args(argv)
 
     if args.self_test:
         return self_test()
-    if args.ladder is None or args.acceptance is None or args.target_count is None:
-        parser.error("--ladder, --acceptance, and --target-count are required")
-
-    result = build_ladder(
-        parse_float_list(args.ladder),
-        parse_float_list(args.acceptance),
-        target_count=args.target_count,
-        bandwidth=args.bandwidth,
-        grid_size=args.grid_size,
-        acceptance_floor=args.acceptance_floor,
-        acceptance_ceiling=args.acceptance_ceiling,
-    )
+    if args.local_refinement:
+        if args.ladder is None:
+            parser.error("--ladder is required with --local-refinement")
+        window_lo, window_hi = (float(value) for value in args.local_refinement[:2])
+        factor = int(args.local_refinement[2])
+        result = locally_refine_ladder(
+            parse_float_list(args.ladder),
+            window_lo=window_lo,
+            window_hi=window_hi,
+            factor=factor,
+        )
+    else:
+        if args.ladder is None or args.acceptance is None or args.target_count is None:
+            parser.error("--ladder, --acceptance, and --target-count are required")
+        result = build_ladder(
+            parse_float_list(args.ladder),
+            parse_float_list(args.acceptance),
+            target_count=args.target_count,
+            bandwidth=args.bandwidth,
+            grid_size=args.grid_size,
+            acceptance_floor=args.acceptance_floor,
+            acceptance_ceiling=args.acceptance_ceiling,
+        )
     encoded = json.dumps(result, indent=2, sort_keys=True) + "\n"
     if args.output:
         args.output.write_text(encoded, encoding="utf-8")

@@ -1,0 +1,80 @@
+ParaToric Quick Tutorial (based on arXiv:2510.14781v2)
+======================================================
+
+Repo
+----
+https://github.com/palmbart/ParaToric
+
+Local path used here
+--------------------
+/home/a/A.Otaifi/Documents/ParaToric
+
+Important note
+--------------
+ParaToric does NOT depend on ALPSCore, so no ALPSCore CMake path is needed.
+
+1) Clone
+--------
+cd /home/a/A.Otaifi/Documents
+git clone https://github.com/palmbart/ParaToric
+cd ParaToric
+git submodule update --init --recursive
+
+2) Installation commands from the arXiv file
+--------------------------------------------
+The installation section in the paper uses this pattern:
+
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+  -DPARATORIC_ENABLE_NATIVE_OPT=ON -DPARATORIC_LINK_MPI=OFF \
+  -DPARATORIC_BUILD_TESTS=ON -DPARATORIC_BUILD_CLI=ON
+cmake --build build -jN
+ctest --test-dir build -jN --output-on-failure
+cmake --install build
+
+(Replace N with your core count, e.g. N=8)
+
+3) Working build on this machine (verified)
+-------------------------------------------
+On this machine, GCC 11 failed on C++23 <format>, so Clang was used.
+Also, install prefix was set to the repo to avoid /usr/local permission issues.
+
+cmake -S . -B build-clang \
+  -DCMAKE_C_COMPILER=clang \
+  -DCMAKE_CXX_COMPILER=clang++ \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_CXX_FLAGS='-Wno-enum-constexpr-conversion' \
+  -DCMAKE_INSTALL_PREFIX=/home/a/A.Otaifi/Documents/ParaToric \
+  -DPARATORIC_ENABLE_NATIVE_OPT=ON \
+  -DPARATORIC_LINK_MPI=OFF \
+  -DPARATORIC_BUILD_TESTS=ON \
+  -DPARATORIC_BUILD_CLI=ON
+
+cmake --build build-clang -j$(nproc)
+ctest --test-dir build-clang -j$(nproc) --output-on-failure
+cmake --install build-clang
+
+Installed binary:
+/home/a/A.Otaifi/Documents/ParaToric/bin/paratoric
+
+4) Minimal usage (Python CLI, verified end-to-end)
+---------------------------------------------------
+This is the easiest interface to use first.
+
+python3 ./python/cli/paratoric.py -sim etc_thermalization \
+  -Nth 50 -reps 1 -muc 1 -T 0.5 -hc 0.1 -Jc 1 -lmbdac 0.1 \
+  -Nr 20 -obs energy -bas x -lat square -L 2 -bound periodic -dsp 1 \
+  -outdir /tmp/paratoric_demo -proc 1
+
+This creates output folders/files such as:
+- parameters.txt
+- simulation_data.h5
+- PDF plots (energy, acceptance ratio, etc.)
+
+5) Help / options
+-----------------
+Python CLI help:
+python3 ./python/cli/paratoric.py -h
+
+Note: the C++ binary currently does not provide a clear --help option in this build,
+so prefer the Python CLI help for option discovery.
+

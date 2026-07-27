@@ -1,0 +1,1004 @@
+
+---
+events:
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineSystem.cmake:204 (message)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      The system is: Linux - 5.14.0-611.55.1.el9_7.x86_64 - x86_64
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake:17 (message)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake:126 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+      Compiler: /usr/bin/clang++-20 
+      Build flags: 
+      Id flags:  
+      
+      The output was:
+      0
+      
+      
+      Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "a.out"
+      
+      The CXX compiler identification is Clang, found in:
+        /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/3.26.5/CompilerIdCXX/a.out
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake:17 (message)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCCompiler.cmake:123 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+      Compiler: /usr/bin/cc 
+      Build flags: 
+      Id flags:  
+      
+      The output was:
+      0
+      
+      
+      Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "a.out"
+      
+      The C compiler identification is GNU, found in:
+        /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/3.26.5/CompilerIdC/a.out
+      
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerABI.cmake:57 (try_compile)"
+      - "/usr/share/cmake/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    checks:
+      - "Detecting CXX compiler ABI info"
+    directories:
+      source: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-v5prvS"
+      binary: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-v5prvS"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "CMAKE_CXX_ABI_COMPILED"
+      cached: true
+      stdout: |
+        Change Dir: /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-v5prvS
+        
+        Run Build Command(s):/usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_2ba73/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_2ba73.dir/build.make CMakeFiles/cmTC_2ba73.dir/build
+        gmake[1]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-v5prvS'
+        Building CXX object CMakeFiles/cmTC_2ba73.dir/CMakeCXXCompilerABI.cpp.o
+        /usr/bin/clang++-20   -v -MD -MT CMakeFiles/cmTC_2ba73.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_2ba73.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_2ba73.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp
+        clang version 20.1.8 (AlmaLinux OS Foundation 20.1.8-3.el9)
+        Target: x86_64-redhat-linux-gnu
+        Thread model: posix
+        InstalledDir: /usr/bin
+        Configuration file: /etc/clang/x86_64-redhat-linux-gnu-clang++.cfg
+        System configuration file directory: /etc/clang/
+        Selected GCC installation: /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14
+        Candidate multilib: .;@m64
+        Candidate multilib: 32;@m32
+        Selected multilib: .;@m64
+         (in-process)
+         "/usr/bin/clang-20" -cc1 -triple x86_64-redhat-linux-gnu -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCXXCompilerABI.cpp -mrelocation-model static -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -dwarf-version=4 -debugger-tuning=gdb -fdebug-compilation-dir=/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-v5prvS -v -fcoverage-compilation-dir=/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-v5prvS -resource-dir /usr/bin/../lib/clang/20 -dependency-file CMakeFiles/cmTC_2ba73.dir/CMakeCXXCompilerABI.cpp.o.d -MT CMakeFiles/cmTC_2ba73.dir/CMakeCXXCompilerABI.cpp.o -sys-header-deps -I/opt/slurm/include/slurm -I/opt/pmix/include -I/opt/slurm/include/slurm -I/opt/pmix/include -I/opt/slurm/include/slurm -I/opt/pmix/include -I/opt/slurm/include/slurm -I/opt/pmix/include -I. -internal-isystem /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14 -internal-isystem /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14/x86_64-redhat-linux -internal-isystem /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14/backward -internal-isystem /usr/bin/../lib/clang/20/include -internal-isystem /usr/local/include -internal-isystem /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../x86_64-redhat-linux/include -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdeprecated-macro -ferror-limit 19 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o CMakeFiles/cmTC_2ba73.dir/CMakeCXXCompilerABI.cpp.o -x c++ /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp
+        clang -cc1 version 20.1.8 based upon LLVM 20.1.8 default target x86_64-redhat-linux-gnu
+        ignoring nonexistent directory "/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../x86_64-redhat-linux/include"
+        ignoring nonexistent directory "/include"
+        ignoring duplicate directory "/opt/slurm/include/slurm"
+        ignoring duplicate directory "/opt/pmix/include"
+        ignoring duplicate directory "/opt/slurm/include/slurm"
+        ignoring duplicate directory "/opt/pmix/include"
+        ignoring duplicate directory "/opt/slurm/include/slurm"
+        ignoring duplicate directory "/opt/pmix/include"
+        #include "..." search starts here:
+        #include <...> search starts here:
+         /opt/slurm/include/slurm
+         /opt/pmix/include
+         .
+         /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14
+         /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14/x86_64-redhat-linux
+         /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14/backward
+         /usr/bin/../lib/clang/20/include
+         /usr/local/include
+         /usr/include
+        End of search list.
+        Linking CXX executable cmTC_2ba73
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_2ba73.dir/link.txt --verbose=1
+        /usr/bin/clang++-20  -v CMakeFiles/cmTC_2ba73.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_2ba73 
+        clang version 20.1.8 (AlmaLinux OS Foundation 20.1.8-3.el9)
+        Target: x86_64-redhat-linux-gnu
+        Thread model: posix
+        InstalledDir: /usr/bin
+        Configuration file: /etc/clang/x86_64-redhat-linux-gnu-clang++.cfg
+        System configuration file directory: /etc/clang/
+        Selected GCC installation: /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14
+        Candidate multilib: .;@m64
+        Candidate multilib: 32;@m32
+        Selected multilib: .;@m64
+         "/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_2ba73 /lib/../lib64/crt1.o /lib/../lib64/crti.o /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/crtbegin.o -L/usr/bin/../lib/clang/20/lib/x86_64-redhat-linux-gnu -L/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14 -L/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/lib -L/usr/lib CMakeFiles/cmTC_2ba73.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/crtend.o /lib/../lib64/crtn.o
+        gmake[1]: Leaving directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-v5prvS'
+        
+      exitCode: 0
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerABI.cmake:127 (message)"
+      - "/usr/share/cmake/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Parsed CXX implicit include dir info: rv=done
+        found start of include info
+        found start of implicit include info
+          add: [/opt/slurm/include/slurm]
+          add: [/opt/pmix/include]
+          add: [.]
+          add: [/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14]
+          add: [/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14/x86_64-redhat-linux]
+          add: [/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14/backward]
+          add: [/usr/bin/../lib/clang/20/include]
+          add: [/usr/local/include]
+          add: [/usr/include]
+        end of search list found
+        collapse include dir [/opt/slurm/include/slurm] ==> [/opt/slurm/include/slurm]
+        collapse include dir [/opt/pmix/include] ==> [/opt/pmix/include]
+        skipping relative include dir [.]
+        collapse include dir [/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14] ==> [/opt/rh/gcc-toolset-14/root/usr/include/c++/14]
+        collapse include dir [/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14/x86_64-redhat-linux] ==> [/opt/rh/gcc-toolset-14/root/usr/include/c++/14/x86_64-redhat-linux]
+        collapse include dir [/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14/backward] ==> [/opt/rh/gcc-toolset-14/root/usr/include/c++/14/backward]
+        collapse include dir [/usr/bin/../lib/clang/20/include] ==> [/usr/lib/clang/20/include]
+        collapse include dir [/usr/local/include] ==> [/usr/local/include]
+        collapse include dir [/usr/include] ==> [/usr/include]
+        implicit include dirs: [/opt/slurm/include/slurm;/opt/pmix/include;/opt/rh/gcc-toolset-14/root/usr/include/c++/14;/opt/rh/gcc-toolset-14/root/usr/include/c++/14/x86_64-redhat-linux;/opt/rh/gcc-toolset-14/root/usr/include/c++/14/backward;/usr/lib/clang/20/include;/usr/local/include;/usr/include]
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerABI.cmake:152 (message)"
+      - "/usr/share/cmake/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Parsed CXX implicit link information:
+        link line regex: [^( *|.*[/\\])(ld|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
+        ignore line: [Change Dir: /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-v5prvS]
+        ignore line: []
+        ignore line: [Run Build Command(s):/usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_2ba73/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_2ba73.dir/build.make CMakeFiles/cmTC_2ba73.dir/build]
+        ignore line: [gmake[1]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-v5prvS']
+        ignore line: [Building CXX object CMakeFiles/cmTC_2ba73.dir/CMakeCXXCompilerABI.cpp.o]
+        ignore line: [/usr/bin/clang++-20   -v -MD -MT CMakeFiles/cmTC_2ba73.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_2ba73.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_2ba73.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp]
+        ignore line: [clang version 20.1.8 (AlmaLinux OS Foundation 20.1.8-3.el9)]
+        ignore line: [Target: x86_64-redhat-linux-gnu]
+        ignore line: [Thread model: posix]
+        ignore line: [InstalledDir: /usr/bin]
+        ignore line: [Configuration file: /etc/clang/x86_64-redhat-linux-gnu-clang++.cfg]
+        ignore line: [System configuration file directory: /etc/clang/]
+        ignore line: [Selected GCC installation: /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14]
+        ignore line: [Candidate multilib: .]
+        ignore line: [@m64]
+        ignore line: [Candidate multilib: 32]
+        ignore line: [@m32]
+        ignore line: [Selected multilib: .]
+        ignore line: [@m64]
+        ignore line: [ (in-process)]
+        ignore line: [ "/usr/bin/clang-20" -cc1 -triple x86_64-redhat-linux-gnu -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCXXCompilerABI.cpp -mrelocation-model static -mframe-pointer=all -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -target-cpu x86-64 -tune-cpu generic -dwarf-version=4 -debugger-tuning=gdb -fdebug-compilation-dir=/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-v5prvS -v -fcoverage-compilation-dir=/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-v5prvS -resource-dir /usr/bin/../lib/clang/20 -dependency-file CMakeFiles/cmTC_2ba73.dir/CMakeCXXCompilerABI.cpp.o.d -MT CMakeFiles/cmTC_2ba73.dir/CMakeCXXCompilerABI.cpp.o -sys-header-deps -I/opt/slurm/include/slurm -I/opt/pmix/include -I/opt/slurm/include/slurm -I/opt/pmix/include -I/opt/slurm/include/slurm -I/opt/pmix/include -I/opt/slurm/include/slurm -I/opt/pmix/include -I. -internal-isystem /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14 -internal-isystem /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14/x86_64-redhat-linux -internal-isystem /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14/backward -internal-isystem /usr/bin/../lib/clang/20/include -internal-isystem /usr/local/include -internal-isystem /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../x86_64-redhat-linux/include -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdeprecated-macro -ferror-limit 19 -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o CMakeFiles/cmTC_2ba73.dir/CMakeCXXCompilerABI.cpp.o -x c++ /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp]
+        ignore line: [clang -cc1 version 20.1.8 based upon LLVM 20.1.8 default target x86_64-redhat-linux-gnu]
+        ignore line: [ignoring nonexistent directory "/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../x86_64-redhat-linux/include"]
+        ignore line: [ignoring nonexistent directory "/include"]
+        ignore line: [ignoring duplicate directory "/opt/slurm/include/slurm"]
+        ignore line: [ignoring duplicate directory "/opt/pmix/include"]
+        ignore line: [ignoring duplicate directory "/opt/slurm/include/slurm"]
+        ignore line: [ignoring duplicate directory "/opt/pmix/include"]
+        ignore line: [ignoring duplicate directory "/opt/slurm/include/slurm"]
+        ignore line: [ignoring duplicate directory "/opt/pmix/include"]
+        ignore line: [#include "..." search starts here:]
+        ignore line: [#include <...> search starts here:]
+        ignore line: [ /opt/slurm/include/slurm]
+        ignore line: [ /opt/pmix/include]
+        ignore line: [ .]
+        ignore line: [ /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14]
+        ignore line: [ /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14/x86_64-redhat-linux]
+        ignore line: [ /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14/backward]
+        ignore line: [ /usr/bin/../lib/clang/20/include]
+        ignore line: [ /usr/local/include]
+        ignore line: [ /usr/include]
+        ignore line: [End of search list.]
+        ignore line: [Linking CXX executable cmTC_2ba73]
+        ignore line: [/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_2ba73.dir/link.txt --verbose=1]
+        ignore line: [/usr/bin/clang++-20  -v CMakeFiles/cmTC_2ba73.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_2ba73 ]
+        ignore line: [clang version 20.1.8 (AlmaLinux OS Foundation 20.1.8-3.el9)]
+        ignore line: [Target: x86_64-redhat-linux-gnu]
+        ignore line: [Thread model: posix]
+        ignore line: [InstalledDir: /usr/bin]
+        ignore line: [Configuration file: /etc/clang/x86_64-redhat-linux-gnu-clang++.cfg]
+        ignore line: [System configuration file directory: /etc/clang/]
+        ignore line: [Selected GCC installation: /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14]
+        ignore line: [Candidate multilib: .]
+        ignore line: [@m64]
+        ignore line: [Candidate multilib: 32]
+        ignore line: [@m32]
+        ignore line: [Selected multilib: .]
+        ignore line: [@m64]
+        link line: [ "/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_2ba73 /lib/../lib64/crt1.o /lib/../lib64/crti.o /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/crtbegin.o -L/usr/bin/../lib/clang/20/lib/x86_64-redhat-linux-gnu -L/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14 -L/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/lib -L/usr/lib CMakeFiles/cmTC_2ba73.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/crtend.o /lib/../lib64/crtn.o]
+          arg [/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld] ==> ignore
+          arg [--hash-style=gnu] ==> ignore
+          arg [--build-id] ==> ignore
+          arg [--eh-frame-hdr] ==> ignore
+          arg [-m] ==> ignore
+          arg [elf_x86_64] ==> ignore
+          arg [-dynamic-linker] ==> ignore
+          arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
+          arg [-o] ==> ignore
+          arg [cmTC_2ba73] ==> ignore
+          arg [/lib/../lib64/crt1.o] ==> obj [/lib/../lib64/crt1.o]
+          arg [/lib/../lib64/crti.o] ==> obj [/lib/../lib64/crti.o]
+          arg [/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/crtbegin.o] ==> obj [/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/crtbegin.o]
+          arg [-L/usr/bin/../lib/clang/20/lib/x86_64-redhat-linux-gnu] ==> dir [/usr/bin/../lib/clang/20/lib/x86_64-redhat-linux-gnu]
+          arg [-L/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14] ==> dir [/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14]
+          arg [-L/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../lib64] ==> dir [/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../lib64]
+          arg [-L/lib/../lib64] ==> dir [/lib/../lib64]
+          arg [-L/usr/lib/../lib64] ==> dir [/usr/lib/../lib64]
+          arg [-L/lib] ==> dir [/lib]
+          arg [-L/usr/lib] ==> dir [/usr/lib]
+          arg [CMakeFiles/cmTC_2ba73.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
+          arg [-lstdc++] ==> lib [stdc++]
+          arg [-lm] ==> lib [m]
+          arg [-lgcc_s] ==> lib [gcc_s]
+          arg [-lgcc] ==> lib [gcc]
+          arg [-lc] ==> lib [c]
+          arg [-lgcc_s] ==> lib [gcc_s]
+          arg [-lgcc] ==> lib [gcc]
+          arg [/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/crtend.o] ==> obj [/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/crtend.o]
+          arg [/lib/../lib64/crtn.o] ==> obj [/lib/../lib64/crtn.o]
+        collapse obj [/lib/../lib64/crt1.o] ==> [/lib64/crt1.o]
+        collapse obj [/lib/../lib64/crti.o] ==> [/lib64/crti.o]
+        collapse obj [/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/crtbegin.o] ==> [/opt/rh/gcc-toolset-14/root/usr/lib/gcc/x86_64-redhat-linux/14/crtbegin.o]
+        collapse obj [/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/crtend.o] ==> [/opt/rh/gcc-toolset-14/root/usr/lib/gcc/x86_64-redhat-linux/14/crtend.o]
+        collapse obj [/lib/../lib64/crtn.o] ==> [/lib64/crtn.o]
+        collapse library dir [/usr/bin/../lib/clang/20/lib/x86_64-redhat-linux-gnu] ==> [/usr/lib/clang/20/lib/x86_64-redhat-linux-gnu]
+        collapse library dir [/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14] ==> [/opt/rh/gcc-toolset-14/root/usr/lib/gcc/x86_64-redhat-linux/14]
+        collapse library dir [/opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../lib64] ==> [/opt/rh/gcc-toolset-14/root/usr/lib64]
+        collapse library dir [/lib/../lib64] ==> [/lib64]
+        collapse library dir [/usr/lib/../lib64] ==> [/usr/lib64]
+        collapse library dir [/lib] ==> [/lib]
+        collapse library dir [/usr/lib] ==> [/usr/lib]
+        implicit libs: [stdc++;m;gcc_s;gcc;c;gcc_s;gcc]
+        implicit objs: [/lib64/crt1.o;/lib64/crti.o;/opt/rh/gcc-toolset-14/root/usr/lib/gcc/x86_64-redhat-linux/14/crtbegin.o;/opt/rh/gcc-toolset-14/root/usr/lib/gcc/x86_64-redhat-linux/14/crtend.o;/lib64/crtn.o]
+        implicit dirs: [/usr/lib/clang/20/lib/x86_64-redhat-linux-gnu;/opt/rh/gcc-toolset-14/root/usr/lib/gcc/x86_64-redhat-linux/14;/opt/rh/gcc-toolset-14/root/usr/lib64;/lib64;/usr/lib64;/lib;/usr/lib]
+        implicit fwks: []
+      
+      
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerABI.cmake:57 (try_compile)"
+      - "/usr/share/cmake/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    checks:
+      - "Detecting C compiler ABI info"
+    directories:
+      source: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-e3KHPw"
+      binary: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-e3KHPw"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "CMAKE_C_ABI_COMPILED"
+      cached: true
+      stdout: |
+        Change Dir: /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-e3KHPw
+        
+        Run Build Command(s):/usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_2d6a6/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_2d6a6.dir/build.make CMakeFiles/cmTC_2d6a6.dir/build
+        gmake[1]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-e3KHPw'
+        Building C object CMakeFiles/cmTC_2d6a6.dir/CMakeCCompilerABI.c.o
+        /usr/bin/cc   -v -o CMakeFiles/cmTC_2d6a6.dir/CMakeCCompilerABI.c.o -c /usr/share/cmake/Modules/CMakeCCompilerABI.c
+        Using built-in specs.
+        COLLECT_GCC=/usr/bin/cc
+        OFFLOAD_TARGET_NAMES=nvptx-none
+        OFFLOAD_TARGET_DEFAULT=1
+        Target: x86_64-redhat-linux
+        Configured with: ../configure --enable-bootstrap --enable-host-pie --enable-host-bind-now --enable-languages=c,c++,fortran,lto --prefix=/usr --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=http://bugs.almalinux.org/ --enable-shared --enable-threads=posix --enable-checking=release --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-gcc-major-version-only --enable-plugin --enable-initfini-array --without-isl --enable-multilib --with-linker-hash-style=gnu --enable-offload-targets=nvptx-none --without-cuda-driver --enable-gnu-indirect-function --enable-cet --with-tune=generic --with-arch_64=x86-64-v2 --with-arch_32=x86-64 --build=x86_64-redhat-linux --with-build-config=bootstrap-lto --enable-link-serialization=1
+        Thread model: posix
+        Supported LTO compression algorithms: zlib zstd
+        gcc version 11.5.0 20240719 (Red Hat 11.5.0-11) (GCC) 
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_2d6a6.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64-v2' '-dumpdir' 'CMakeFiles/cmTC_2d6a6.dir/'
+         /usr/libexec/gcc/x86_64-redhat-linux/11/cc1 -quiet -v /usr/share/cmake/Modules/CMakeCCompilerABI.c -quiet -dumpdir CMakeFiles/cmTC_2d6a6.dir/ -dumpbase CMakeCCompilerABI.c.c -dumpbase-ext .c -mtune=generic -march=x86-64-v2 -version -o /var/tmp/a.otaifi/tmp/ccNDSt7L.s
+        GNU C17 (GCC) version 11.5.0 20240719 (Red Hat 11.5.0-11) (x86_64-redhat-linux)
+        	compiled by GNU C version 11.5.0 20240719 (Red Hat 11.5.0-11), GMP version 6.2.0, MPFR version 4.1.0-p9, MPC version 1.2.1, isl version none
+        GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+        ignoring nonexistent directory "/usr/lib/gcc/x86_64-redhat-linux/11/include-fixed"
+        ignoring nonexistent directory "/usr/lib/gcc/x86_64-redhat-linux/11/../../../../x86_64-redhat-linux/include"
+        ignoring duplicate directory "/opt/slurm/include/slurm"
+        ignoring duplicate directory "/opt/pmix/include"
+        ignoring duplicate directory "/opt/slurm/include/slurm"
+        ignoring duplicate directory "/opt/pmix/include"
+        ignoring duplicate directory "/opt/slurm/include/slurm"
+        ignoring duplicate directory "/opt/pmix/include"
+        #include "..." search starts here:
+        #include <...> search starts here:
+         /opt/slurm/include/slurm
+         /opt/pmix/include
+         .
+         /usr/lib/gcc/x86_64-redhat-linux/11/include
+         /usr/local/include
+         /usr/include
+        End of search list.
+        GNU C17 (GCC) version 11.5.0 20240719 (Red Hat 11.5.0-11) (x86_64-redhat-linux)
+        	compiled by GNU C version 11.5.0 20240719 (Red Hat 11.5.0-11), GMP version 6.2.0, MPFR version 4.1.0-p9, MPC version 1.2.1, isl version none
+        GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+        Compiler executable checksum: 3c6c0d6fcf9d5c9e28fc64ee8cdb99ee
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_2d6a6.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64-v2' '-dumpdir' 'CMakeFiles/cmTC_2d6a6.dir/'
+         as -v --64 -o CMakeFiles/cmTC_2d6a6.dir/CMakeCCompilerABI.c.o /var/tmp/a.otaifi/tmp/ccNDSt7L.s
+        GNU assembler version 2.35.2 (x86_64-redhat-linux) using BFD version version 2.35.2-67.el9_7.1
+        COMPILER_PATH=/usr/libexec/gcc/x86_64-redhat-linux/11/:/usr/libexec/gcc/x86_64-redhat-linux/11/:/usr/libexec/gcc/x86_64-redhat-linux/:/usr/lib/gcc/x86_64-redhat-linux/11/:/usr/lib/gcc/x86_64-redhat-linux/
+        LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/11/:/usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/11/../../../:/lib/:/usr/lib/
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_2d6a6.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64-v2' '-dumpdir' 'CMakeFiles/cmTC_2d6a6.dir/CMakeCCompilerABI.c.'
+        Linking C executable cmTC_2d6a6
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_2d6a6.dir/link.txt --verbose=1
+        /usr/bin/cc  -v CMakeFiles/cmTC_2d6a6.dir/CMakeCCompilerABI.c.o -o cmTC_2d6a6 
+        Using built-in specs.
+        COLLECT_GCC=/usr/bin/cc
+        COLLECT_LTO_WRAPPER=/usr/libexec/gcc/x86_64-redhat-linux/11/lto-wrapper
+        OFFLOAD_TARGET_NAMES=nvptx-none
+        OFFLOAD_TARGET_DEFAULT=1
+        Target: x86_64-redhat-linux
+        Configured with: ../configure --enable-bootstrap --enable-host-pie --enable-host-bind-now --enable-languages=c,c++,fortran,lto --prefix=/usr --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=http://bugs.almalinux.org/ --enable-shared --enable-threads=posix --enable-checking=release --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-gcc-major-version-only --enable-plugin --enable-initfini-array --without-isl --enable-multilib --with-linker-hash-style=gnu --enable-offload-targets=nvptx-none --without-cuda-driver --enable-gnu-indirect-function --enable-cet --with-tune=generic --with-arch_64=x86-64-v2 --with-arch_32=x86-64 --build=x86_64-redhat-linux --with-build-config=bootstrap-lto --enable-link-serialization=1
+        Thread model: posix
+        Supported LTO compression algorithms: zlib zstd
+        gcc version 11.5.0 20240719 (Red Hat 11.5.0-11) (GCC) 
+        COMPILER_PATH=/usr/libexec/gcc/x86_64-redhat-linux/11/:/usr/libexec/gcc/x86_64-redhat-linux/11/:/usr/libexec/gcc/x86_64-redhat-linux/:/usr/lib/gcc/x86_64-redhat-linux/11/:/usr/lib/gcc/x86_64-redhat-linux/
+        LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/11/:/usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/11/../../../:/lib/:/usr/lib/
+        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_2d6a6' '-mtune=generic' '-march=x86-64-v2' '-dumpdir' 'cmTC_2d6a6.'
+         /usr/libexec/gcc/x86_64-redhat-linux/11/collect2 -plugin /usr/libexec/gcc/x86_64-redhat-linux/11/liblto_plugin.so -plugin-opt=/usr/libexec/gcc/x86_64-redhat-linux/11/lto-wrapper -plugin-opt=-fresolution=/var/tmp/a.otaifi/tmp/cco9T9zK.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s --build-id --no-add-needed --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_2d6a6 /usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64/crt1.o /usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64/crti.o /usr/lib/gcc/x86_64-redhat-linux/11/crtbegin.o -L/usr/lib/gcc/x86_64-redhat-linux/11 -L/usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/usr/lib/gcc/x86_64-redhat-linux/11/../../.. CMakeFiles/cmTC_2d6a6.dir/CMakeCCompilerABI.c.o -lgcc --push-state --as-needed -lgcc_s --pop-state -lc -lgcc --push-state --as-needed -lgcc_s --pop-state /usr/lib/gcc/x86_64-redhat-linux/11/crtend.o /usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64/crtn.o
+        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_2d6a6' '-mtune=generic' '-march=x86-64-v2' '-dumpdir' 'cmTC_2d6a6.'
+        gmake[1]: Leaving directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-e3KHPw'
+        
+      exitCode: 0
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerABI.cmake:127 (message)"
+      - "/usr/share/cmake/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Parsed C implicit include dir info: rv=done
+        found start of include info
+        found start of implicit include info
+          add: [/opt/slurm/include/slurm]
+          add: [/opt/pmix/include]
+          add: [.]
+          add: [/usr/lib/gcc/x86_64-redhat-linux/11/include]
+          add: [/usr/local/include]
+          add: [/usr/include]
+        end of search list found
+        collapse include dir [/opt/slurm/include/slurm] ==> [/opt/slurm/include/slurm]
+        collapse include dir [/opt/pmix/include] ==> [/opt/pmix/include]
+        skipping relative include dir [.]
+        collapse include dir [/usr/lib/gcc/x86_64-redhat-linux/11/include] ==> [/usr/lib/gcc/x86_64-redhat-linux/11/include]
+        collapse include dir [/usr/local/include] ==> [/usr/local/include]
+        collapse include dir [/usr/include] ==> [/usr/include]
+        implicit include dirs: [/opt/slurm/include/slurm;/opt/pmix/include;/usr/lib/gcc/x86_64-redhat-linux/11/include;/usr/local/include;/usr/include]
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerABI.cmake:152 (message)"
+      - "/usr/share/cmake/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Parsed C implicit link information:
+        link line regex: [^( *|.*[/\\])(ld|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
+        ignore line: [Change Dir: /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-e3KHPw]
+        ignore line: []
+        ignore line: [Run Build Command(s):/usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_2d6a6/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_2d6a6.dir/build.make CMakeFiles/cmTC_2d6a6.dir/build]
+        ignore line: [gmake[1]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-e3KHPw']
+        ignore line: [Building C object CMakeFiles/cmTC_2d6a6.dir/CMakeCCompilerABI.c.o]
+        ignore line: [/usr/bin/cc   -v -o CMakeFiles/cmTC_2d6a6.dir/CMakeCCompilerABI.c.o -c /usr/share/cmake/Modules/CMakeCCompilerABI.c]
+        ignore line: [Using built-in specs.]
+        ignore line: [COLLECT_GCC=/usr/bin/cc]
+        ignore line: [OFFLOAD_TARGET_NAMES=nvptx-none]
+        ignore line: [OFFLOAD_TARGET_DEFAULT=1]
+        ignore line: [Target: x86_64-redhat-linux]
+        ignore line: [Configured with: ../configure --enable-bootstrap --enable-host-pie --enable-host-bind-now --enable-languages=c c++ fortran lto --prefix=/usr --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=http://bugs.almalinux.org/ --enable-shared --enable-threads=posix --enable-checking=release --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-gcc-major-version-only --enable-plugin --enable-initfini-array --without-isl --enable-multilib --with-linker-hash-style=gnu --enable-offload-targets=nvptx-none --without-cuda-driver --enable-gnu-indirect-function --enable-cet --with-tune=generic --with-arch_64=x86-64-v2 --with-arch_32=x86-64 --build=x86_64-redhat-linux --with-build-config=bootstrap-lto --enable-link-serialization=1]
+        ignore line: [Thread model: posix]
+        ignore line: [Supported LTO compression algorithms: zlib zstd]
+        ignore line: [gcc version 11.5.0 20240719 (Red Hat 11.5.0-11) (GCC) ]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_2d6a6.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64-v2' '-dumpdir' 'CMakeFiles/cmTC_2d6a6.dir/']
+        ignore line: [ /usr/libexec/gcc/x86_64-redhat-linux/11/cc1 -quiet -v /usr/share/cmake/Modules/CMakeCCompilerABI.c -quiet -dumpdir CMakeFiles/cmTC_2d6a6.dir/ -dumpbase CMakeCCompilerABI.c.c -dumpbase-ext .c -mtune=generic -march=x86-64-v2 -version -o /var/tmp/a.otaifi/tmp/ccNDSt7L.s]
+        ignore line: [GNU C17 (GCC) version 11.5.0 20240719 (Red Hat 11.5.0-11) (x86_64-redhat-linux)]
+        ignore line: [	compiled by GNU C version 11.5.0 20240719 (Red Hat 11.5.0-11)  GMP version 6.2.0  MPFR version 4.1.0-p9  MPC version 1.2.1  isl version none]
+        ignore line: [GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072]
+        ignore line: [ignoring nonexistent directory "/usr/lib/gcc/x86_64-redhat-linux/11/include-fixed"]
+        ignore line: [ignoring nonexistent directory "/usr/lib/gcc/x86_64-redhat-linux/11/../../../../x86_64-redhat-linux/include"]
+        ignore line: [ignoring duplicate directory "/opt/slurm/include/slurm"]
+        ignore line: [ignoring duplicate directory "/opt/pmix/include"]
+        ignore line: [ignoring duplicate directory "/opt/slurm/include/slurm"]
+        ignore line: [ignoring duplicate directory "/opt/pmix/include"]
+        ignore line: [ignoring duplicate directory "/opt/slurm/include/slurm"]
+        ignore line: [ignoring duplicate directory "/opt/pmix/include"]
+        ignore line: [#include "..." search starts here:]
+        ignore line: [#include <...> search starts here:]
+        ignore line: [ /opt/slurm/include/slurm]
+        ignore line: [ /opt/pmix/include]
+        ignore line: [ .]
+        ignore line: [ /usr/lib/gcc/x86_64-redhat-linux/11/include]
+        ignore line: [ /usr/local/include]
+        ignore line: [ /usr/include]
+        ignore line: [End of search list.]
+        ignore line: [GNU C17 (GCC) version 11.5.0 20240719 (Red Hat 11.5.0-11) (x86_64-redhat-linux)]
+        ignore line: [	compiled by GNU C version 11.5.0 20240719 (Red Hat 11.5.0-11)  GMP version 6.2.0  MPFR version 4.1.0-p9  MPC version 1.2.1  isl version none]
+        ignore line: [GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072]
+        ignore line: [Compiler executable checksum: 3c6c0d6fcf9d5c9e28fc64ee8cdb99ee]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_2d6a6.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64-v2' '-dumpdir' 'CMakeFiles/cmTC_2d6a6.dir/']
+        ignore line: [ as -v --64 -o CMakeFiles/cmTC_2d6a6.dir/CMakeCCompilerABI.c.o /var/tmp/a.otaifi/tmp/ccNDSt7L.s]
+        ignore line: [GNU assembler version 2.35.2 (x86_64-redhat-linux) using BFD version version 2.35.2-67.el9_7.1]
+        ignore line: [COMPILER_PATH=/usr/libexec/gcc/x86_64-redhat-linux/11/:/usr/libexec/gcc/x86_64-redhat-linux/11/:/usr/libexec/gcc/x86_64-redhat-linux/:/usr/lib/gcc/x86_64-redhat-linux/11/:/usr/lib/gcc/x86_64-redhat-linux/]
+        ignore line: [LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/11/:/usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/11/../../../:/lib/:/usr/lib/]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_2d6a6.dir/CMakeCCompilerABI.c.o' '-c' '-mtune=generic' '-march=x86-64-v2' '-dumpdir' 'CMakeFiles/cmTC_2d6a6.dir/CMakeCCompilerABI.c.']
+        ignore line: [Linking C executable cmTC_2d6a6]
+        ignore line: [/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_2d6a6.dir/link.txt --verbose=1]
+        ignore line: [/usr/bin/cc  -v CMakeFiles/cmTC_2d6a6.dir/CMakeCCompilerABI.c.o -o cmTC_2d6a6 ]
+        ignore line: [Using built-in specs.]
+        ignore line: [COLLECT_GCC=/usr/bin/cc]
+        ignore line: [COLLECT_LTO_WRAPPER=/usr/libexec/gcc/x86_64-redhat-linux/11/lto-wrapper]
+        ignore line: [OFFLOAD_TARGET_NAMES=nvptx-none]
+        ignore line: [OFFLOAD_TARGET_DEFAULT=1]
+        ignore line: [Target: x86_64-redhat-linux]
+        ignore line: [Configured with: ../configure --enable-bootstrap --enable-host-pie --enable-host-bind-now --enable-languages=c c++ fortran lto --prefix=/usr --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=http://bugs.almalinux.org/ --enable-shared --enable-threads=posix --enable-checking=release --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-gcc-major-version-only --enable-plugin --enable-initfini-array --without-isl --enable-multilib --with-linker-hash-style=gnu --enable-offload-targets=nvptx-none --without-cuda-driver --enable-gnu-indirect-function --enable-cet --with-tune=generic --with-arch_64=x86-64-v2 --with-arch_32=x86-64 --build=x86_64-redhat-linux --with-build-config=bootstrap-lto --enable-link-serialization=1]
+        ignore line: [Thread model: posix]
+        ignore line: [Supported LTO compression algorithms: zlib zstd]
+        ignore line: [gcc version 11.5.0 20240719 (Red Hat 11.5.0-11) (GCC) ]
+        ignore line: [COMPILER_PATH=/usr/libexec/gcc/x86_64-redhat-linux/11/:/usr/libexec/gcc/x86_64-redhat-linux/11/:/usr/libexec/gcc/x86_64-redhat-linux/:/usr/lib/gcc/x86_64-redhat-linux/11/:/usr/lib/gcc/x86_64-redhat-linux/]
+        ignore line: [LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/11/:/usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/11/../../../:/lib/:/usr/lib/]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_2d6a6' '-mtune=generic' '-march=x86-64-v2' '-dumpdir' 'cmTC_2d6a6.']
+        link line: [ /usr/libexec/gcc/x86_64-redhat-linux/11/collect2 -plugin /usr/libexec/gcc/x86_64-redhat-linux/11/liblto_plugin.so -plugin-opt=/usr/libexec/gcc/x86_64-redhat-linux/11/lto-wrapper -plugin-opt=-fresolution=/var/tmp/a.otaifi/tmp/cco9T9zK.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s --build-id --no-add-needed --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_2d6a6 /usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64/crt1.o /usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64/crti.o /usr/lib/gcc/x86_64-redhat-linux/11/crtbegin.o -L/usr/lib/gcc/x86_64-redhat-linux/11 -L/usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/usr/lib/gcc/x86_64-redhat-linux/11/../../.. CMakeFiles/cmTC_2d6a6.dir/CMakeCCompilerABI.c.o -lgcc --push-state --as-needed -lgcc_s --pop-state -lc -lgcc --push-state --as-needed -lgcc_s --pop-state /usr/lib/gcc/x86_64-redhat-linux/11/crtend.o /usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64/crtn.o]
+          arg [/usr/libexec/gcc/x86_64-redhat-linux/11/collect2] ==> ignore
+          arg [-plugin] ==> ignore
+          arg [/usr/libexec/gcc/x86_64-redhat-linux/11/liblto_plugin.so] ==> ignore
+          arg [-plugin-opt=/usr/libexec/gcc/x86_64-redhat-linux/11/lto-wrapper] ==> ignore
+          arg [-plugin-opt=-fresolution=/var/tmp/a.otaifi/tmp/cco9T9zK.res] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc_s] ==> ignore
+          arg [-plugin-opt=-pass-through=-lc] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc_s] ==> ignore
+          arg [--build-id] ==> ignore
+          arg [--no-add-needed] ==> ignore
+          arg [--eh-frame-hdr] ==> ignore
+          arg [--hash-style=gnu] ==> ignore
+          arg [-m] ==> ignore
+          arg [elf_x86_64] ==> ignore
+          arg [-dynamic-linker] ==> ignore
+          arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
+          arg [-o] ==> ignore
+          arg [cmTC_2d6a6] ==> ignore
+          arg [/usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64/crt1.o] ==> obj [/usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64/crt1.o]
+          arg [/usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64/crti.o] ==> obj [/usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64/crti.o]
+          arg [/usr/lib/gcc/x86_64-redhat-linux/11/crtbegin.o] ==> obj [/usr/lib/gcc/x86_64-redhat-linux/11/crtbegin.o]
+          arg [-L/usr/lib/gcc/x86_64-redhat-linux/11] ==> dir [/usr/lib/gcc/x86_64-redhat-linux/11]
+          arg [-L/usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64] ==> dir [/usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64]
+          arg [-L/lib/../lib64] ==> dir [/lib/../lib64]
+          arg [-L/usr/lib/../lib64] ==> dir [/usr/lib/../lib64]
+          arg [-L/usr/lib/gcc/x86_64-redhat-linux/11/../../..] ==> dir [/usr/lib/gcc/x86_64-redhat-linux/11/../../..]
+          arg [CMakeFiles/cmTC_2d6a6.dir/CMakeCCompilerABI.c.o] ==> ignore
+          arg [-lgcc] ==> lib [gcc]
+          arg [--push-state] ==> ignore
+          arg [--as-needed] ==> ignore
+          arg [-lgcc_s] ==> lib [gcc_s]
+          arg [--pop-state] ==> ignore
+          arg [-lc] ==> lib [c]
+          arg [-lgcc] ==> lib [gcc]
+          arg [--push-state] ==> ignore
+          arg [--as-needed] ==> ignore
+          arg [-lgcc_s] ==> lib [gcc_s]
+          arg [--pop-state] ==> ignore
+          arg [/usr/lib/gcc/x86_64-redhat-linux/11/crtend.o] ==> obj [/usr/lib/gcc/x86_64-redhat-linux/11/crtend.o]
+          arg [/usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64/crtn.o] ==> obj [/usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64/crtn.o]
+        collapse obj [/usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64/crt1.o] ==> [/usr/lib64/crt1.o]
+        collapse obj [/usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64/crti.o] ==> [/usr/lib64/crti.o]
+        collapse obj [/usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64/crtn.o] ==> [/usr/lib64/crtn.o]
+        collapse library dir [/usr/lib/gcc/x86_64-redhat-linux/11] ==> [/usr/lib/gcc/x86_64-redhat-linux/11]
+        collapse library dir [/usr/lib/gcc/x86_64-redhat-linux/11/../../../../lib64] ==> [/usr/lib64]
+        collapse library dir [/lib/../lib64] ==> [/lib64]
+        collapse library dir [/usr/lib/../lib64] ==> [/usr/lib64]
+        collapse library dir [/usr/lib/gcc/x86_64-redhat-linux/11/../../..] ==> [/usr/lib]
+        implicit libs: [gcc;gcc_s;c;gcc;gcc_s]
+        implicit objs: [/usr/lib64/crt1.o;/usr/lib64/crti.o;/usr/lib/gcc/x86_64-redhat-linux/11/crtbegin.o;/usr/lib/gcc/x86_64-redhat-linux/11/crtend.o;/usr/lib64/crtn.o]
+        implicit dirs: [/usr/lib/gcc/x86_64-redhat-linux/11;/usr/lib64;/lib64;/usr/lib]
+        implicit fwks: []
+      
+      
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:111 (find_package)"
+    description: "The MPI test test_mpi for C in mode normal"
+    directories:
+      source: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-SgQYJB"
+      binary: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-SgQYJB"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_C_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-SgQYJB
+        
+        Run Build Command(s):/usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_cae84/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_cae84.dir/build.make CMakeFiles/cmTC_cae84.dir/build
+        gmake[1]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-SgQYJB'
+        Building C object CMakeFiles/cmTC_cae84.dir/test_mpi.c.o
+        /usr/bin/cc    -o CMakeFiles/cmTC_cae84.dir/test_mpi.c.o -c /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-SgQYJB/test_mpi.c
+        /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-SgQYJB/test_mpi.c:1:10: fatal error: mpi.h: No such file or directory
+            1 | #include <mpi.h>
+              |          ^~~~~~~
+        compilation terminated.
+        gmake[1]: *** [CMakeFiles/cmTC_cae84.dir/build.make:78: CMakeFiles/cmTC_cae84.dir/test_mpi.c.o] Error 1
+        gmake[1]: Leaving directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-SgQYJB'
+        gmake: *** [Makefile:127: cmTC_cae84/fast] Error 2
+        
+      exitCode: 2
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:111 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-Gns1w3"
+      binary: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-Gns1w3"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-Gns1w3
+        
+        Run Build Command(s):/usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_a97bc/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_a97bc.dir/build.make CMakeFiles/cmTC_a97bc.dir/build
+        gmake[1]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-Gns1w3'
+        Building CXX object CMakeFiles/cmTC_a97bc.dir/test_mpi.cpp.o
+        /usr/bin/clang++-20    -MD -MT CMakeFiles/cmTC_a97bc.dir/test_mpi.cpp.o -MF CMakeFiles/cmTC_a97bc.dir/test_mpi.cpp.o.d -o CMakeFiles/cmTC_a97bc.dir/test_mpi.cpp.o -c /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-Gns1w3/test_mpi.cpp
+        /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-Gns1w3/test_mpi.cpp:1:10: fatal error: 'mpi.h' file not found
+            1 | #include <mpi.h>
+              |          ^~~~~~~
+        1 error generated.
+        gmake[1]: *** [CMakeFiles/cmTC_a97bc.dir/build.make:79: CMakeFiles/cmTC_a97bc.dir/test_mpi.cpp.o] Error 1
+        gmake[1]: Leaving directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-Gns1w3'
+        gmake: *** [Makefile:127: cmTC_a97bc/fast] Error 2
+        
+      exitCode: 2
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/Internal/CheckSourceCompiles.cmake:101 (try_compile)"
+      - "/usr/share/cmake/Modules/CheckCSourceCompiles.cmake:76 (cmake_check_source_compiles)"
+      - "/usr/share/cmake/Modules/FindThreads.cmake:97 (CHECK_C_SOURCE_COMPILES)"
+      - "/usr/share/cmake/Modules/FindThreads.cmake:163 (_threads_check_libc)"
+      - "/usr/share/cmake/Modules/CMakeFindDependencyMacro.cmake:76 (find_package)"
+      - "/usr/lib64/cmake/boost_thread-1.75.0/boost_thread-config.cmake:106 (find_dependency)"
+      - "/usr/lib64/cmake/boost_log-1.75.0/boost_log-config.cmake:90 (find_package)"
+      - "/usr/lib64/cmake/boost_log_setup-1.75.0/boost_log_setup-config.cmake:90 (find_package)"
+      - "/usr/lib64/cmake/Boost-1.75.0/BoostConfig.cmake:141 (find_package)"
+      - "/usr/lib64/cmake/Boost-1.75.0/BoostConfig.cmake:258 (boost_find_component)"
+      - "CMakeLists.txt:140 (find_package)"
+    checks:
+      - "Performing Test CMAKE_HAVE_LIBC_PTHREAD"
+    directories:
+      source: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-zebjFN"
+      binary: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-zebjFN"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "CMAKE_HAVE_LIBC_PTHREAD"
+      cached: true
+      stdout: |
+        Change Dir: /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-zebjFN
+        
+        Run Build Command(s):/usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_25065/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_25065.dir/build.make CMakeFiles/cmTC_25065.dir/build
+        gmake[1]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-zebjFN'
+        Building C object CMakeFiles/cmTC_25065.dir/src.c.o
+        /usr/bin/cc -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_25065.dir/src.c.o -c /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-zebjFN/src.c
+        Linking C executable cmTC_25065
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_25065.dir/link.txt --verbose=1
+        /usr/bin/cc CMakeFiles/cmTC_25065.dir/src.c.o -o cmTC_25065 
+        gmake[1]: Leaving directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-zebjFN'
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/FindHDF5.cmake:238 (try_compile)"
+      - "/usr/share/cmake/Modules/FindHDF5.cmake:584 (_HDF5_test_regular_compiler_C)"
+      - "CMakeLists.txt:156 (find_package)"
+    directories:
+      source: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-R0hfmO"
+      binary: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-R0hfmO"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "HDF5_C_COMPILER_NO_INTERROGATE"
+      cached: true
+      stdout: |
+        Change Dir: /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-R0hfmO
+        
+        Run Build Command(s):/usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_100dc/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_100dc.dir/build.make CMakeFiles/cmTC_100dc.dir/build
+        gmake[1]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-R0hfmO'
+        Building C object CMakeFiles/cmTC_100dc.dir/cmake_hdf5_test.c.o
+        /usr/bin/cc    -o CMakeFiles/cmTC_100dc.dir/cmake_hdf5_test.c.o -c /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/hdf5/cmake_hdf5_test.c
+        Linking C executable cmTC_100dc
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_100dc.dir/link.txt --verbose=1
+        /usr/bin/cc CMakeFiles/cmTC_100dc.dir/cmake_hdf5_test.c.o -o cmTC_100dc 
+        /usr/bin/ld: CMakeFiles/cmTC_100dc.dir/cmake_hdf5_test.c.o: in function `main':
+        cmake_hdf5_test.c:(.text+0x3e): undefined reference to `H5check_version'
+        /usr/bin/ld: cmake_hdf5_test.c:(.text+0x43): undefined reference to `H5open'
+        /usr/bin/ld: cmake_hdf5_test.c:(.text+0x5c): undefined reference to `H5Fcreate'
+        collect2: error: ld returned 1 exit status
+        gmake[1]: *** [CMakeFiles/cmTC_100dc.dir/build.make:99: cmTC_100dc] Error 1
+        gmake[1]: Leaving directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-R0hfmO'
+        gmake: *** [Makefile:127: cmTC_100dc/fast] Error 2
+        
+      exitCode: 2
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/FindHDF5.cmake:284 (try_compile)"
+      - "/usr/share/cmake/Modules/FindHDF5.cmake:590 (_HDF5_test_regular_compiler_CXX)"
+      - "CMakeLists.txt:156 (find_package)"
+    directories:
+      source: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-zPYvL9"
+      binary: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-zPYvL9"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "HDF5_CXX_COMPILER_NO_INTERROGATE"
+      cached: true
+      stdout: |
+        Change Dir: /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-zPYvL9
+        
+        Run Build Command(s):/usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_ab893/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_ab893.dir/build.make CMakeFiles/cmTC_ab893.dir/build
+        gmake[1]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-zPYvL9'
+        Building CXX object CMakeFiles/cmTC_ab893.dir/cmake_hdf5_test.cxx.o
+        /usr/bin/clang++-20    -MD -MT CMakeFiles/cmTC_ab893.dir/cmake_hdf5_test.cxx.o -MF CMakeFiles/cmTC_ab893.dir/cmake_hdf5_test.cxx.o.d -o CMakeFiles/cmTC_ab893.dir/cmake_hdf5_test.cxx.o -c /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/hdf5/cmake_hdf5_test.cxx
+        Linking CXX executable cmTC_ab893
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_ab893.dir/link.txt --verbose=1
+        /usr/bin/clang++-20 CMakeFiles/cmTC_ab893.dir/cmake_hdf5_test.cxx.o -o cmTC_ab893 
+        /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld: CMakeFiles/cmTC_ab893.dir/cmake_hdf5_test.cxx.o: in function `main':
+        cmake_hdf5_test.cxx:(.text+0x40): undefined reference to `H5check_version'
+        /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld: cmake_hdf5_test.cxx:(.text+0x45): undefined reference to `H5open'
+        /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld: cmake_hdf5_test.cxx:(.text+0x4d): undefined reference to `H5::FileCreatPropList::DEFAULT'
+        /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld: cmake_hdf5_test.cxx:(.text+0x55): undefined reference to `H5::FileAccPropList::DEFAULT'
+        /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld: cmake_hdf5_test.cxx:(.text+0x6d): undefined reference to `H5::H5File::H5File(char const*, unsigned int, H5::FileCreatPropList const&, H5::FileAccPropList const&)'
+        /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld: cmake_hdf5_test.cxx:(.text+0x7d): undefined reference to `H5::H5File::~H5File()'
+        clang++-20: error: linker command failed with exit code 1 (use -v to see invocation)
+        gmake[1]: *** [CMakeFiles/cmTC_ab893.dir/build.make:100: cmTC_ab893] Error 1
+        gmake[1]: Leaving directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-zPYvL9'
+        gmake: *** [Makefile:127: cmTC_ab893/fast] Error 2
+        
+      exitCode: 2
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:111 (find_package)"
+    description: "The MPI test test_mpi for C in mode normal"
+    directories:
+      source: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-khrVwV"
+      binary: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-khrVwV"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_C_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-khrVwV
+        
+        Run Build Command(s):/usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_1b567/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_1b567.dir/build.make CMakeFiles/cmTC_1b567.dir/build
+        gmake[1]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-khrVwV'
+        Building C object CMakeFiles/cmTC_1b567.dir/test_mpi.c.o
+        /usr/bin/cc    -o CMakeFiles/cmTC_1b567.dir/test_mpi.c.o -c /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-khrVwV/test_mpi.c
+        /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-khrVwV/test_mpi.c:1:10: fatal error: mpi.h: No such file or directory
+            1 | #include <mpi.h>
+              |          ^~~~~~~
+        compilation terminated.
+        gmake[1]: *** [CMakeFiles/cmTC_1b567.dir/build.make:78: CMakeFiles/cmTC_1b567.dir/test_mpi.c.o] Error 1
+        gmake[1]: Leaving directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-khrVwV'
+        gmake: *** [Makefile:127: cmTC_1b567/fast] Error 2
+        
+      exitCode: 2
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:111 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-JmrjyJ"
+      binary: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-JmrjyJ"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-JmrjyJ
+        
+        Run Build Command(s):/usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_c01a3/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_c01a3.dir/build.make CMakeFiles/cmTC_c01a3.dir/build
+        gmake[1]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-JmrjyJ'
+        Building CXX object CMakeFiles/cmTC_c01a3.dir/test_mpi.cpp.o
+        /usr/bin/clang++-20    -MD -MT CMakeFiles/cmTC_c01a3.dir/test_mpi.cpp.o -MF CMakeFiles/cmTC_c01a3.dir/test_mpi.cpp.o.d -o CMakeFiles/cmTC_c01a3.dir/test_mpi.cpp.o -c /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-JmrjyJ/test_mpi.cpp
+        /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-JmrjyJ/test_mpi.cpp:1:10: fatal error: 'mpi.h' file not found
+            1 | #include <mpi.h>
+              |          ^~~~~~~
+        1 error generated.
+        gmake[1]: *** [CMakeFiles/cmTC_c01a3.dir/build.make:79: CMakeFiles/cmTC_c01a3.dir/test_mpi.cpp.o] Error 1
+        gmake[1]: Leaving directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-JmrjyJ'
+        gmake: *** [Makefile:127: cmTC_c01a3/fast] Error 2
+        
+      exitCode: 2
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/FindHDF5.cmake:238 (try_compile)"
+      - "/usr/share/cmake/Modules/FindHDF5.cmake:584 (_HDF5_test_regular_compiler_C)"
+      - "CMakeLists.txt:156 (find_package)"
+    directories:
+      source: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-WIwiDc"
+      binary: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-WIwiDc"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "HDF5_C_COMPILER_NO_INTERROGATE"
+      cached: true
+      stdout: |
+        Change Dir: /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-WIwiDc
+        
+        Run Build Command(s):/usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_4233a/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_4233a.dir/build.make CMakeFiles/cmTC_4233a.dir/build
+        gmake[1]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-WIwiDc'
+        Building C object CMakeFiles/cmTC_4233a.dir/cmake_hdf5_test.c.o
+        /usr/bin/cc    -o CMakeFiles/cmTC_4233a.dir/cmake_hdf5_test.c.o -c /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/hdf5/cmake_hdf5_test.c
+        Linking C executable cmTC_4233a
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_4233a.dir/link.txt --verbose=1
+        /usr/bin/cc CMakeFiles/cmTC_4233a.dir/cmake_hdf5_test.c.o -o cmTC_4233a 
+        /usr/bin/ld: CMakeFiles/cmTC_4233a.dir/cmake_hdf5_test.c.o: in function `main':
+        cmake_hdf5_test.c:(.text+0x3e): undefined reference to `H5check_version'
+        /usr/bin/ld: cmake_hdf5_test.c:(.text+0x43): undefined reference to `H5open'
+        /usr/bin/ld: cmake_hdf5_test.c:(.text+0x5c): undefined reference to `H5Fcreate'
+        collect2: error: ld returned 1 exit status
+        gmake[1]: *** [CMakeFiles/cmTC_4233a.dir/build.make:99: cmTC_4233a] Error 1
+        gmake[1]: Leaving directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-WIwiDc'
+        gmake: *** [Makefile:127: cmTC_4233a/fast] Error 2
+        
+      exitCode: 2
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/FindHDF5.cmake:284 (try_compile)"
+      - "/usr/share/cmake/Modules/FindHDF5.cmake:590 (_HDF5_test_regular_compiler_CXX)"
+      - "CMakeLists.txt:156 (find_package)"
+    directories:
+      source: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-aNDsDq"
+      binary: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-aNDsDq"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "HDF5_CXX_COMPILER_NO_INTERROGATE"
+      cached: true
+      stdout: |
+        Change Dir: /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-aNDsDq
+        
+        Run Build Command(s):/usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_b38a0/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_b38a0.dir/build.make CMakeFiles/cmTC_b38a0.dir/build
+        gmake[1]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-aNDsDq'
+        Building CXX object CMakeFiles/cmTC_b38a0.dir/cmake_hdf5_test.cxx.o
+        /usr/bin/clang++-20    -MD -MT CMakeFiles/cmTC_b38a0.dir/cmake_hdf5_test.cxx.o -MF CMakeFiles/cmTC_b38a0.dir/cmake_hdf5_test.cxx.o.d -o CMakeFiles/cmTC_b38a0.dir/cmake_hdf5_test.cxx.o -c /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/hdf5/cmake_hdf5_test.cxx
+        Linking CXX executable cmTC_b38a0
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_b38a0.dir/link.txt --verbose=1
+        /usr/bin/clang++-20 CMakeFiles/cmTC_b38a0.dir/cmake_hdf5_test.cxx.o -o cmTC_b38a0 
+        /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld: CMakeFiles/cmTC_b38a0.dir/cmake_hdf5_test.cxx.o: in function `main':
+        cmake_hdf5_test.cxx:(.text+0x40): undefined reference to `H5check_version'
+        /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld: cmake_hdf5_test.cxx:(.text+0x45): undefined reference to `H5open'
+        /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld: cmake_hdf5_test.cxx:(.text+0x4d): undefined reference to `H5::FileCreatPropList::DEFAULT'
+        /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld: cmake_hdf5_test.cxx:(.text+0x55): undefined reference to `H5::FileAccPropList::DEFAULT'
+        /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld: cmake_hdf5_test.cxx:(.text+0x6d): undefined reference to `H5::H5File::H5File(char const*, unsigned int, H5::FileCreatPropList const&, H5::FileAccPropList const&)'
+        /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld: cmake_hdf5_test.cxx:(.text+0x7d): undefined reference to `H5::H5File::~H5File()'
+        clang++-20: error: linker command failed with exit code 1 (use -v to see invocation)
+        gmake[1]: *** [CMakeFiles/cmTC_b38a0.dir/build.make:100: cmTC_b38a0] Error 1
+        gmake[1]: Leaving directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-aNDsDq'
+        gmake: *** [Makefile:127: cmTC_b38a0/fast] Error 2
+        
+      exitCode: 2
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:111 (find_package)"
+    description: "The MPI test test_mpi for C in mode normal"
+    directories:
+      source: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-ocophJ"
+      binary: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-ocophJ"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_C_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-ocophJ
+        
+        Run Build Command(s):/usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_e0360/fast && gmake[1]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-ocophJ'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_e0360.dir/build.make CMakeFiles/cmTC_e0360.dir/build
+        gmake[2]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-ocophJ'
+        Building C object CMakeFiles/cmTC_e0360.dir/test_mpi.c.o
+        /usr/bin/cc    -o CMakeFiles/cmTC_e0360.dir/test_mpi.c.o -c /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-ocophJ/test_mpi.c
+        /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-ocophJ/test_mpi.c:1:10: fatal error: mpi.h: No such file or directory
+            1 | #include <mpi.h>
+              |          ^~~~~~~
+        compilation terminated.
+        gmake[2]: *** [CMakeFiles/cmTC_e0360.dir/build.make:78: CMakeFiles/cmTC_e0360.dir/test_mpi.c.o] Error 1
+        gmake[2]: Leaving directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-ocophJ'
+        gmake[1]: *** [Makefile:127: cmTC_e0360/fast] Error 2
+        gmake[1]: Leaving directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-ocophJ'
+        
+      exitCode: 2
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:111 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-m5ADR8"
+      binary: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-m5ADR8"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-m5ADR8
+        
+        Run Build Command(s):/usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_d9797/fast && gmake[1]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-m5ADR8'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_d9797.dir/build.make CMakeFiles/cmTC_d9797.dir/build
+        gmake[2]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-m5ADR8'
+        Building CXX object CMakeFiles/cmTC_d9797.dir/test_mpi.cpp.o
+        /usr/bin/clang++-20    -MD -MT CMakeFiles/cmTC_d9797.dir/test_mpi.cpp.o -MF CMakeFiles/cmTC_d9797.dir/test_mpi.cpp.o.d -o CMakeFiles/cmTC_d9797.dir/test_mpi.cpp.o -c /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-m5ADR8/test_mpi.cpp
+        /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-m5ADR8/test_mpi.cpp:1:10: fatal error: 'mpi.h' file not found
+            1 | #include <mpi.h>
+              |          ^~~~~~~
+        1 error generated.
+        gmake[2]: *** [CMakeFiles/cmTC_d9797.dir/build.make:79: CMakeFiles/cmTC_d9797.dir/test_mpi.cpp.o] Error 1
+        gmake[2]: Leaving directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-m5ADR8'
+        gmake[1]: *** [Makefile:127: cmTC_d9797/fast] Error 2
+        gmake[1]: Leaving directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-m5ADR8'
+        
+      exitCode: 2
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/FindHDF5.cmake:238 (try_compile)"
+      - "/usr/share/cmake/Modules/FindHDF5.cmake:584 (_HDF5_test_regular_compiler_C)"
+      - "CMakeLists.txt:156 (find_package)"
+    directories:
+      source: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-7UfXo2"
+      binary: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-7UfXo2"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "HDF5_C_COMPILER_NO_INTERROGATE"
+      cached: true
+      stdout: |
+        Change Dir: /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-7UfXo2
+        
+        Run Build Command(s):/usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_94bbd/fast && gmake[1]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-7UfXo2'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_94bbd.dir/build.make CMakeFiles/cmTC_94bbd.dir/build
+        gmake[2]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-7UfXo2'
+        Building C object CMakeFiles/cmTC_94bbd.dir/cmake_hdf5_test.c.o
+        /usr/bin/cc    -o CMakeFiles/cmTC_94bbd.dir/cmake_hdf5_test.c.o -c /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/hdf5/cmake_hdf5_test.c
+        Linking C executable cmTC_94bbd
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_94bbd.dir/link.txt --verbose=1
+        /usr/bin/cc CMakeFiles/cmTC_94bbd.dir/cmake_hdf5_test.c.o -o cmTC_94bbd 
+        /usr/bin/ld: CMakeFiles/cmTC_94bbd.dir/cmake_hdf5_test.c.o: in function `main':
+        cmake_hdf5_test.c:(.text+0x3e): undefined reference to `H5check_version'
+        /usr/bin/ld: cmake_hdf5_test.c:(.text+0x43): undefined reference to `H5open'
+        /usr/bin/ld: cmake_hdf5_test.c:(.text+0x5c): undefined reference to `H5Fcreate'
+        collect2: error: ld returned 1 exit status
+        gmake[2]: *** [CMakeFiles/cmTC_94bbd.dir/build.make:99: cmTC_94bbd] Error 1
+        gmake[2]: Leaving directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-7UfXo2'
+        gmake[1]: *** [Makefile:127: cmTC_94bbd/fast] Error 2
+        gmake[1]: Leaving directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-7UfXo2'
+        
+      exitCode: 2
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/FindHDF5.cmake:284 (try_compile)"
+      - "/usr/share/cmake/Modules/FindHDF5.cmake:590 (_HDF5_test_regular_compiler_CXX)"
+      - "CMakeLists.txt:156 (find_package)"
+    directories:
+      source: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-an4v3c"
+      binary: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-an4v3c"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "HDF5_CXX_COMPILER_NO_INTERROGATE"
+      cached: true
+      stdout: |
+        Change Dir: /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-an4v3c
+        
+        Run Build Command(s):/usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_4057c/fast && gmake[1]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-an4v3c'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_4057c.dir/build.make CMakeFiles/cmTC_4057c.dir/build
+        gmake[2]: Entering directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-an4v3c'
+        Building CXX object CMakeFiles/cmTC_4057c.dir/cmake_hdf5_test.cxx.o
+        /usr/bin/clang++-20    -MD -MT CMakeFiles/cmTC_4057c.dir/cmake_hdf5_test.cxx.o -MF CMakeFiles/cmTC_4057c.dir/cmake_hdf5_test.cxx.o.d -o CMakeFiles/cmTC_4057c.dir/cmake_hdf5_test.cxx.o -c /project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/hdf5/cmake_hdf5_test.cxx
+        Linking CXX executable cmTC_4057c
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_4057c.dir/link.txt --verbose=1
+        /usr/bin/clang++-20 CMakeFiles/cmTC_4057c.dir/cmake_hdf5_test.cxx.o -o cmTC_4057c 
+        /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld: CMakeFiles/cmTC_4057c.dir/cmake_hdf5_test.cxx.o: in function `main':
+        cmake_hdf5_test.cxx:(.text+0x40): undefined reference to `H5check_version'
+        /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld: cmake_hdf5_test.cxx:(.text+0x45): undefined reference to `H5open'
+        /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld: cmake_hdf5_test.cxx:(.text+0x4d): undefined reference to `H5::FileCreatPropList::DEFAULT'
+        /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld: cmake_hdf5_test.cxx:(.text+0x55): undefined reference to `H5::FileAccPropList::DEFAULT'
+        /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld: cmake_hdf5_test.cxx:(.text+0x6d): undefined reference to `H5::H5File::H5File(char const*, unsigned int, H5::FileCreatPropList const&, H5::FileAccPropList const&)'
+        /opt/rh/gcc-toolset-14/root//usr/lib/gcc/x86_64-redhat-linux/14/../../../../bin/ld: cmake_hdf5_test.cxx:(.text+0x7d): undefined reference to `H5::H5File::~H5File()'
+        clang++-20: error: linker command failed with exit code 1 (use -v to see invocation)
+        gmake[2]: *** [CMakeFiles/cmTC_4057c.dir/build.make:100: cmTC_4057c] Error 1
+        gmake[2]: Leaving directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-an4v3c'
+        gmake[1]: *** [Makefile:127: cmTC_4057c/fast] Error 2
+        gmake[1]: Leaving directory '/project/theorie/a/A.Otaifi/ParaToric/build-current-clang-portable/CMakeFiles/CMakeScratch/TryCompile-an4v3c'
+        
+      exitCode: 2
+...

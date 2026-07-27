@@ -147,6 +147,30 @@ def strict_roundtrip_sample_gaps(trajectory: np.ndarray, top: int) -> list[int]:
     return gaps
 
 
+def return_excursion_ranges(trajectory: np.ndarray, anchor: int) -> list[int]:
+    """Return maximum rung distances for closed excursions from one anchor.
+
+    The anchor is the replica's initial ladder position.  An excursion begins
+    when the label leaves that position and ends on its first return.  An open
+    terminal excursion is deliberately excluded because its eventual range is
+    unknown.
+    """
+    ranges: list[int] = []
+    maximum = 0
+    away = False
+    for value in trajectory:
+        distance = abs(int(value) - anchor)
+        if distance == 0:
+            if away:
+                ranges.append(maximum)
+                maximum = 0
+                away = False
+        else:
+            away = True
+            maximum = max(maximum, distance)
+    return ranges
+
+
 def flow_counts(trajectory: np.ndarray, world_size: int) -> tuple[list[int], list[int]]:
     """Count crossings through each rung toward higher or lower ladder index."""
     n_up = [0 for _ in range(world_size)]
@@ -163,6 +187,67 @@ def flow_counts(trajectory: np.ndarray, world_size: int) -> tuple[list[int], lis
             else:
                 n_down[rung] += 1
     return n_up, n_down
+
+
+def endpoint_labelled_flow_counts(
+    trajectory: np.ndarray, world_size: int
+) -> tuple[list[int], list[int]]:
+    """Count rung occupancy by the endpoint most recently visited."""
+    top = world_size - 1
+    n_up = [0 for _ in range(world_size)]
+    n_down = [0 for _ in range(world_size)]
+    label: str | None = None
+    for value in trajectory:
+        rung = int(value)
+        if rung == 0:
+            label = "up"
+        elif rung == top:
+            label = "down"
+        if label == "up":
+            n_up[rung] += 1
+        elif label == "down":
+            n_down[rung] += 1
+    return n_up, n_down
+
+
+def production_motion_by_link(
+    trajectories: list[np.ndarray], world_size: int
+) -> tuple[list[int], list[int], list[int]]:
+    """Infer accepted swaps/opportunities from one-swap-phase sample motion."""
+    if not trajectories:
+        raise ValueError("at least one trajectory is required")
+    sample_counts = {int(trajectory.size) for trajectory in trajectories}
+    if len(sample_counts) != 1:
+        raise ValueError(f"trajectory sample counts differ: {sorted(sample_counts)}")
+    sample_count = next(iter(sample_counts))
+    accepted_up = [0 for _ in range(world_size - 1)]
+    accepted_down = [0 for _ in range(world_size - 1)]
+    offsets: set[int] = set()
+    for trajectory in trajectories:
+        for interval, (left, right) in enumerate(zip(trajectory[:-1], trajectory[1:])):
+            a = int(left)
+            b = int(right)
+            if abs(b - a) > 1:
+                raise ValueError(
+                    "production-motion acceptance requires at most one swap phase "
+                    "between stored samples"
+                )
+            if a == b:
+                continue
+            link = min(a, b)
+            offsets.add((link - interval) % 2)
+            if b > a:
+                accepted_up[link] += 1
+            else:
+                accepted_down[link] += 1
+    if len(offsets) != 1:
+        raise ValueError(f"could not infer a unique alternating swap-phase offset: {offsets}")
+    offset = next(iter(offsets))
+    opportunities = [
+        sum(1 for interval in range(sample_count - 1) if (interval + offset) % 2 == link % 2)
+        for link in range(world_size - 1)
+    ]
+    return accepted_up, accepted_down, opportunities
 
 
 def analyze_trajectory(
@@ -267,6 +352,112 @@ def run_analyze(args: argparse.Namespace) -> int:
             f"{replica.endpoint_span_count}\t{replica.reference_low_to_high_count}\t"
             f"{replica.strict_roundtrips}\t{taus}"
         )
+    if args.production_motion:
+        trajectories = [read_ladder_trajectory(path)[0] for path in paths]
+        accepted_up, accepted_down, opportunities = production_motion_by_link(
+            trajectories, world_size
+        )
+        endpoint_up = [0 for _ in range(world_size)]
+        endpoint_down = [0 for _ in range(world_size)]
+        for trajectory in trajectories:
+            up, down = endpoint_labelled_flow_counts(trajectory, world_size)
+            endpoint_up = [left + right for left, right in zip(endpoint_up, up)]
+            endpoint_down = [left + right for left, right in zip(endpoint_down, down)]
+        ladder = None
+        if args.ladder_values:
+            ladder = [
+                float(part)
+                for part in Path(args.ladder_values)
+                .read_text(encoding="utf-8")
+                .replace(",", " ")
+                .split()
+            ]
+            if len(ladder) != world_size:
+                raise SystemExit(
+                    f"ladder-values count {len(ladder)} != world_size {world_size}"
+                )
+        motion_lines = [
+            "link\tleft_h\tright_h\taccepted_up\taccepted_down\topportunities\tproduction_acceptance\tbinomial_se"
+        ]
+        print(
+            "production_motion_formula: accepted swaps are adjacent trajectory "
+            "changes; one stored sample per alternating swap phase"
+        )
+        print(motion_lines[0])
+        acceptance_values: list[float] = []
+        for link, (up, down, attempted) in enumerate(
+            zip(accepted_up, accepted_down, opportunities)
+        ):
+            accepted = 0.5 * (up + down)
+            acceptance = accepted / attempted
+            standard_error = math.sqrt(acceptance * (1.0 - acceptance) / attempted)
+            left_h = f"{ladder[link]:.12f}" if ladder is not None else "NA"
+            right_h = f"{ladder[link + 1]:.12f}" if ladder is not None else "NA"
+            line = (
+                f"{link}\t{left_h}\t{right_h}\t{up}\t{down}\t{attempted}\t"
+                f"{acceptance:.12f}\t{standard_error:.12f}"
+            )
+            motion_lines.append(line)
+            print(line)
+            acceptance_values.append(acceptance)
+        acceptance_array = np.asarray(acceptance_values, dtype=float)
+        harmonic = (
+            float(acceptance_array.size / np.sum(1.0 / acceptance_array))
+            if np.all(acceptance_array > 0.0) else 0.0
+        )
+        print(
+            f"production_acceptance_summary median={np.median(acceptance_array):.12f} "
+            f"harmonic_mean={harmonic:.12f} min={np.min(acceptance_array):.12f}"
+        )
+        print(
+            "endpoint_labelled_flow: up=last visited low endpoint; "
+            "down=last visited high endpoint"
+        )
+        endpoint_flow_lines = ["rung\th\tn_up\tn_down\tf_up"]
+        print(endpoint_flow_lines[0])
+        for rung, (up, down) in enumerate(zip(endpoint_up, endpoint_down)):
+            visits = up + down
+            f_up = float(up) / float(visits) if visits else None
+            h_value = f"{ladder[rung]:.12f}" if ladder is not None else "NA"
+            line = f"{rung}\t{h_value}\t{up}\t{down}\t{format_float(f_up)}"
+            endpoint_flow_lines.append(line)
+            print(line)
+        if args.motion_output:
+            args.motion_output.write_text("\n".join(motion_lines) + "\n", encoding="utf-8")
+        if args.flow_output:
+            motion_flow_lines = ["rung\th\tn_up_from_lower_link\tn_down_from_upper_link\tf_up"]
+            for rung, (up, down) in enumerate(zip(total_up, total_down)):
+                visits = up + down
+                f_up = float(up) / float(visits) if visits else None
+                h_value = f"{ladder[rung]:.12f}" if ladder is not None else "NA"
+                motion_flow_lines.append(
+                    f"{rung}\t{h_value}\t{up}\t{down}\t{format_float(f_up)}"
+                )
+            args.flow_output.write_text(
+                "\n".join(motion_flow_lines) + "\n", encoding="utf-8"
+            )
+    if args.excursion_output:
+        rows = ["rung\tclosed_excursions\tmean_range\tmedian_range\tmax_range\trange_counts"]
+        for path in paths:
+            trajectory, _, _, initial, _ = read_ladder_trajectory(path)
+            if initial is None:
+                raise ValueError(f"{path}: initial_ladder_index is required for excursions")
+            ranges = return_excursion_ranges(trajectory, initial)
+            counts = np.bincount(ranges, minlength=world_size) if ranges else np.zeros(world_size, dtype=int)
+            count_text = ",".join(
+                f"{distance}:{int(count)}" for distance, count in enumerate(counts) if count
+            ) or "NONE"
+            rows.append(
+                f"{initial}\t{len(ranges)}\t"
+                f"{format_float(float(np.mean(ranges)) if ranges else None)}\t"
+                f"{format_float(float(np.median(ranges)) if ranges else None)}\t"
+                f"{max(ranges) if ranges else 'NA'}\t{count_text}"
+            )
+        rows = [rows[0], *sorted(rows[1:], key=lambda row: int(row.split("\t", 1)[0]))]
+        print("excursion_formula=closed departures from each replica initial rung through first return")
+        for row in rows:
+            print(row)
+        args.excursion_output.write_text("\n".join(rows) + "\n", encoding="utf-8")
     return 0
 
 
@@ -283,6 +474,23 @@ def synthetic_self_test() -> int:
     assert down == [3, 2, 2, 0], down
     taus = [gap * period for gap in gaps]
     assert taus == [10.0, 10.0], taus
+    excursions = return_excursion_ranges(
+        np.array([1, 2, 3, 2, 1, 0, 1, 2, 1, 3], dtype=int), 1
+    )
+    assert excursions == [2, 1, 1], excursions
+    endpoint_up, endpoint_down = endpoint_labelled_flow_counts(trajectory, top + 1)
+    assert endpoint_up == [3, 3, 0, 0], endpoint_up
+    assert endpoint_down == [0, 0, 2, 4], endpoint_down
+    motion_up, motion_down, opportunities = production_motion_by_link(
+        [
+            np.array([0, 1, 2, 2, 2], dtype=int),
+            np.array([1, 0, 0, 0, 0], dtype=int),
+            np.array([2, 2, 1, 1, 1], dtype=int),
+        ],
+        3,
+    )
+    assert motion_up == [1, 1] and motion_down == [1, 1]
+    assert opportunities == [2, 2], opportunities
     print("synthetic_strict_roundtrips=2")
     print("synthetic_endpoint_spans=5")
     print("synthetic_reference_low_to_high=3")
@@ -304,6 +512,18 @@ def build_parser() -> argparse.ArgumentParser:
     analyze.add_argument("--sample-period-sweeps", type=float, help="Sweeps between stored trajectory samples")
     analyze.add_argument("--system-size", type=int, help="L for square lattice; used with --n-between-samples")
     analyze.add_argument("--n-between-samples", type=int, help="Raw Metropolis updates between stored samples")
+    analyze.add_argument(
+        "--excursion-output", type=Path,
+        help="Write per-initial-rung closed-excursion range distributions as TSV",
+    )
+    analyze.add_argument(
+        "--production-motion",
+        action="store_true",
+        help="Infer per-link production acceptance from adjacent trajectory motion",
+    )
+    analyze.add_argument("--ladder-values", help="File with one physical ladder value per rung")
+    analyze.add_argument("--motion-output", type=Path, help="Write production-motion per-link TSV")
+    analyze.add_argument("--flow-output", type=Path, help="Write trajectory-motion production-flow TSV")
     analyze.set_defaults(func=run_analyze)
 
     self_test = subparsers.add_parser("self-test", help="Run synthetic PT trajectory assertions")

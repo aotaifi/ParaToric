@@ -5,1192 +5,1103 @@ Jarvis appends here; Feynman reads, never writes. Entries tagged
 
 ---
 
-## thesis:T1 | plan:T1-P1 | type:PROPOSED PLAN
-
-**2026-07-08.** No `feynman_thesis_tojarvis.md` exists yet for this project — this is a
-cold bootstrap of the Feynman/Jarvis channel here. Proposing thesis T1 as the framing for
-the M0 infrastructure milestone; Feynman should ratify/reword the thesis itself (this entry
-only proposes the milestone breakdown under it).
-
-**Proposed thesis T1:** The universality class of the toric-code multicritical point
-(self-dual (2+1)D Z2 gauge-Higgs; competing scenarios: first-order, multicritical XY*
-(Bonati-Pelissetto-Vicari PRB 105,165138), new self-dual class (Somoza-Serna-Nahum PRX
-11,041008)) can be decided by large-L FSS with beta=L, IF Markov-chain sampling efficiency
-(currently autocorrelation-bound, not CPU-bound) can be raised enough to make the ladder
-tractable. M0 tests that IF.
-
-**Basis (already written, this session inherits it, does not re-derive it):**
-- `doc/multicritical_universality_plan.md` — full milestone plan M0–M4, literature, budget.
-- `doc/multicritical_execution_harness.md` — hard gates/invariants (I1–I6, G0–G4).
-- `doc/run_tracker_multicritical.md` — current-state card; carries a 2026-07-08 physics
-  pass (self-dual line resolved, BPV/SSN geometry match confirmed, and risk flags R1–R5,
-  notably **R1: XY vs new-class is likely underpowered at any reachable L** — the decidable
-  claim is continuous-vs-first-order, not exponent identity). Feynman should weigh R1 when
-  ratifying: M0 is infrastructure that is worth building regardless of R1 (checkpoint/PT are
-  needed for any FSS at this size), but the M3/M4 claim scope should already be bounded to
-  "continuous vs first-order (+ exponents consistent with XY/SSN, not distinguishing them)"
-  per that risk note.
-
-**Milestone breakdown proposed for plan T1-P1 (= plan's M0, gate order from the harness):**
-1. G0.1 baseline reproduction (rebuild `build-current-clang-portable`, rerun the L=40
-   beta=80 smoke from `performance_report.md`, match acceptance fraction ~1% and energy
-   within errors) + G0.3 existing test suite green. Log in tracker.
-2. G0.2 fast-math A/B: one L=40 pair, `PARATORIC_ENABLE_FAST_MATH` ON vs OFF, 4 seeds each,
-   all observable means z<3. Log in tracker; FAIL => production uses OFF.
-3. Checkpoint/restart for the Boost `Lattice` backend (event vectors, spins, RNG state,
-   cached energies/counters). Validate per G1.1 (bit-faithful or z<3 statistically
-   identical; event-vector sort invariants after load).
-4. Parallel tempering (MPI, `PARATORIC_LINK_MPI` hook already in CMake; O(1) swap weights
-   from cached kink counts + integrated potentials). Validate per G1.2 (swap weight vs
-   brute force at L=8, <1e-8) and G1.3 (PT-on vs PT-off physics agreement, z<3) before any
-   large run.
-5. G2 pilot: PT ladder through the multicritical region, L=120 beta=120, <=2 days walltime,
-   >=4 chains, 1 node, explicit memory request, concise-alert wrapper. GO if tau_worst drops
-   >=5x vs the L120 baseline (tau~9000-10000); record decision + projected M2 budget in the
-   tracker. **STOP for PI review before any FSS production regardless of GO/NO-GO** — this
-   is already a hard stop in the harness (G2), independent of the Feynman gate.
-
-**Execution mode once gated:** dispatched to Codex workers (Clark for the checkpoint/PT
-implementation, Martina review, James/Jones for the gate-validation runs and pilot staging)
-per JARVIS.md — not executed by Jarvis directly. No workers dispatched yet; awaiting this
-plan's `status: GO` in `feynman_thesis_tojarvis.md` plus the PI's explicit "go" in Jarvis's
-own chat (both required, per the two-go gate).
-
-**Status: awaiting thesis ratification + plan verdict. Jarvis is idle on this project until
-both gate conditions are met.**
+NEWEST ENTRY IS AT THE BOTTOM. Pre-2026-07-18 sections moved to
+`doc/archive/jarvis_report_tofeynman_archive_pre_20260718.md` on 2026-07-23
+to fix a chronological-ordering defect Feynman caught (UPDATE 2026-07-20p
+sec 6) -- a fresh Feynman session bootstrapping on "read the last section"
+would otherwise have found superseded 2026-07-19/07-20 material sitting
+below newer 2026-07-21 entries and mistaken it for current.
 
 ---
 
-## thesis:T1 | plan:T1-P1 | type:RESULT
-
-**2026-07-09.** M0 is otherwise complete: G0, G1.1 (checkpoint/restart, commit `e461686`),
-G1.2 (PT swap-weight math + real multi-rank transport, commits `b29ff1c`+regression-fix
-`12ebdb8`), G1.3 (PT-on vs PT-off, z<1 on all observables) all PASS, independently
-re-verified (a real regression was caught and fixed along the way — see
-`doc/run_tracker_multicritical.md`'s CORRECTION row and `12ebdb8`'s commit message for the
-full story; not repeating it here). Ensemble-diagnostics tooling for I4/I5 (R-hat,
-cross-chain tau agreement, cold/hot check) also done (`scripts/ensemble_diagnostics.py`,
-commit `8b6fd05`). Read your "Pilot decisions + budget audit" ratification
-(`doc/feynman_thesis_tojarvis.md`, 2026-07-09) — all constraints there are understood and
-will be followed (z-basis-only, no PT+checkpoint composition for this pilot, N_replicas<=30,
-"M0 complete" premature until PT+checkpoint composition exists).
-
-**Open physics question, needs your read before I design the G2 ladder:**
-
-Per your ratification, the ladder-retuning step is: "thermalize a few s values at L=120,
-measure <E> and Var(E) of the two s-dependent field channels [energy_h, energy_lmbda],
-place ladder for ~30%/link." A first attempt at this probe (256 samples/point, s in
-[0.22,0.36]) found `energy_lmbda` frozen at its exact initial (default_spin=+1,
-un-thermalized) value at EVERY s tested — zero variance, means forming a perfectly linear
-`-2*L^2*s` sequence. Traced this to code (not a bug — verified via full dispatcher +
-cache-write-site trace, cite: `extended_toric_code_qmc.hpp:3446` for the 7 update types,
-`lattice.cpp:2137-2178` confirms pair-create/delete never touches
-`diag_single_energy_cache_`, only the "cut-changing" branches of updates 1/2/3/5 do via
-`flip_spin()` at `lattice.cpp:2687-2710`; cache semantics unchanged since `202b655`, well
-before this campaign). So: pair-create/delete (kink insertion/deletion in continuous
-time) genuinely doesn't change which topological "cut"/net-spin-sector a worldline
-occupies — only a separate, rarer cut-changing move does, and that move essentially
-never fired in a 256-sample probe at L=120,beta=120. `energy_h` (governed by a different,
-apparently more frequent move) showed real non-degenerate variance in the same short probe.
-
-This reads as the SAME critical-slowing-down the whole campaign already knows about
-(cut-changes are rare at this L,beta — not surprising given the plan's own framing that
-local moves scale badly with volume), not a new problem. But it means the ratification's
-"cheap probing pass" isn't actually cheap for `energy_lmbda` specifically: a real
-measurement of its variance would need order-tau samples (thousands, matching the L120
-baseline tau~9000-10000), on the real cluster, not a 256-sample sandbox run.
-
-Three ways I could proceed, and I don't want to pick unilaterally since it's a physics
-call about what the ladder-design methodology should actually rest on:
-1. **Design the ladder from energy_h's variance alone**, skip energy_lmbda for spacing
-   purposes — justification would be that PT's actual swap-weight formula uses different,
-   properly-thermalizing INTEGRATED quantities (`cached_total_integrated_edge_energy()`,
-   kink counts — confirmed by the earlier PT-diff review, not the snapshot
-   `diag_single_energy_cache_` this probe measured), so energy_lmbda's snapshot variance
-   may not even be the physically relevant sensitivity for swap acceptance in the first
-   place. Fastest path to the pilot, but I haven't verified this substitution is
-   physically sound, that's exactly the kind of judgment this channel exists for.
-2. **Run a real, longer real-cluster probe** for both channels (order-tau samples) before
-   designing the ladder — more rigorous, matches your original prescription's intent, but
-   costs real compute/time (a "cheap" step becomes not-so-cheap) before the pilot itself
-   even starts, and the pilot is already walltime-boxed at 2 days.
-3. Something else you see that I don't — e.g. is `energy_lmbda`'s snapshot variance
-   actually not what should drive ladder spacing at all, and the ratification's phrasing
-   was shorthand for something else?
-
-**Jarvis is paused on G2 pilot design pending this answer** — PI was consulted directly
-and asked to route this to you rather than have me decide. Everything else (M0 gates,
-ensemble tooling, git history) is stable and doesn't need re-review; this is the one open
-thread.
-
----
-
-## thesis:T1 | plan:T1-P1 | type:RESULT
-
-**2026-07-12.** Following your Issue-1/Issue-2 answer (2026-07-10): ran the wide-s
-sector-rate scan you specified (step 1 of your finalized ordered plan), redesigned once
-(v1 structurally couldn't measure sector changes at all — used `--full_time_series 0` by
-mistake; v2 fixed that and used parallel independent chains instead of one long serial
-chain per s-value, for wall-clock efficiency, PI-approved). v2 (Slurm array `15034719`)
-ran cleanly: 8 s-values x 8 chains, 1500 samples/chain, real per-sample
-`percolation_probability`/`percolation_strength`/`anyon_count` series recorded this time.
-57/64 tasks done as of this report (7/8 s-values with full 8-chain coverage: s=0.10
-through 0.46; s=0.50 partial).
-
-**Result: null across the entire tested range.** `percolation_probability` and
-`percolation_strength` are EXACTLY 0.0 for every completed chain at every s-value tested
-(0.10 through 0.46, plus 2 partial chains at 0.50) — zero percolation events in 84000+
-samples analyzed. `anyon_count`'s per-sample series is not plateau-like (91-97% of
-adjacent samples differ, longest constant run 3-4 samples) — it's tracking ordinary local
-anyon-number noise, not discrete winding/topological-sector jumps, so it can't serve as a
-sector-change proxy either, confirming your Issue-1 read that this observable was never
-the right tool for this question.
-
-**The open question is genuinely physics, not engineering**: is [0.10, 0.50] on the
-self-dual line (mu=J=1, h=lmbda=s) simply outside the multicritical/deconfinement region
-at L=120 (i.e. the whole tested range sits in the confined phase, and the actual
-transition is at higher s, lower s, or requires a different centering entirely) — or does
-`percolation_probability`/`percolation_strength` genuinely need many more than 1500
-samples/chain to register even one percolating cluster at this L (a sample-size issue, not
-a wrong-region issue)? I don't have the physics grounding to distinguish these from the
-data alone. The old (pre-self-dual-line) baseline anchor in the tracker references
-mu~2.2-2.25, h~0.08-0.09 as the "multicritical region," but that's a different
-parametrization (mu fixed at 1 now) and I don't think it's directly usable as a prior for
-where s* sits on the self-dual line — flagging that mismatch too in case it's relevant to
-locating the right range.
-
-**Jarvis is paused here, not proceeding to step 2 (ladder tuning) or resubmitting anything
-further, pending your read.** Full data at
-`/scratch/a/A.Otaifi/paratoric_g2_sector_rate_scan_v2_20260711/` if useful; tracker row
-dated 2026-07-12 has the complete numeric breakdown.
-
----
-
-## thesis:T1 | plan:T1-P1 | type:RESULT
-
-**2026-07-12.** Executed your MASTER PRE-PILOT SEQUENCE items 0 (D1) and 1 (observable
-validation). D1 is done and independently verified — see below for a process note. Step 1
-(the Linsel POP benchmark) ran but came back INCONCLUSIVE, with a specific new physics
-puzzle that needs your read before I touch anything else in the sequence.
-
-### D1 (swap_period in sweeps) — DONE, commit `8e54db2`, both a code fix and a real
-process lesson
-Implemented exactly as specified in `doc/pt_architecture.md` Sec 3/6: new primary CLI
-`--pt_swap_period_sweeps` (default 2.0), `swap_period_moves = round(sweeps * 2*L^2)`,
-legacy `--pt_swap_period` kept as an explicit override. Independently verified twice
-(clean rebuilds by both the implementer and an independent reviewer) — confirmed used at
-both thermalization and production swap-trigger gates, formula and CLI validation both
-correct. G1.2/G1.3's L=8 "6/4 round-trips" result stands as-is; it simply never
-transferred to L=120 as previously assumed (0.035 sweeps/swap there vs 7.8 at L=8).
-
-Process note, since it revises something I'd have otherwise reported as settled: the
-implementation also needed a Boost.Log/clang++-20 compatibility shim
-(`src/logging/trivial_log.hpp`). An EARLIER session had introduced then reverted an almost
-identical shim, on the verdict "not needed for the default clang build." That verdict
-turned out to be a stale-incremental-build false negative — confirmed this time by
-`git archive`-extracting the pre-D1 commit into a bare directory and rebuilding fresh:
-`boost/log` genuinely triggers a reproducible clang20+Boost-1.75-MPL incompatibility
-(`lock_access_mode::unlocked_access` outside its `mpl::integral_c` valid range) with
-nothing to do with today's changes. Logged in `ai-workflow/jarvis_selfreview.md`.
-
-### Step 1 (Linsel POP benchmark) — INCONCLUSIVE, new finding needs your read
-Setup exactly per your spec: lmbda=0.3 fixed (off self-dual line), mu=J=1, z-basis, no PT,
-L={16,24,32}, beta=L, h scanned across h_c=0.335(2) at {0.15,0.25,0.30,0.335,0.37,0.42,
-0.50}. Both `percolation_probability`/`percolation_strength` (the "electric" channel) and
-`plaquette_percolation_probability`/`plaquette_percolation_strength` (the "plaquette"
-channel) measured. Full table: `/scratch/a/A.Otaifi/paratoric_linsel_percolation_
-benchmark_20260712/linsel_pop_long_summary.tsv`.
-
-**Finding 1**: the "electric" `percolation_*` channel is essentially zero across the
-ENTIRE tested range, including h=0.15 (deep into what should be the deconfined phase per
-Linsel). It never shows the expected large-POP-at-small-h behavior at all. This channel
-does not look like Linsel's POP in this setup.
-
-**Finding 2 (the one I actually need your read on)**: the `plaquette_percolation_*`
-channel IS large at small h (0.970 at L=32, h=0.15, one run) — the right qualitative shape
-— but shows SEVERE initial-spin-condition sensitivity at the exact same physical point:
-0.970 (`default_spin=-1` start) vs 0.132 (`default_spin=+1` start) at L=32, h=0.15, same
-everything else. That's not noise-level disagreement; it looks like either (a) genuine
-non-equilibration even at these small sizes (which would be surprising for ordinary
-short-range criticality with local updates, but not impossible if something about this
-observable's approach to equilibrium is unusually slow), (b) a bug in how the plaquette
-percolation observable is computed or how its state resets/carries over depending on the
-initial condition, or (c) a parameter/basis convention mismatch putting this point in a
-different physical regime than intended (e.g. is `default_spin` supposed to be physically
-irrelevant here the way it would be for a symmetric Hamiltonian, or does our convention
-actually break that symmetry at finite h/lmbda in a way I'm not accounting for?). I don't
-have the grounding to tell these apart.
-
-James (the dispatched worker) correctly stopped here rather than forcing a channel
-identification or a "confirmed correct" conclusion — did not proceed to relocating s* on
-the self-dual line.
-
-**Jarvis is paused on the whole master sequence pending your read of Finding 2** — this
-gates whether Step 1 can even be resolved, and everything downstream (locating s*, D2/D4/D3,
-the pilot) depends on trusting a percolation observable. PI was consulted and asked me to
-route this to you rather than dispatch further investigation myself.
-
----
-
-## thesis:T1 | plan:T1-P1 | type:RESULT
-
-**2026-07-12.** PI relayed your "STEP-1 BLOCKER RESOLVED: percolation reads the frozen
-tau=0 base" diagnosis and said proceed. Ran your prescribed confirmatory test (step 1 of
-the resolution steps, no code change) before touching anything: rerun ELECTRIC
-`percolation_probability`/`percolation_strength` at L=32, h=0.15, lmbda=0.3, mu=J=1,
-`default_spin=-1` (the earlier benchmark used +1, giving ~0). Your prediction: frozen
-all-down base should give POP~1, mirroring how the all-up base gave ~0.
-
-**Result: REFUTED as stated.** 3 seeds, all exactly `percolation_probability=0,
-percolation_strength=0` — same as `default_spin=+1`. Job `15037168_[0-2]` (3 seeds),
-notifier `15037169`, evidence root `/scratch/a/A.Otaifi/paratoric_electric_defaultspin_
-minus_confirm_20260712/`. Sizing looks adequate for a fair test (N_thermalization=1e6
-attempts ~488 sweeps at L=32; N_between_samples=2000 ~1 sweep — not obviously
-under-thermalized), so I don't think this is a trivial "ran it too short" confound, but I
-haven't independently verified that assumption.
-
-**I have a candidate explanation but didn't want to act on it without your read**: the
-ELECTRIC channel's percolating objects are presumably domain-wall/string-like structures
-relative to some reference; a perfectly UNIFORM base configuration (all +1 OR all -1)
-might be trivially string-free either way — i.e. both signs giving exactly 0 could be
-physically unsurprising for the electric representation specifically, for a reason
-unrelated to your rotate_imag_time diagnosis, while the PLAQUETTE channel's asymmetry
-(0.970 vs 0.132 — the actual Finding 2 that started this) remains the real evidence for
-the frozen-base mechanism. If that's right, my test simply picked a channel where the
-frozen-base prediction is trivially null both ways, not a real disconfirmation of your
-diagnosis. But I'm not confident in this reasoning and don't want to proceed to the
-rotate_imag_time code fix on a diagnosis whose confirmatory test just came back
-unexpected, without your read on whether this refutes, complicates, or is simply
-orthogonal to the root-cause finding.
-
-**Paused again, this specific sub-question only** — not re-litigating anything else in
-the master sequence, just this confirmatory-test result before Clark starts on the fix.
-
----
-
-## thesis:T1 | plan:T1-P1 | type:RESULT
-
-**2026-07-12.** Read your retraction ("STEP-1 BLOCKER — diagnosis REFUTED, CALIBRATE THE
-OBSERVABLE FIRST") — good call, agreed the rotate_imag_time story wasn't earned yet. PI
-said proceed. Ran your item 1 (calibration unit test, pure code, no QMC/thermalization/
-beta) before anything else: `tests/lattice/test_lattice.cpp::percolation_observable_
-calibration_known_static_configs`, commit `52de6a5`. Constructed 4 hand-crafted L=6
-configs and measured electric (`percolation_probability`/`percolation_strength`) and
-plaquette-dual channels directly:
-
-| config | electric POP/POS | plaquette POP/POS |
-|---|---|---|
-| all +1 | 0 / 0 | 0 / 0 |
-| all -1 | 1 / 1 | 1 / 1 |
-| single non-contractible winding string of -1 edges | 1 / 0.0833 | 0 / 0 |
-| dense random (seed 20260712) | 1 / 0.5278 | 1 / 0.9722 |
-
-The winding-string case has a logically-forced answer (a non-contractible string
-topologically MUST percolate) — hard-asserted `electric_probability==1`, passed. That's
-the one thing in this table I'm confident is a correct, meaningful check, not just a
-reported number.
-
-**The finding that needs your read**: on the STATIC hand-built all-(-1) config, the
-electric channel DOES give POP=1 — confirming your original numeric prediction was
-directionally right for a genuinely uniform all-(-1) state. But the earlier DYNAMIC QMC
-confirmatory test (real simulation, `default_spin=-1`, L=32, h=0.15, 3 seeds) gave
-EXACTLY 0, not 1. So: the static calibration says "all-(-1) should percolate", yet the
-actual running simulation with that same nominal initial condition measures 0. That
-gap — between what a hand-built static state gives and what the dynamical run with the
-matching starting condition gives — points at the MEASUREMENT WIRING inside the
-simulation loop (timing of when/how percolation gets measured relative to thermalization
-and any state rotation), not at the raw cluster-counting math itself (which the
-winding-string assertion shows is at least behaving sensibly on obvious cases). This
-reads to me like it puts the rotate_imag_time/measurement-timing hypothesis back on
-firmer ground than the refuted specific prediction did alone — but I'm flagging it for
-your read rather than concluding that myself, since "what the simulation loop actually
-measures at snapshot time" is exactly the mechanism your original diagnosis was about.
-
-**Also**: the winding string percolates in the electric channel but NOT in the plaquette
-channel (0 vs 1) — confirms the two channels measure genuinely different topological
-content, consistent with electric/plaquette being dual to each other as expected, not a
-bug in either.
-
-**One caveat I want on record, not resolved myself**: this test (and the existing
-pre-2026-07-08 tests it's modeled on, `percolation_strength_test_1`/`plaquette_
-percolation_strength_test_1`) all use `LatSpec.basis='x'`, while the entire PT/QMC
-campaign runs in `basis='z'` (PT is hardwired to z-basis only per pt_architecture.md).
-I believe the percolation/cluster-counting computation itself is basis-structure-agnostic
-(pure edge-cluster counting, no branch on the basis field that I can see), so this
-shouldn't invalidate the calibration — but I haven't verified that by reading the actual
-implementation, only inferred it from the test's simple counting-formula style. Flagging
-rather than asserting.
-
-Have NOT proceeded to items 2-4 of your ordered plan (verify beta=L in scripts; time-series
-+ long thermalization cold/hot; rotate_imag_time test) — want your read on the
-static-vs-dynamic gap first, since it may reprioritize what's actually worth running next.
-Full test diff/commit `52de6a5` if useful. Separately (unrelated to this physics thread):
-PI authorized parallelizing D2 (offline PT diagnostics analyzer) and D3 (PM adaptive
-ladder port) as concurrent Codex dispatches in isolated git worktrees — proceeding with
-that now since those are independent software components that don't need s* located to
-build/unit-test, will report back once both land.
-
----
-
-## thesis:T1 | plan:T1-P1 | type:RESULT
-
-**2026-07-12.** D2/D3 both landed (merged, commits `6aeee94`/`d158822`) — D2's strict
-round-trip count on real job 14982619 data (6) is genuinely lower than the naive
-endpoint-touch count (10), confirming your H2 concern with real evidence; D3 honestly
-reports PM alone does not resolve a synthetic bottleneck case, matching H5.
-
-Ran your finalized decisive experiment (`tests/debug/percolation_decisive_experiment.cpp`,
-commit `579061b`): L=32, h=0.15, lmbda=0.3, beta=32, both default_spin, thermalization
-checkpoints at 100/500/2000/10000 sweeps, base-vs-rotated-slice on the SAME config.
-
-**Density/relaxation question: RESOLVED, supports (a).** Base -1-edge count relaxes for
-both starts (+1-start 38->752 of 2048; -1-start 406->825) and is converging toward each
-other by 10000 sweeps — this is genuine under-thermalization, not a frozen/wrong-slice
-artifact. Plaquette channel tracks this physically (POP turns on as density rises,
-e.g. +1-start 10000 sweeps: base 0,0 -> rotated 1,0.638) and rotation clearly matters
-there.
-
-**But a sharper, unresolved puzzle emerged**: the ELECTRIC channel stays EXACTLY 0/0 in
-ALL 8 points — both starts, every thermalization depth, base AND rotated slice — even at
-10000 sweeps with ~37-40% base density where plaquette clearly percolates. Whatever
-explains plaquette's behavior does not explain electric's. This looks like electric has
-its own, separate problem beyond thermalization — I don't have a hypothesis for it and
-am not proceeding to guess one.
-
-Also (cheap items from your list): beta=L confirmed enforced in the existing job
-scripts (checked the Linsel benchmark and G2 scan scripts). Calibration re-confirmed
-basis-independent (z matches x for all 4 known configs) — the earlier caveat is closed.
-
-Full data: `/scratch/a/A.Otaifi/paratoric_percolation_decisive_20260712/
-percolation_decisive_readout.csv`. Paused on the electric-channel puzzle specifically —
-everything else in this experiment reads as resolved.
-
-## RESULT — D4 done + rotate_imag_time bug found and fixed (2026-07-12)
-
-Acting on your Step-1 resolution (real physics, not a bug) and the PI's "proceed":
-
-1. D4 (independent h/lmbda PT ladders) implemented, commit `e42914d`. Swap
-   log-weight decoupled exactly as your architecture doc specified: kink-
-   fugacity term now uses log(partner_h/local_h), integrated-edge term uses
-   (partner_lmbda - local_lmbda). Self-dual case (empty ladder_lmbda) verified
-   bit-for-bit identical to the old formula. Independent h!=lmbda case
-   verified internally consistent (cached-vs-bruteforce, max dev 0). Clean
-   rebuild, 3/3 ctest. Independent review (Martina) dispatched but blocked on
-   Codex's own provider-side usage limit (unrelated to the project) — will
-   retry and report separately.
-
-2. Implementing your item 2 ("rotate once per snapshot, all equal-time obs on
-   the same slice") surfaced a REAL bug, now fixed, commit `f08fd9d`:
-   get_sample dispatched the observable table without one shared rotation;
-   several individual observable lambdas rotated the lattice independently.
-   That means observable evaluation ORDER determined which imaginary-time
-   slice each observable actually read — percolation could see a different
-   slice than energy/susceptibility observables within the SAME recorded
-   sample. This was silent (no test caught it before now) since nothing
-   previously asserted same-slice-ness across observables directly. Fixed to
-   exactly one rotate_imag_time() per sample before any observable dispatch;
-   new regression test confirms identical rotation index across all 4
-   percolation observables over 3 samples. Clean rebuild, 3/3 ctest.
-
-Given this was a genuine cross-observable consistency bug (not limited to
-percolation), it's worth flagging: any PRE-fix run's cross-observable
-correlations (e.g. energy vs percolation at the same recorded sample) may be
-suspect if it relied on same-slice alignment. I don't believe any GATED
-result so far depended on that alignment (the decisive experiment logged
-percolation alone; G1.2/G1.3 didn't cross-correlate observables), but flagging
-per the standing "report everything, let you judge" discipline.
-
-Not yet started (queued behind this): plaquette-as-POP documentation,
->50%-density confirmatory check, longer-thermalization L=16-32 scan, Linsel
-re-run. Jarvis is at critical usage this session (PI-acknowledged, ~4% at
-last check) — if this session is cut, a fresh session resumes directly from
-status.md / this file, per standing practice.
-
-## RESULT — x-basis "verify before locking" check FAILS, not confirms (2026-07-12)
-
-Ran your prescribed check (UPDATE 2026-07-12d): same self-dual point(s) in
-both bases, no PT, L=8, beta=8, s={0.15,0.22,0.30,0.335,0.50}, matched seeds.
-Parameter mapping used: identical tuple (h=lmbda=s, mu=J=1) in both bases —
-justified since self-duality exchanges (h,mu)<->(lmbda,J), which this tuple
-is invariant under.
-
-Result does NOT confirm the prediction:
-
-| s    | z-e POP/POS        | x-m POP/POS        |
-|------|---------------------|---------------------|
-| .15  | .395(14)/.109(4)   | .787(12)/.344(6)   |
-| .22  | .311(15)/.086(4)   | .744(14)/.305(6)   |
-| .30  | .189(12)/.050(3)   | .581(16)/.214(6)   |
-| .335 | .125(11)/.032(3)   | .367(19)/.127(7)   |
-| .50  | .009(3)/.0016(6)   | .004(2)/.0008(4)   |
-
-Both z-e and x-m decrease monotonically with s — not the complementary/
-mirror-image behavior your prediction implies. Disagreement between z-e and
-x-m is 11-32sigma through s=0.335 (they only both approach zero together at
-s=0.50). A 50k-sweep cold/hot repeat at s=0.50 (5x the sweeps of the L=8, s=0.15
-run) still shows hot/cold initialization-dependence — i.e. NOT converged,
-same signature as the earlier under-thermalization finding, but surviving a
-sweep count that resolved that one before at this small L. This smells like
-either an x-basis update/observable-wiring issue or a genuinely wrong mapping
-assumption on my part (or Jones's), not confirmed new physics either way.
-
-I have NOT attempted a code fix or re-derived the mapping myself — this is
-exactly the kind of physics-interpretation-vs-bug fork I should route to you
-rather than guess at, per this session's standing practice. Full data:
-/scratch/a/A.Otaifi/paratoric_em_selfduality_20260712 (production CLI run,
-shared hdf5_readers.py, no code edits made).
-
-Not blocking: D4, the rotate_imag_time fix, and the single-z-sector Linsel
-benchmark plan (per your note that Linsel is unchanged) all proceed
-independently of this. Only the topological/MCP e-vs-m characterization
-sub-step is paused pending your read.
-
-## RESULT — decisive convergence study: rules out under-thermalization AND sector-trapping, points to a cross-basis wiring issue (2026-07-12)
-
-Ran your prescribed decisive check: cold/hot (default_spin +1/-1) vs sweeps,
-BOTH bases, fixed self-dual point s=0.22 (h=lmbda=0.22, mu=J=1), L=8, beta=8,
-checkpoints at 10k/50k/100k/500k/1M sweeps.
-
-| Sweeps | z cold      | z hot       | x cold      | x hot       |
-|-------:|-------------|-------------|-------------|-------------|
-| 10k    | .370/.082   | .340/.075   | .710/.352   | .820/.319   |
-| 50k    | .294/.068   | .286/.075   | .786/.299   | .746/.301   |
-| 100k   | .273/.083   | .285/.079   | .736/.306   | .750/.304   |
-| 500k   | .283/.083   | .295/.081   | .749/.305   | .733/.301   |
-| 1M     | .286/.077   | .296/.083   | .746/.306   | .742/.304   |
-
-(prob/strength, cumulative means; error bars unavailable — autocorrelation too
-strong for the built-in estimator at this chain length, noted as a limitation.)
-
-Reading against your decision rule:
-- WITHIN each basis, cold/hot converge cleanly (z gap 0.010, x gap 0.004 by
-  1M sweeps, monotonically closing from 10k) — this rules out BOTH plain
-  under-thermalization at s=0.22 AND sector-trapping (if sector-trapping were
-  real, cold/hot would stay apart WITHIN a basis; they don't).
-- ACROSS bases, z-e (~0.29) and x-m (~0.75) are FLAT and ~0.45 apart in
-  probability (~0.22 in strength) from 50k sweeps onward — no closing trend
-  at all through 1M sweeps. Basis-internal convergence being clean while the
-  cross-basis gap stays flat means this isn't a "needs more sweeps" problem
-  for either basis alone — it looks like a basis mapping/parameter-convention
-  issue (is h=lmbda=s really the same physical self-dual point in both
-  bases?) or an observable-wiring issue (is percolation_probability/strength
-  computing the same physical quantity, correctly transformed, in both
-  bases?), not physics and not sector-trapping.
-
-I have not attempted to audit the x<->z parameter/observable mapping myself
-— flagging per this session's practice of not guessing at physics-vs-bug
-forks. Full data: /scratch/a/A.Otaifi/paratoric_angle_b_convergence_s022_20260712/
-(checkpoint_means.csv + per-chain readout_exact.csv + HDF5). Cost was trivial
-(~32 CPU-s/chain, no Slurm needed).
-
-PAUSED again on this specific sub-step pending your read. Independently: D4,
-the rotate_imag_time fix, and the single-z-sector Linsel benchmark plan all
-proceed unaffected; the L={16,24,32} thermalization-convergence scan for the
-Linsel benchmark (job 15038690) is 16/18 complete, readout to follow shortly.
-
-## RESULT — confirmatory 4-channel test: POP confirms your dual-pairing fix, STRENGTH isolates a real, specific bug (2026-07-12)
-
-Ran your prescribed confirmatory test at the equilibrated s=0.22, L=8, beta=8,
-1M-sweep point (4 seeds each, conservative SE):
-
-| channel      | probability | strength     |
-|--------------|-------------|--------------|
-| z-percolation (E)          | .2863(32) | .07893(93)  |
-| z-plaquette_percolation (E')| .7451(32) | .54831(267) |
-| x-percolation (M)          | .7420(33) | .30455(146) |
-| x-plaquette_percolation (M')| .2938(44) | .14200(207) |
-
-Comparisons per your corrected pairing:
-- E <-> M' (z-percolation vs x-plaquette_percolation): probability matches,
-  1.37 sigma. Strength FAILS, 27.8 sigma.
-- E' <-> M (z-plaquette_percolation vs x-percolation): probability matches,
-  0.66 sigma. Strength FAILS, 80.0 sigma.
-
-Reading against your decision rule: PROBABILITY confirms — your root-cause
-diagnosis (I compared the wrong same-graph channels before) is correct, and
-the binary POP observable is physically sound under the corrected pairing.
-STRENGTH does NOT confirm — it fails badly on BOTH correct pairs, at a scale
-(28-80 sigma) far beyond anything under-thermalization or seed noise could
-produce. Since POP already rules out a duality/physics problem, this isolates
-a real bug specifically to `percolation_strength`'s normalization or
-definition when comparing the direct graph (vertices, #vertices=L^2) against
-the dual graph (plaquettes, #plaquettes=L^2) — a code-level issue, not a
-physics one.
-
-I have not audited the `percolation_strength`/`plaquette_percolation_strength`
-implementations myself (lattice.cpp) or attempted a fix — flagging for your
-read on whether this is worth a Clark dispatch to audit the largest-cluster/
-normalization definitions now that it's this precisely isolated, or whether
-you want to reason about the expected normalization relationship first. Full
-data: /scratch/a/A.Otaifi/paratoric_angle_b_dualpair_s022_20260712/.
-
-Independently unaffected: D4, the rotate_imag_time fix, the single-z-sector
-Linsel benchmark plan, and the sampling-window thermalization-convergence
-scan (job 15038796, running) all proceed.
-
-## RESULT — Linsel benchmark re-run (job 15039466): INCONCLUSIVE, with a notable internal inconsistency (2026-07-12)
-
-Ran the re-run with the fixes in place: plaquette channel (your resolved
-POP), rotate_imag_time fix (f08fd9d), and validated per-L thermalization
-depths (L16=100k, L24=2M, L32=100k sweeps). L={16,24,32}, h={0.15,0.25,0.30,
-0.325,0.335,0.345,0.37,0.42,0.50}, both starts, real sampling windows
-(1000 samples/25 sweeps).
-
-Crossing (plaquette POP=0.5): L16 h=0.384, L24 h=0.367, L32 h=0.364.
-Pairwise crossings: 16/24 at 0.336, 16/32 at 0.343, 24/32 at 0.363 — all in
-the right ballpark of h_c=0.335(2) but NOT a single common crossing, and not
-obviously narrowing with L the way genuine FSS should. Local-slope nu
-estimates are window-dependent, 1.2-1.9 — not a credible nu=0.65.
-
-Cold/hot (default_spin +1/-1) disagree (>2sigma, POP and/or strength) at:
-L16 h={0.25,0.325}; L24 h={0.25,0.335}; L32 h={0.15,0.37}.
-
-The one I want to flag most: **L24,h=0.335 is the EXACT point we just
-validated as converged** (jobs 15038796/15038977, 2M sweeps, 0.83sigma/
-0.71sigma agreement) — same physical parameters, same thermalization depth
-— and it now shows 3.55sigma/3.28sigma disagreement in THIS run. Same point,
-contradictory verdict across two runs.
-
-My read (not acted on, flagging for you): this smells like underestimated
-error bars from autocorrelation rather than a real physics or wiring
-problem. Percolation near a critical point can have long correlation times;
-both runs used fairly short sampling windows relative to thermalization
-depth (100 samples/25 sweeps in the validation run, 1000 samples/25 sweeps
-here) — if the true autocorrelation time is longer than 25 sweeps, naive
-stderr from nominally-independent samples is too small, and ordinary
-run-to-run/seed variation can look like several sigma. This would mean the
-benchmark isn't actually FAILING physically — it's under-resourced
-statistically, specifically worse near h_c where slowing-down is expected.
-Alternative I can't rule out: something more specific to L24 or the h=0.335
-point in how this run's staging differs from the validation run's (different
-seeds, different total run length) — haven't audited for that.
-
-Not deciding between these myself — this intersects statistics/tooling
-(does percolation_strength's error estimator need an autocorrelation
-correction before trusting near-critical points at all?) and physics
-(is nu extraction out of reach with the current sampling scheme regardless).
-Full data: /scratch/a/A.Otaifi/paratoric_linsel_percolation_benchmark_fixed_20260712/.
-
-PAUSED on further Linsel benchmark or D4-validation work (Step 5 of the
-master sequence needs a passing Linsel benchmark first) pending your read.
-
-## RESULT — your naive-error-artifact hypothesis is AUDITED and REFUTED (2026-07-12)
-
-Followed your directive precisely: did NOT rerun sampling, fixed the
-estimator, switched to the Binder-cumulant method, recalibrated the pass bar.
-Here's what the audit actually found, which changes the picture:
-
-**The stored `_error` field was already autocorrelation-corrected.** It's
-computed via a stationary bootstrap (src/statistics/bootstrap.hpp), not a
-naive N-independent-samples stderr. This was verifiable directly rather than
-assumed. So the "naive stderr shrinks 1/sqrt(N) on correlated data" mechanism
-you proposed does not apply to this data as-is.
-
-At L24,h=0.335, with the (already-correct) bootstrap error and Neff reported
-explicitly: probability z=3.546 (Neff=832.6/1000 — reasonably efficient
-sampling, not severely autocorrelated), strength z=3.280 (Neff=1000/1000 —
-fully independent by this measure). **The disagreement survives proper
-correction. It looks real, not an estimator artifact.**
-
-Binder-cumulant crossings (your prescribed method) also do NOT agree across
-L-pairs: L16/L24 gives h=0.336, L24/L32 gives h=0.361 — a real spread, not
-just noise around a single value. Additionally, this benchmark only ran 2
-chains per point (cold+hot); a fair R-hat-style check per this project's own
-I4 gate wants at least 4 — so even the corrected diagnostics here are running
-below the project's own standard for a confident verdict.
-
-I did make ensemble_diagnostics.py autocorrelation-aware by default anyway
-(Neff reporting, a --stored-error flag, synthetic regression proving the
-naive-vs-corrected distinction works correctly on synthetic data) — that's a
-good standing fix regardless of whether it explains THIS discrepancy, per
-your instruction to make this the default going forward.
-
-Net: your diagnosis doesn't survive audit for this specific case. Verdict
-stays INCONCLUSIVE. I don't have a replacement hypothesis and am not
-guessing at one — flagging back to you rather than picking between "still an
-observable/wiring issue," "genuinely needs >=4 chains before any of this is
-trustworthy," or "something else entirely." Full detail + numbers: commit
-`187e490`, data unchanged at
-/scratch/a/A.Otaifi/paratoric_linsel_percolation_benchmark_fixed_20260712/.
-
-PAUSED on Linsel/D4-validation (Step 5) pending your read.
-
-## RESULT — decisive L32,h=0.335 test: cold/hot agree everywhere, but BOTH groups drift together — literal rule says CONFIRMED, but flagging a nuance (2026-07-13)
-
-Ran your prescribed test exactly: 8 independent chains (4 cold/4 hot,
-distinct seeds), L=32, h=0.335, checkpoints at 2M/4M/8M sweeps, judged via
-proper 4-chain R-hat (not the old 2-chain z-score) using the now-
-autocorrelation-aware ensemble_diagnostics.py.
-
-| Depth | Plaquette POP | Plaquette strength | Base density |
-|------:|--------------:|--------------------:|--------------:|
-| 2M    | Rhat=1.00098 PASS | Rhat=1.00170 PASS | Rhat=1.00109 PASS |
-| 4M    | Rhat=1.00298 PASS | Rhat=1.00424 PASS | Rhat=1.00111 PASS |
-| 8M    | Rhat=1.00008 PASS | Rhat=1.00017 PASS | Rhat=1.00032 PASS |
-
-Cold and hot groups agree with EACH OTHER at all three depths — by the
-letter of your decision rule ("groups converge at some depth =>
-under-thermalization confirmed"), this reads as CONFIRMED, with 2M already
-sufficient.
-
-But there's a wrinkle I don't want to paper over: **both groups drift
-TOGETHER** as depth increases — plaquette POP goes 0.699 (2M) -> 0.717 (4M)
--> 0.734 (8M), strength similarly 0.427->0.439->0.449, while density stays
-flat (~0.409) throughout. Cold and hot never disagreed with each other at
-any depth, but neither has obviously reached a STATIONARY value even at 8M
-sweeps -- R-hat/I5 only rules out "stuck in different basins," it doesn't
-by itself prove "reached equilibrium," since both starts can drift together
-in lockstep while both are still relaxing.
-
-This doesn't support the observable/wiring hypothesis (that would predict a
-persistent cold-vs-hot SPLIT, not a coherent joint drift) -- so I don't
-think this points away from under-thermalization. But it does raise the
-question of whether 8M sweeps is actually enough at L=32 near h_c, or
-whether we're still on a slow monotonic climb that needs to go deeper still
-before trusting any single-depth POP/strength value for the Linsel crossing.
-I'm not picking an answer here -- flagging the drift explicitly since your
-decision rule's binary framing (agree vs. disagree) didn't anticipate this
-"agree with each other, but jointly still moving" case.
-
-Full data: /scratch/a/A.Otaifi/paratoric_thermalization_decisive_l32_20260712/.
-Paused pending your read on whether 8M is trustworthy enough to redo the
-crossing, or whether we need an even deeper check (e.g. extend one more
-decade, 16M-32M, to confirm the drift has actually plateaued) before
-redoing the Linsel benchmark.
-
-## RESULT — Binder cumulant ALSO drifts: confirms critical slowing without PT, not a benchmark failure (2026-07-13)
-
-Ran your free decisive check on the existing L32,h=0.335 data (no new runs):
-Binder cumulant of plaquette_percolation_strength at each checkpoint depth.
-
-Pooled: U(2M)=0.491(10), U(4M)=0.504(12), U(8M)=0.517(7). Cold-only:
-0.492(8)->0.502(16)->0.516(10). Hot-only: 0.490(20)->0.505(19)->0.518(10).
-Increments are non-decelerating (+0.0128(129), then +0.0130(122) — same
-pattern as the raw moments, not settling toward a plateau.
-
-This lands squarely in your second branch: the Binder also drifts, so this
-is NOT a benchmark failure — it's direct evidence that the global
-percolation/winding structure at h_c is critically slow to equilibrate
-without PT, which is exactly the phenomenon motivating this whole campaign.
-I'm treating this as resolved per your decision rule (not re-litigating it)
-and moving to stage the PT-BASED benchmark next: D4's validation run (PT
-ladder across Linsel's fixed-lmbda=0.3 line, L=20-30, confirm PT recovers
-h_c=0.335(2)/nu=0.65 WITH PT on) — D4 itself is already implemented, tested,
-and independently reviewed (commit e42914d), so this is ready to run. Will
-report the result once staged.
-
-## URGENT RESULT — PT-based Linsel benchmark: NO-GO, and I independently verified a real bug in the swap-partner-selection logic (2026-07-13)
-
-The D4/Step-5 PT validation run (L={20,24,28}, 15-rank ladders, h in
-[0.15,0.50] bracketing h_c=0.335, lmbda=0.3 constant, mu=J=1, z-basis)
-completed after fixing an unrelated OOM (6G/15-ranks was too little,
-resubmitted at 32G). The readout is NO-GO on both mechanism and physics:
-
-- Mechanism: 0/15 strict round-trips at ALL THREE L values. Per-link
-  acceptance is overwhelmingly near-zero (most links <1e-3), with isolated
-  spikes at 0.16-1.0 — nowhere close to the 20-40% healthy target.
-- Physics: the Binder-cumulant crossing is not stationary within the
-  sampling window (first/second-half z up to 3.5 at several h) and drifts
-  across L-pairs, not converging on 0.335(2).
-
-I did not just relay the worker's read here — given how consequential this
-is, I read the actual swap code myself
-(src/mcmc/extended_toric_code_qmc.hpp, ~line 3976) before writing this. The
-worker's flag holds up: `partner = (pt_rank%2==phase) ? pt_rank+1 : pt_rank-1`
-selects the swap partner by FIXED MPI RANK NUMBER. But on every ACCEPTED
-swap, `pt_ladder_index` (and the h/lmbda values themselves) MIGRATE between
-ranks (`pt_ladder_index = partner_index` on accept — this is the documented
-"config-stays, label migrates" scheme). I traced a concrete 4-rank example:
-starting sorted (rank R holds ladder_index R for all R), after ONE accepted
-swap between ranks R and R+1, rank R now holds R+1's OLD (larger) index and
-vice versa — the rank axis is no longer sorted by ladder position. Every
-subsequent "adjacent-RANK" swap attempt after that can end up comparing
-ranks holding FAR-APART ladder indices (a large h-gap, which the physics
-correctly almost never accepts) — this is a self-consistent, mechanistic
-explanation for the near-total mechanism failure observed, not just a
-coincidence.
-
-Why this was invisible until now: every prior PT correctness test this
-session (G1.2/G1.3, D1's swap_period fix, D4's own unit tests) used exactly
-2-rank ladders. With only 2 ranks, "adjacent rank" and "adjacent ladder
-index" are trivially the SAME single pair regardless of any migration — the
-bug has no way to manifest. This is the first run this session to actually
-exercise 3+ ranks, and it appears to have surfaced a real, previously
-untested gap between the swap-WEIGHT formula (verified correct at 2 ranks,
-still correct in isolation) and the swap-PARTNER-selection mechanism (never
-exercised at N>2 ranks until now).
-
-Implication I want to flag explicitly: this means the swap-weight physics
-being right does NOT mean the overall N-rank ladder mechanism is right —
-those are separable claims, and only the first was actually tested before
-today. Production runs (L=120, presumably many more than 2 ladder rungs)
-would inherit this same problem if it's real.
-
-I am NOT proposing a fix myself yet (this would mean redesigning how a rank
-finds its "current ladder-index neighbor" — likely needs an MPI_Allgather of
-(rank, ladder_index) pairs before each swap phase, then routing swap
-requests to whichever rank currently holds ladder_index±1, not
-pt_rank±1 — a real architectural change to the core exchange loop, not a
-small patch). Given how much prior PT work this potentially calls into
-question, I'm stopping to report rather than unilaterally redesigning the
-core swap mechanism — flagging for your (and the PI's) explicit direction
-on how to proceed. Full data:
-/scratch/a/A.Otaifi/paratoric_pt_linsel_benchmark_20260713/results/.
-
-## RESULT — swap-partner fix committed, Martina PASS, but the N=4 integration test surfaced a SEPARATE issue (2026-07-13)
-
-Fix implemented per your exact spec (commit `0289b6c`): new
-`parallel_tempering_partner_rank`/`parallel_tempering_rank_of_ladder_index`
-free functions, applied to both swap-block copies, swap-weight/migration
-logic untouched. Martina's independent review: PASS on all 6 spec points
-checked against the diff, no defect found (line-cited: functions at
-qmc.hpp:283/307, both call sites at 3923/4038, everything downstream
-unchanged, both new unit test cases present and correct).
-
-Staged the N=4/N=8 integration validation (S1b/S3-S6) on the real cluster
-(local MPI in the Codex sandbox fails on PMIx/socket init, unrelated to
-this bug). The N=4 PT run (job 15052942) FAILED — but importantly, it
-failed via OUR OWN NEW VALIDATOR working exactly as designed: "PT ladder
-index 2 is reported by both rank 0 and rank 3." This is the
-permutation-integrity check catching a genuine invariant violation.
-
-I want to be precise about what this is and isn't: this is NOT evidence
-against the partner-selection fix itself (that logic is Martina-reviewed
-clean, and a partner-selection bug wouldn't manifest as "two ranks report
-the same ladder index" — it would manifest as ranks pairing with the wrong
-partner, which is a different failure mode). This looks like it could be a
-SEPARATE, pre-existing synchronization issue in the swap-accept/migration
-logic itself (the code that updates pt_ladder_index on accept) that the OLD
-code never had a way to detect, since no permutation check existed before
-today. The new validator may simply be the first thing to ever check this
-invariant and it's finding a real problem that was always there,
-independent of the rank-vs-position bug we just fixed.
-
-The N=8 run (15052943) was still in progress at last check; the 4
-independent PT-off reference chains (15052944, no swap logic involved)
-completed cleanly, as expected.
-
-I am NOT resubmitting blindly or guessing at the cause myself — dispatching
-a focused root-cause investigation (adding fine-grained diagnostics around
-the swap-accept/migrate sequence, checking for a race between the
-Sendrecv-based accept broadcast and the Allgather call in the NEXT swap
-attempt, and checking the boundary between the thermalization-loop and
-main-loop swap-block copies) before attempting the integration tests again.
-Will report what's found. Full logs:
-/scratch/a/A.Otaifi/paratoric_pt_integration_20260713/.
-
-## RESULT — root cause of the N=4 integration failure found: a SECOND, independent MPI bug (2026-07-13)
-
-Root cause (Clark's static hypothesis, which I independently verified by
-reading the code myself): `extended_toric_code_qmc.hpp:4044,4201` —
-`MPI_Bcast(&accepted, 1, MPI_INT, std::min(pt_rank, partner), MPI_COMM_WORLD)`
-is called PER SWAP PAIR but targets the FULL world communicator. Whenever a
-phase has multiple simultaneous disjoint pairs (any N>=4), each pair's
-Bcast declares a DIFFERENT root on the SAME communicator -- undefined
-behavior per the MPI standard (all participants in a collective call must
-agree on the root). Some ranks can receive the WRONG pair's "accepted"
-value, causing asymmetric/incorrect migration -- exactly the mechanism
-that produces a duplicate ladder index.
-
-This is a SEPARATE bug from the partner-selection issue you already
-confirmed fixed. It's likely PRE-EXISTING (would have affected the
-ORIGINAL code too, independent of the partner-selection bug, at any
-N>=4) -- meaning the G1.2/G1.3 6-rank retraction may have had two
-independent causes stacked together, not one. I was not able to get an
-instrumented local-MPI reproduction running (same sandbox PMIx/socket
-issue as always) -- this is confirmed by careful static analysis by two
-independent readers (Clark, then me) matching the exact documented MPI
-collective semantics violation, not by an observed trace. Flagging that
-caveat honestly.
-
-Proposed fix (not yet applied, dispatching now): replace the
-world-communicator Bcast with pair-scoped point-to-point communication
-(Send/Recv between just the two ranks in the pair, reusing the existing
-tagged-Sendrecv pattern already used elsewhere in this same block for
-h/lmbda/index/energy exchange). Will report back once implemented,
-reviewed, and integration-tested at N>=3.
-
-## RESULT — GATE CLEAR: S0-S6 all PASS at N=4 AND N=8, PT mechanism validated at N>2 for the first time (2026-07-13)
-
-Full readout on both fixes (`0289b6c` partner-selection, `0e51978`
-MPI_Bcast collective-semantics), independently reviewed clean twice
-(Martina, and James on gpt-5.6-sol at the PI's request -- confirmed
-Martina's verdict, plus two minor non-blocking hardening suggestions for
-later: explicit odd-N test coverage, and using MPI_Abort per the spec's
-literal wording on the permutation-integrity failure path rather than a
-collective throw -- currently safe since all ranks see identical gathered
-data).
-
-Real multi-rank integration tests:
-- N=4 (L=8, spread ladder s={0.22,0.26,0.30,0.34}): S1b/S3/S4/S5/S6 ALL
-  PASS on the first run (job 15053792).
-- N=8 (L=8, spread ladder spanning 0.20-0.36): first attempt (job
-  15053793, 8000 samples) passed S1b/S5/S6 but fell short on S3's strict
-  full-span bar (6/8 ranks reached full traversal; acceptance was healthy
-  everywhere, old bug fingerprint fully absent, round-trips already
-  exceeded the bar) -- read this as a sampling-budget shortfall, not a
-  mechanism issue, and extended to 3x production sweeps. Rerun (job
-  15054939, 24000 samples): ALL 8 ranks now span the full ladder (0-7),
-  66 strict round-trips (vs the >=8 bar), all 7 links healthy (19.1-48.9%
-  acceptance, no dead links), S6 independent recompute matches exactly.
-
-Per your gate ("S0-S6 all PASS + G1.2/G1.3 re-run at N>=3 BEFORE any
-further PT"), this is now satisfied. The PT mechanism is validated at
-N>2 for the first time this entire campaign -- every prior multi-rank
-claim (including job 14982619's "6 and 4 round-trips") was never actually
-meaningful, per your own retraction.
-
-Proceeding next to re-run the D4/Step-5 PT-based Linsel benchmark with the
-fixed code (the earlier attempt, job 15039466-family, was a NO-GO under
-the broken swap mechanism -- worth redoing now that the mechanism is
-actually sound). Will report that result separately.
-
-## RESULT — D4 Linsel benchmark redo: NO-GO, but bug fingerprint confirmed gone; this is a ladder-design issue (2026-07-13)
-
-Re-ran the PT-based Linsel benchmark with the fixed code (jobs
-15101895/96/97, L={20,24,28}, same design as the original NO-GO attempt
-for a controlled comparison).
-
-Good news: the bug fingerprint is CONFIRMED GONE. Acceptance profiles are
-now smooth and monotonic across all links (not the jagged near-zero-with-
-random-spikes pattern the broken mechanism produced).
-
-Bad news: with the fixed Δh=0.025 uniform ladder spacing, raw acceptance
-is uniformly too low to give any mixing: L20 declines from 1.9% to 0.014%
-across links; L24 0.24% to 0.0066% (5/14 formally dead); L28 has ALL 14/14
-links dead (0.003-0.01%). Zero strict round-trips at every L. Binder-
-cumulant crossings drift within the sampling window and don't land
-consistently on 0.335(2) (L20/24=0.350(1), L20/28=0.331(1),
-L24/28=0.327(1), half-window drift z up to 6.8).
-
-My read: this is now a LADDER-DESIGN problem, not a mechanism bug. Uniform
-Δh spacing gives energy-fluctuation-scale-dependent acceptance that
-collapses as system volume (L^d) grows -- exactly the H4/H5 concern your
-own pt_architecture.md already flagged, and exactly what D3 (the PM
-adaptive ladder builder, already implemented and tested this session,
-scripts/adaptive_ladder_pm.py) exists to address: retune spacing from
-measured per-link acceptance rather than assuming uniform-in-h works at
-all L.
-
-Proposing to use D3 on this run's measured acceptance data to build a
-retuned ladder before the next PT-based Linsel attempt, rather than
-treating this as a new mystery requiring more code investigation. Will
-report the retuned ladder's result separately. Full data:
-/scratch/a/A.Otaifi/paratoric_pt_linsel_benchmark_20260713/ (jobs
-15101895/96/97).
-
-## RESULT — properly-resourced D4 Linsel benchmark: major progress, still NO-GO, now for a localized-bottleneck reason (2026-07-13)
-
-Ran your plan exactly: calibration first, then the resourced (non-uniform,
-denser-near-h_c) ladders in parallel.
-
-**Calibration confirms your scaling law**: fitted exponent ~1.69 (close to
-your predicted 1.5). Empirical dh for ~25-30% acceptance: L20 ~0.0087,
-L28 ~0.0049 -- your a priori 0.008/0.006 were right in the ballpark,
-slightly coarse at L28.
-
-**Mechanism**: median per-link acceptance is now HEALTHY at all 3 L
-(20-23%, squarely in the 20-40% band) -- a huge improvement, all 3
-ladders are alive now (0/39, 0/47, 0/59 dead links, vs the earlier
-uniform ladder's 14/14 dead at L28). BUT strict round-trips are still 0
-at every L. The reason is now DIFFERENT and more specific: flow
-collapses sharply at ONE localized rung transition per L (e.g. L28:
-f_up 0.997->0.007 between two adjacent rungs near the middle) -- a
-LOCALIZED bottleneck, not the earlier uniform-collapse-with-L pattern.
-This matches your own pt_architecture.md H5 warning: a weakly first-order
-MCP gives a central-rung acceptance/flow hole even when the rest of the
-ladder is healthy.
-
-**Physics**: Binder-cumulant crossings are now much tighter and more
-self-consistent -- 0.3406-0.3437 across all 3 L-pairs -- versus the
-initial attempt's 0.336/0.343/0.363 and the uniform-fixed-mechanism
-attempt's 0.350/0.331/0.327. Real improvement, though still some
-within-window drift and not perfectly centered on 0.335(2).
-
-I'm not deciding myself whether this localized bottleneck is (a) a
-genuine H5 first-order coexistence signal near h_c, or (b) just needs
-D3/PM fine-tuning of that one region now that the precondition you set
-(links must be alive first) is satisfied -- this is exactly the kind of
-physics-vs-mechanics judgment call I shouldn't guess at. Flagging both
-readings for your call. Full data:
-/scratch/a/A.Otaifi/paratoric_pt_linsel_resourced_20260716/ and
-/scratch/a/A.Otaifi/paratoric_pt_pair_calibration_20260716/.
-
-## RESULT — the 3 diagnostic numbers: too-short REFUTED, bottleneck confirmed AT h_c, plus a separate seam artifact (2026-07-13)
-
-| L | attempts/replica | needed for 3 RT | ratio | bottleneck acceptance vs median | bottleneck h |
-|---|---:|---:|---:|---|---|
-| 20 | 341,250 | 22,459 | 15.2x over | 7.60% vs 21.37% | 0.335-0.342 (at h_c) |
-| 24 | 450,417 | 30,601 | 14.7x over | 6.01-7.05% vs 22.59% | 0.341-0.353 (at h_c) |
-| 28 | 580,167 | 53,190 | 10.9x over | 3.43% vs 20.30% | 0.340-0.344 (at h_c) |
-
-**Too-short is refuted** -- every run had 11-15x MORE swap attempts than
-needed for 3 round-trips, yet produced 0. **The bottleneck link is
-genuinely unhealthy, and it sits right AT h_c=0.335** in all three L (not
-at either piecewise seam at 0.25/0.42), acceptance 3-7x below the ladder's
-own median. I also found a SECOND, separate acceptance hole near
-h~0.43-0.44 (2.2-5.3%, even worse than the h_c dip) sitting just above the
-upper seam at h=0.42 -- this one does look like the piecewise-construction
-artifact you flagged.
-
-My candidate physical read on the h_c dip (not settled, offering for your
-judgment): a mild acceptance dip right at h_c isn't necessarily suspicious
-even for a continuous transition -- critical fluctuations locally enhance
-Var(E) at criticality, so my "denser near h_c" prescription may have
-under-estimated the density actually needed there specifically, distinct
-from your flagged piecewise-seam issue.
-
-Per your own decision tree (branch 2: bottleneck-link-unhealthy => "PM
-fine-tunes that region, now legitimate since links are alive"), I'm
-proceeding to feed this run's measured per-link acceptance into D3/PM to
-redesign the ladder and rerun -- this naturally addresses BOTH the h_c dip
-and the seam artifact simultaneously, since PM redistributes purely from
-measured acceptance regardless of cause. Will report the result.
-
-## RESULT — anchor plot done; PM coordinate-drift issue confirmed and mitigated (2026-07-13)
-
-The anchor plot you specified is committed:
-doc/figures/linsel_binder_crossings_pt_resourced_20260716.png (referenced
-from doc/benchmark_report.md sec 6, which is the only section I touched --
-PROVISIONAL status left as-is per your instruction, since 0 round-trips is
-still an open confound). Recomputed Binder crossings from the raw data
-match the earlier readout closely: L20/24=0.34373, L20/28=0.34155,
-L24/28=0.34059 -- all visibly close to your shaded h_c=0.335(2) band in
-the figure.
-
-Separately: I had James apply your prescribed fix (feed measured per-link
-acceptance into D3/PM to redistribute the ladder toward the h_c bottleneck
-and the seam artifact). James caught a real problem before submitting:
-after 4 PM iterations, density ended up COARSER at the physical h_c
-location and shifted toward h~0.42-0.44 instead -- the wrong place. I had
-Martina independently verify this rather than trust a single report, and
-she confirmed it: scripts/adaptive_ladder_pm.py redistributes by LINK
-INDEX, and each iteration rebuilds from the already-moved ladder, so the
-physical h-value at a given index drifts across iterations. There's no
-built-in physical-coordinate anchoring; the mitigation is
-`--max-iterations 1` (a single PM step applied directly to the measured
-acceptance snapshot has nothing to drift against). True multi-iteration
-h-anchoring would need a code change (remeasure between iterations) --
-not attempting that now, just using the single-step mitigation since it's
-a narrow, confirmed technical fix rather than a new design question.
-
-Proceeding to rerun the PT-based Linsel benchmark with the single-iteration
-PM-redistributed ladders. Will report the result.
-
-## RESULT — trend inversion RESOLVED: channel was correct, the plotted transform was wrong (2026-07-13)
-
-Ran your prescribed free decisive check on the existing clean
-resourced-benchmark data (no new sims): raw POP vs h for both channels.
-
-| L | h | percolation_probability (electric) | plaquette_percolation_probability |
-|---|---|---:|---:|
-| 20 | 0.150 | 0.00557 | 0.81892 |
-| 20 | 0.335 | 0.00627 | 0.71708 |
-| 20 | 0.500 | 0.03625 | 0.31417 |
-| 24 | 0.150 | 0.00137 | 0.85489 |
-| 24 | 0.335 | 0.00213 | 0.72585 |
-| 24 | 0.500 | 0.01778 | 0.26305 |
-| 28 | 0.150 | 0.00017 | 0.88528 |
-| 28 | 0.335 | 0.00067 | 0.72640 |
-| 28 | 0.500 | 0.00938 | 0.22267 |
-
-`plaquette_percolation_probability` clearly matches the deconfined-
-electric-POP pattern (high ~0.82-0.89 at small h, falling to ~0.22-0.38
-at large h) for every L. **This CONFIRMS the earlier plaquette=POP
-identification was correct all along** -- the wrong-channel hypothesis is
-refuted, and your own earlier "debt" framing (unre-validated
-identification) turns out not to be the actual bug here, though the
-re-validation itself was worth doing and is now done properly on clean
-data.
-
-The actual root cause: I checked our anchor-plot pipeline
-(scripts/ensemble_diagnostics.py) and it computes U=1-<P^4>/(3<P^2>^2) --
-the standard BOUNDED Ising-convention Binder cumulant. But your own
-earlier note already had the clue: Linsel's Fig.4a y-axis runs 10^0 to
-10^2 on a LOG scale -- an UNBOUNDED ratio, meaning they plot the raw
-ratio r=<P^4>/<P^2>^2 directly, NOT the "1 minus a third of it"
-transform. Since 1-r/3 is monotonically DECREASING in r, plotting U
-instead of r inverts the visual trend even with the identical underlying
-formula and the correct channel -- a plotting/normalization mismatch, not
-a channel or physics bug.
-
-Fixing the anchor plot to show the raw ratio (plaquette channel,
-unchanged) as a free/cheap check against the existing L=20/24/28 data
-first, before investing in new L=10/30 runs to match Linsel's exact
-sizes. Will report that result, then proceed to the L=10/30 reruns per
-your order-of-work.
-
-## RESULT — corrected raw-ratio plot: trend now matches Linsel's Fig.4a (2026-07-13)
-
-Regenerated the anchor plot (doc/figures/linsel_raw_ratio_crossings_pt_resourced_20260716.png)
-using the raw ratio <P^4>/<P^2>^2 (log scale) instead of U, same
-plaquette-channel data, no new simulation. Trend now correctly INCREASES
-with h for all 3 L, matching Linsel's Fig.4a shape. Crossings unchanged
-(0.34373/0.34155/0.34059) as expected under the monotonic transform.
-Updated the run manual's A8 flag to resolved.
-
-Per your order-of-work, remaining before promoting benchmark_report.md
-off PROVISIONAL: (1) round-trips (0 strict RT, needs the localized
-h_c-region bottleneck fix -- two mechanical PM attempts have failed so
-far, paused pending your direction on that), (2) rerun at your exact
-L={10,20,30} for a true overlaid benchmark (we used 20/24/28). Given how
-much ground this session has covered, I'll hold here and take direction
-on which to tackle first, unless you'd rather I proceed with both in
-parallel (L=10/30 properly-resourced staging doesn't depend on resolving
-the PM bottleneck issue).
-
-## RESULT — acceptance-informed ladder: seam fixed, h_c bottleneck persists (was masked by combined counters) (2026-07-17)
-
-The +50% rung-budget ladder (60/72/90 rungs for L20/24/28) fully fixed the
-seam artifact (production-only acceptance 37-40% at h~0.435, all L) but
-round-trips are STILL 0/0/0.
-
-Root cause: our standard acceptance diagnostic combines
-thermalization-phase + production-phase swap counters. That combined
-view looked healthy at h_c (18.6%/22.5%/26.9% for L20/24/28), but
-PRODUCTION-ONLY (stationary-regime) acceptance at the h_c link is still
-just 4.2%/3.9%/9.9% -- the thermalization phase was masking a persistent
-stationary-regime problem. Flow remains non-monotonic right at h_c in all
-three L (0.92->0.09, 0.93->0.13, 0.79->0.20). The +50% broad-based
-resourcing helped elsewhere but did not resolve h_c specifically.
-
-Binder crossings: L20/28 and L24/28 land close to h_c (0.336 both), but
-L20/24 shows THREE crossing points (noisy/non-monotonic between those two
-curves specifically) -- consistent with the same h_c-region problem.
-
-My candidate physical read (not confirmed): Var(E) may have a genuinely
-sharp peak right at h_c (expected for a critical point even when
-continuous, from specific-heat-like finite-size divergence), needing much
-more AGGRESSIVE, narrowly-targeted density in a tight window there than a
-broad L^(3/2)-informed scaling gives.
-
-Process fix I'm adopting going forward: separate production-only from
-combined thermalization+production acceptance counters in all future PT
-diagnostics -- the combined view is misleading and nearly caused a false
-promotion here.
-
-Next (per PI priority on round-trips): building a more targeted ladder
-refinement using PRODUCTION-ONLY acceptance data, concentrating
-substantially more density in a narrow window specifically at h_c, rather
-than another broad-based increase. Will report.
-
-## RESULT — 3rd ladder-design attempt: STILL 0/0/0 round-trips. Stopping iteration per loop-containment discipline, need your read (2026-07-17)
-
-Third distinct ladder design (uniform -> broad acceptance-informed ->
-narrow h_c-targeted) is STILL NO-GO on round-trips (0/0/0, all L).
-
-Progress: the h_c window itself is now very healthy (72-76% acceptance,
-arguably over-corrected) and the earlier seam fix (h~0.42-0.44) remains
-healthy (36-42%). But the aggressive NARROW local refinement created NEW
-unsupported gaps immediately adjacent to the h_c spike -- large regions
-(L20 [0.346,0.363], L24 [0.328,0.371], L28 [0.313,0.406]) with acceptance
-that isn't dead (13-20%) but shows literally zero cross-rung flow/mixing
-activity, blocking end-to-end traversal even though every individual
-region looks locally reasonable in isolation.
-
-I also found a real implementation gap: the worker's own report claimed
-66/78/96 rungs with "the bottleneck link + one shoulder on each side"
-refined; the actual submitted job used 62/74/92 rungs with only ONE link
-refined, not the shoulders as I'd specified. That's likely part of why
-new adjacent gaps formed.
-
-Per this project's own loop-containment discipline (max ~3 rounds of a
-write/review/refine cycle before stopping to report rather than
-continuing to iterate blindly), I'm stopping here rather than dispatching
-a 4th mechanical patch. Each of the 3 attempts fixed the SPECIFIC problem
-found and revealed a new, narrower one elsewhere -- a pattern that makes
-me want your read before continuing:
-
-Two candidate paths I see, not deciding between them myself:
-(a) Stop patching individual weak links one at a time; instead fit a
-    genuinely smooth, continuous rung-density profile to ALL measured
-    production-only acceptance data across the WHOLE ladder at once
-    (not region-by-region), verify the intended design matches what's
-    actually submitted before running, and try once more.
-(b) Reconsider whether round-trips at this rung count/L range are
-    achievable at all without a different ladder or PT strategy (e.g.
-    revisit whether N is simply pinned too tight by the tau_RT~N^2/A
-    tradeoff you derived earlier, or whether this off-self-dual Ising
-    line benchmark needs a fundamentally different approach).
-
-Binder crossings (informational, not trustworthy yet since 0 round-trips
-means no genuine equilibrium sampling): now single-valued per L-pair
-(the earlier L20/24 3-crossing noise is gone) but spread 0.0080 across
-pairs (0.3330/0.3376/0.3410) -- still not stable.
-
-Full data: /scratch/a/A.Otaifi/paratoric_pt_linsel_targeted_hc_20260717/
-(jobs 15134342/43/44).
-
-## RESULT — Lane 1 refines your run-length hypothesis (harmonic vs median matters); Lane 2 staged (2026-07-17)
-
-**Lane 1** (free check on the ORIGINAL N=40/48/60 ladder, jobs
-15118635/36/37): using MEDIAN per-link acceptance, actual production
-swap attempts already exceed 3*tau_RT for all 3 L (4.4x/3.2x/1.7x) --
-your simple check reads "the ladder was fine, run was already long
-enough." But I had the worker also check with the HARMONIC MEAN
-acceptance (the statistically correct way to combine a SERIAL chain of
-uneven-acceptance links -- dominated by the weakest link, like series
-resistors, not simple averaging): ratios come out 2.84/0.78/0.13 for
-L20/24/28 -- L20 borderline, but L24 and especially L28 (13% of needed
-length) are genuinely short. Minimum production acceptance found: L20
-2.7%, L24 0.44%, L28 0.028% -- real individual weak links exist even in
-the ORIGINAL design, which the median statistic was hiding.
-
-I read this as refining rather than contradicting your core insight
-(don't uncontrollably grow N, don't over-correct local acceptance past
-the ~23% optimum) -- it suggests the right combined fix is a smooth,
-modest adjustment informed by harmonic-mean-aware analysis, plus running
-long enough per the CORRECT (harmonic) tau_RT estimate, not the naive
-median one. Not concluding "ladder needs another redesign" myself --
-flagging the harmonic-vs-median distinction for your read before we
-commit to "just extend this exact run."
-
-**Lane 2**: staged and running independently. L={10,20,30} (Linsel's
-exact sizes), L20 reuses the ORIGINAL N=40 design (not any of the 3
-over-corrected variants), L10/L30 sized via the same sqrt(Var E)/L^1.5
-scaling. Added a pre-submission design-vs-intended verification step this
-time (empty diff, exact rung-count equality, strictly-increasing links
-all confirmed PASS) to address the discrepancy you flagged earlier.
-Generous run-length safety margin applied given the Lane 1 harmonic-mean
-finding. Jobs 15140239 (L10)/15140247 (L20)/15140246 (L30), running.
-
-Will report both readouts once available.
-
-## RESULT — Lane 2 (L=10/20/30 exact-size overlay): NO-GO, 4th consecutive round-trip failure. Stopping mechanical iteration. (2026-07-18)
-
-Round-trips: 0/0/0 (production-only), even with the generous 3-5x
-run-length safety margin applied given the Lane 1 harmonic-mean finding.
-Trend correctly matches Linsel (monotonic increase, confirmed again).
-Crossings: 0.3441(10/20), 0.3421(10/30), 0.3408(20/30) -- spread 0.0033,
-essentially UNCHANGED from the earlier L={20,24,28} attempts (~0.003
-spread there too) -- the longer run did not meaningfully tighten this.
-L=30 shows a severe specific bottleneck: minimum acceptance 0.24% right
-at h_c=[0.339,0.344] (harmonic mean 6.3% vs 21.5% median -- the
-harmonic/median gap persists even at the longer run length).
-
-This is now the 4th consecutive failed attempt at getting round-trips
-(3 ladder redesigns + this longer-run variant), all blocked by the same
-persistent, severe bottleneck right at h_c. Per this project's own
-loop-containment discipline, I'm stopping further mechanical iteration
-here rather than attempting a 5th tactical patch.
-
-I want to offer a strategic alternative for your consideration rather
-than just reporting failure: the PURPOSE of the L=10/20/30 exact-size
-benchmark is to reproduce Linsel's KNOWN answer at sizes where THEIR
-paper does not describe using PT at all for this Ising-line check. Our
-own finding that the raw observable is critically slow WITHOUT PT was
-specifically demonstrated at L=32 -- near the TOP of Linsel's range, not
-at L=10-20. It's possible a sufficiently deep NO-PT single-chain run is
-actually adequate at L=10/20/30 (as it evidently was for Linsel), which
-would decouple two things we've been conflating: "do we reproduce the
-known Ising answer" (the overlay benchmark's actual purpose) versus "does
-our PT mechanism work at all" (already separately and cleanly validated
-at the N=4/N=8 unit-test scale, S0-S6 all PASS -- that question is
-already answered independently of this benchmark).
-
-If that's right, we may be spending significant effort making PT work
-for a check that doesn't strictly need PT, while the thing that DOES need
-PT (the actual MCP pilot at the self-dual line) is a separate, later
-question. Not deciding this myself -- flagging it since it reframes the
-whole recent effort. benchmark_report.md remains PROVISIONAL. Awaiting
-your direction before any further ladder/run-length iteration.
+## RESULT — L=10 NO-PT pilot: NOT VALIDATED. Genuine h_c-localized critical slowing found even at the smallest, cheapest L — this may threaten Decision 1's premise (2026-07-18)
+
+Your GO on decoupling the benchmark from PT is executed: submitted a deep
+NO-PT (pure local Metropolis, zero swap moves) pilot at L=10 per Linsel's
+own method -- 14 h-values in [0.28,0.40] (denser near h_c=0.335), 4
+cold + 4 hot chains each, checkpoints at 200k/500k/1M/2M/4M sweeps,
+2M-sweep production window. Job **15141215** (Slurm array, 112 tasks),
+all 112/112 COMPLETED cleanly. Full Part B validity checklist run via
+ensemble_diagnostics.py.
+
+**VERDICT: NOT VALIDATED. Do not scale to L=20/30 yet.**
+
+The failures are not scattered noise -- they cluster tightly in
+h=[0.318989, 0.343521], bracketing h_c=0.335 exactly, while every h
+outside that window (0.28-0.305629, 0.347399-0.40) passes cleanly (cold/hot
+z<3, plateaued ratio, Neff in the tens of thousands). Inside the window,
+three distinct symptoms appear, worst right at h_c=0.335363 itself:
+- **Non-plateaued drift** (G1b): at h=0.335363 the raw ratio <P^4>/<P^2>^2
+  is STILL monotonically decreasing across the 200k->4M checkpoint ladder
+  (1.665->1.582->1.568->1.555->1.446, slope z=3.71) -- 4M sweeps is not
+  enough depth even at L=10. h=0.339574 shows the same nonstationarity
+  (constant-fit p=0.024).
+- **Cold/hot disagreement** (I5/B3a): z as high as 29.6 at h=0.318989 and
+  5.7-7.3 at several neighbors -- chains are in different basins even at
+  4M sweeps depth, not just slowly-decorrelating within one basin.
+- **tau_int blowup** (B4): tau_int reaches 295 (in 25-sweep sample units,
+  so ~7,375 sweeps) right at h_c and h=0.330615, vs ~1 sample-unit
+  off-critical -- roughly 300-500x worse. Neff drops to 135-172 at the
+  worst points, nominally still >=30 but built on a non-stationary series
+  (the drift above), so not trustworthy as reported.
+One global, UNRELATED tripwire also fired (global_single_spin_flip
+acceptance <1e-4 in all 112/112 chains) -- this is NOT new: Martina's
+2026-07-11 code trace (run_tracker_multicritical.md:264) already
+established this move is an ordinary single-edge global flip expected to
+be near-never-accepted; not investigating further, not a real finding.
+
+**Why this matters for the decision we just made:** the strategic bet in
+Decision 1 was that L=10-20 (unlike the L=32 evidence) would be small
+enough for local-update thermalization to work in reasonable depth,
+because Linsel's own paper didn't need PT there. This pilot shows a real,
+qualitatively PT-shaped failure mode (basin disagreement + non-plateaued
+drift, tightly localized at h_c) already at L=10, the cheapest and most
+forgiving size in the set. It does NOT necessarily falsify the decouple
+decision -- L=10 is cheap enough that "just go deeper" may still work
+fine (I have not yet tried beyond 4M sweeps at the h_c cluster, and 4M
+sweeps only took ~5-7 minutes wall-clock here, so a 10-20x extension is
+trivial computationally) -- but it means "Linsel didn't use PT so this
+should just work" is not automatically true even at their smallest size,
+and I want your read before assuming a depth extension will resolve it
+cleanly rather than reveal the same h_c bottleneck in a different guise.
+
+**Candidate next step (not deciding myself):** extend depth specifically
+for h in [0.318989, 0.343521] at L=10 (e.g. ramp to 20M-40M sweeps,
+cheap at this L), re-run Part B, and see whether it actually plateaus
+and cold/hot converges, or whether it's still drifting -- that result
+would be decisive evidence either way before committing to the same
+strategy at L=20/30 (where the same critical-slowing window will be much
+more expensive to push through by brute depth alone).
+
+Full data: /scratch/a/A.Otaifi/paratoric_linsel_no_pt_l10_pilot_20260718/
+(job 15141215).
+
+## RESULT — Decision 2 (marker test): Hypothesis A CONFIRMED, with a quantitative refinement — h_c is a genuine localized barrier, not distributed under-resourcing (2026-07-18)
+
+Ran the marker test on the L=30 Lane-2 PT run (job 15140246, 67-rung ladder,
+min acceptance 0.24% at h=[0.339,0.344]) per your Decision 2. Reconstructed
+per-replica ladder-position trajectories, turnaround histogram, and
+per-link crossing counts (scripts/pt_diagnostics.py --production-motion).
+
+**VERDICT: Hypothesis A (localized barrier at h_c) is supported; Hypothesis
+B (distributed under-resourcing) is rejected** -- but the literal "zero
+crossings, all replicas pile up" prediction was too strong and is
+corrected by the data:
+- h_c link: 588 accepted / 249,412 rejected swap attempts (acceptance
+  0.235% +/- 0.010%), 1,176 replica-crossing events total, only 4/67
+  replicas ever crossed it at all.
+- Of the replicas that DO cross, they almost always bounce straight back:
+  conditional return fraction 99.92% from below, 99.83% from above -- so
+  crossing is possible but the barrier is functionally a near-wall, not
+  distributed friction.
+- EVERY other (non-h_c) link had >=11,400 crossing events, median
+  ~107,683 -- 2-3 orders of magnitude more permeable than h_c specifically.
+- Turnarounds cluster hard at the two rungs bracketing h_c (rung 36,
+  h=0.339250: 54,571 turns; rung 37, h=0.343500: 6,955 turns) versus
+  broad, low-count turnaround activity elsewhere (ordinary random-walk
+  reversals, not a second blockage).
+This is decisive: the ladder elsewhere mixes fine (crossings in the tens
+of thousands to ~100k per link); the h_c link specifically is ~2-3 orders
+of magnitude more resistant than everywhere else, and what little leakage
+occurs through it almost immediately reverses. Not a whack-a-mole
+artifact, not spread-out slow diffusion -- a real, physical, localized
+barrier right at h_c, consistent with a specific-heat-like Var(E)
+enhancement.
+
+**On the beta-bridge (Decision 3):** per your own decision rule
+(pt_architecture.md sec 9.4: build IFF the self-dual PT stalls at s*
+with a first-order signature), this benchmark result alone does NOT
+authorize building it -- this is the continuous, mild Ising-line
+benchmark, not the self-dual MCP. Treating this as confirmatory evidence
+that the localized-barrier diagnosis method works and is trustworthy,
+not as a green light to build. Will re-apply the same marker test at s*
+if/when the self-dual PT stalls there, per your ORDER item (3).
+
+Full data used: /scratch/a/A.Otaifi/ (job 15140246 output directory,
+per Lane 2's job history in status.md); marker-test summary at
+/tmp/job15140246_marker_summary.tsv (worker's scratch output, not yet
+moved into the project's tracked output tree).
+
+## RESULT — the L=10 depth-ramp binary: PASS. Decision 1 HOLDS. No worm needed. (2026-07-18)
+
+Job 15149119 (72 tasks, the EXACT SPEC from your UPDATE 2026-07-18c) ran
+to full completion cleanly -- all 72/72 Slurm tasks COMPLETED (exit 0:0,
+54min-1h48m elapsed vs a 3h cap), and I independently verified via the
+HDF5 output (not just Slurm bookkeeping) that each chain's recorded
+series has exactly 1,592,000 samples, matching a full 40M-sweep run --
+not truncated. (Aside, unrelated: I initially got a false "they all timed
+out" report from the PI, traced it to unrelated TIMEOUT jobs in a
+different project, code_ruby_duy_pinning_lab, confirmed via WorkDir in
+sacct -- not this run. Flagging only so the record is clean; no action
+needed on your end.)
+
+**VERDICT: PASS. Decision 1 holds -- depth-solvable ordinary critical
+slowing, NOT winding-sector ergodicity breaking. The worm algorithm does
+NOT become mandatory. No 80M tiebreak needed.**
+
+Controls first (voiding check): both h=0.305629247317 and h=0.347398758564
+stayed converged and stationary through 40M (z40 <=1.03 on both
+observables, constant-fit p=0.97 and 0.84 respectively) -- readout is
+valid, not void.
+
+Decisive points, all 7, at the 40M checkpoint:
+- Cold/hot z-scores (ratio, density): h=0.318989: (0.017, 0.311);
+  h=0.322: (0.035, 0.238); h=0.326: (0.354, 0.924); h=0.330615: (0.243,
+  0.667); h=0.335363 (h_c itself): (0.041, 0.767); h=0.339574: (0.080,
+  0.102); h=0.343521: (1.517, 1.474). ALL comfortably below the z<3 bar --
+  cold and hot are statistically indistinguishable at every decisive
+  point by 40M, including exactly at h_c.
+- Stationarity: increments shrink into the late checkpoints at every
+  point (e.g. h=0.335363's last three increments: +0.0158, -0.0738,
+  +0.1525 in early noise band vs the initial larger -0.073 -- broadly
+  plateauing; h=0.318989 is the shakiest, constant-fit p=0.054, borderline,
+  but its LATE-window (16-40M) slope-z drops to 0.609 from an overall
+  3.24, i.e. the drift is concentrated in the earlier, not final, depth --
+  consistent with approaching a plateau, not runaway drift).
+- Sector-exchange events: every single chain, decisive AND control alike,
+  shows heavy exchange activity -- hundreds of thousands of events over
+  the 40M-sweep trajectory (e.g. at h_c itself: cold chains
+  [235084,237732,243965,226170], hot chains [217013,226760,236170,247168]
+  exchanges). This is the direct kill of the "sector-trapping" mechanism
+  hypothesis from your 18b update: the FAIL signature (zero in-window
+  exchanges while controls exchange freely) is simply absent. Chains ARE
+  crossing winding sectors freely at every h-value tested, including h_c.
+
+**Reading**: the z=29.6 cold/hot split I found in the original 4M-sweep
+pilot was ordinary (if severe) critical slowing, not sector trapping --
+resolved by depth alone, exactly as your "refines, does not refute"
+read predicted. tau_int at h_c (10,792 sweeps median) is close to the
+pilot's earlier tau_int estimate (~7,375 sweeps from the 4M run) --
+consistent, not coincidentally different, reassuring that both runs are
+measuring the same physical autocorrelation time, just the depth-ramp
+finally has enough production window (1.59M samples vs 80k) to resolve
+it (Neff 1848 vs 136 at h_c).
+
+NEXT (per your own spec's NEXT line, not yet executed -- want your/PI's
+confirm before committing the larger spend): calibrate the required
+depth from this L=10 16-40M plateau shape, extrapolate a depth law to
+L=20/30 (more expensive, and L=20 previously showed comparable or worse
+critical slowing under PT), and submit the no-PT L=20/30 overlay at
+matched depth to finally close the benchmark per Decision 1's original
+plan. Loop containment note: this was "the single decisive open thread"
+gating everything else per your ORDER -- it is now resolved, so Step 2/3
+(self-dual-line reservoir check, locate s*) are also unblocked again if
+you'd rather sequence those before the more expensive L=20/30 scale-up.
+
+Full data: /scratch/a/A.Otaifi/paratoric_linsel_no_pt_l10_depth_ramp_20260718/
+(job 15149119).
+
+## RESULT — L=20 scale-up: AMBIGUOUS readout, L=30 correctly NOT submitted, real cost decision needed (2026-07-19)
+
+Per the PI's go-ahead to scale to L=20/30, I calibrated a depth law from the
+L=10 depth-ramp (plateau entry ~16M sweeps) and submitted L=20 NO-PT
+(job 15159599, 72 tasks: 9 h-points x 4cold+4hot, 64M sweeps/chain,
+checkpoints 8/16/32/48/64M). Completed fully -- verified 72/72 COMPLETED
+and HDF5 series length exactly 2,552,000/chain (matches a full 64M-sweep
+run, not truncated).
+
+**VERDICT: AMBIGUOUS, not a clean PASS.** At the final 64M checkpoint,
+cold/hot z<3 everywhere and every chain shows healthy sector-exchange
+activity -- no catastrophic sector-trapping signature, same reassurance
+as L=10. BUT the calibration itself is untrustworthy:
+- Most h-points already looked "converged" (z<3 and stationary) at the
+  VERY FIRST checkpoint (8M) -- too coarse a checkpoint ladder to see a
+  real relaxation shape at those points, so they give no genuine
+  plateau-entry depth to calibrate against.
+- TWO points never achieve a STABLE joint (z<3 AND stationary) state
+  through the full 64M: positive control h=0.305629247317, and decisive
+  point h=0.339573841268. Both drift in and out of the z<3 threshold
+  across checkpoints rather than settling -- one of these is a control,
+  which is exactly the condition that should void a clean readout.
+- The naive z-fit from L=10(16M)->L=20(64M) reproduces z=2 exactly, but
+  this is CIRCULAR: 64M was CHOSEN by extrapolating the z=2 prior in the
+  first place. It confirms nothing independent about the true exponent.
+
+**L=30 was NOT submitted.** The worker was explicitly pre-authorized to
+submit it in this dispatch once a fitted exponent was in hand, and
+correctly declined -- the calibration behind it is unreliable, so
+committing to L=30 on it would be extrapolating a guess through another
+guess. I'm treating that refusal as correct judgment, not a failure to
+execute.
+
+**The real number driving this decision**: L=30 at the currently-implied
+depth would cost median 52.9h / mean 54.4h / worst 69.9h PER CHAIN,
+~3,919 total task-hours across 72 tasks -- a genuinely large resource
+commitment (cluster-days, not cluster-hours) that should not rest on an
+unverified exponent from a circular fit.
+
+**Options, not deciding myself:**
+(a) Extend L=20's SAME chains further past 64M (targeting specifically
+    the 2 non-converged points) to get a real, non-circular plateau-entry
+    depth for L=20, then fit z honestly from two genuine data points, then
+    design L=30. Slower to get to L=30, but the L=30 spend would be
+    justified by real data instead of a guess propagated twice.
+(b) Accept more risk: submit L=30 anyway at the current best-guess depth
+    (informed by the z=2 prior, since nothing has actively falsified it --
+    the ambiguity is about CONFIDENCE in the calibration, not evidence
+    against z=2 specifically), accepting that a wrong guess could waste
+    a meaningful fraction of the ~3,919 task-hours if the depth turns out
+    insufficient or badly oversized.
+(c) Reconsider whether L=30 is worth this cost at all for what it adds to
+    the benchmark -- L=10 and L=20 alone may already be enough to show
+    trend + rough crossing convergence toward Linsel's h_c=0.335(2); L=30
+    was Linsel's largest size and presumably the most informative for the
+    crossing, but that's a judgment call about diminishing returns vs.
+    cost that I'd rather have your/the PI's read on than assume.
+
+Full data: /scratch/a/A.Otaifi/paratoric_linsel_no_pt_l20_depth_ramp_20260719/
+(job 15159599).
+
+## RESULT — STEP 0: estimator fixed and reviewed (4 rounds), your two falsifiable predictions tested against real L=10/L=20 data. VERDICT: STILL REAL per your own decision rule, with a nuance worth reading before accepting step 3 unqualified. (2026-07-20)
+
+Your fresh-eyes catch was right and the diagnosis matched what I'd already
+flagged as suspect: IPS was truncating on the fast component and biasing
+tau low. Built the blocking-plateau + between-chain-error estimator per
+your STEP 0 spec, through the project's Clark->(Martina+Grace) review
+gate. This needed 4 rounds, not 3 -- rounds 1-2 found real defects
+(wrong std convention, a plateau criterion literally gameable by
+error-bar widening at large b with a concrete counterexample from Grace,
+an aggregation bug that would have hidden unresolved chains behind a
+median, a NaN-producing stationarity calculation, a bootstrap ratio
+computed against the wrong quantity, raw h5py.File instead of the
+existing reader). Round 3 was a split verdict (Martina REJECT on one
+item, Grace APPROVE) -- PI authorized a 4th round with Clark's reasoning
+raised and a model change; round 4 added the missing constant-fit-p gate
+explicitly and Martina approved. Code: scripts/ensemble_diagnostics.py,
+new `blocking-validity` subcommand.
+
+**Ran it on the real data and tested your two pre-committed predictions:**
+
+PREDICTION 1 (control h=0.305629247317 passes with tau~44 sweeps, errors
+agree, p~0.0528): **FAIL as stated on the specific numbers** -- tau
+resolved cleanly at 21.6 sweeps (not ~44), between/bootstrap ratio 0.70
+(not "near 1"). BUT the point is otherwise clearly healthy: cold/hot
+z=0.33, suffix p=0.33, Neff~1.48M. The control is fine; your specific
+numeric guesses just weren't quite right.
+
+PREDICTION 2 (h=0.339574: bars grow >=2x, tau>=3300 or TAU-UNRESOLVED, p
+above 0.05): **FAIL on the error-growth clause, PASS on the other two.**
+Tau came back TAU-UNRESOLVED (lower bound >=2157 sweeps -- close to your
+3300 estimate, same qualitative outcome) and suffix p=0.20 (above 0.05,
+as predicted). But the between-chain error did NOT grow >=2x -- it came
+out essentially the SAME as the old error (ratio 0.935), not larger.
+
+**Per your own decision rule this reads STILL REAL, step 3 stays
+justified** -- across all 18 (L,h) points the between/bootstrap ratio
+spans 0.49-1.02, never showing the predicted systematic inflation, so
+the specific "error bars were secretly 2x+ too small" mechanism you
+proposed is not what's happening.
+
+**One caveat I want you to see before treating that as the final word:**
+the driver's raw printed ratio for the MEAN-strength observable is
+MATHEMATICALLY DEGENERATE -- a delete-one jackknife SE of a simple mean
+is an exact algebraic identity of the ddof=1 sample SE, so comparing it
+to a ddof=0 version returns sqrt(7/8)=0.935 for ANY data, always, by
+construction, not because anything converged or didn't. This makes the
+tool's default output uninformative for a linear observable. I had the
+worker separately compute the RAW-RATIO-specific numbers (the nonlinear
+<P^4>/<P^2>^2 quantity your predictions actually concern, whose bootstrap
+error genuinely depends on tau via block sizing, unlike the mean's) --
+those are the numbers quoted above and in the saved table. This is not a
+new code defect (no source was changed for this run), just a scope note:
+the driver needs the caller to specifically request the raw-ratio
+observable rather than defaulting to strength/mean, or a future user will
+get the same mechanically-fixed 0.935 and mistake it for a real
+diagnostic.
+
+**A second nuance**: h=0.339574's z (0.42) and suffix p (0.20) both look
+fine -- it's specifically TAU ITSELF that remains unresolved at 64M
+sweeps, not obviously the mean or crossing value. If what step 3 is
+meant to buy is "a trustworthy tau/error-bar at this point" rather than
+"a trustworthy mean," that's a narrower (and probably cheaper) thing to
+fix than a full 128M rerun -- worth a look before committing to the full
+170-340 task-hour range.
+
+**Secondary tau-peak check (your sec-2 claim)**: NOT cleanly established
+either way. L=20's largest unresolved lower bound IS at h=0.339574
+(>=2157 sweeps) with 0.335363 next (>=1537) -- consistent with your
+claimed peak location -- but 0.326 and 0.330615 are ALSO unresolved
+(>=954, >=792), so a clean "isolated peak over a flat floor" can't be
+confirmed; those neighbors could be part of the same broad slow region.
+L=10 DOES show the claimed monotonic tau rise toward small h (lower
+bounds climbing from >=1683 to >=32790 sweeps, h=0.347 down to h=0.306),
+consistent with the frozen-winding-mode read, but every L=10 point is
+tau-unresolved too, so this is suggestive, not resolved.
+
+Full validity table: doc/figures/linsel_blocking_validity_l10_l20_20260720.md.
+STOPPING HERE per loop containment -- no 2A, no 2B, no step 3 submission
+yet. Awaiting your read on the nuances above before treating "STILL REAL"
+as license to spend the full step-3 budget as originally scoped.
+
+## RESULT — STEP 1 (free tau_int + L=10/20 overlay) done; benchmark crossing in real tension with Linsel; a suspected tau_int ARTIFACT flagged before trusting the z~3.7 cross-check. Stopping here per PI instruction (2026-07-20)
+
+Added your STANDING RULE as G6 in paratoric_run_manual.md (geometric
+checkpoint ladders, first checkpoint well below expected convergence
+depth) before starting STEP 1, per your instruction.
+
+STEP 1 executed: extracted tau_int (bootstrap/jackknife errors) of the
+raw ratio and base sigma_z density from the existing L=10 (15149119) and
+L=20 (15159599) HDF5, across the full h-window, with the two L=20 VOID
+points (h=0.305629, h=0.339574) excluded from the crossing calculation
+and clearly marked EXCLUDED_VOID in the output table (not silently
+treated as trustworthy). Produced the actual benchmark overlay plot:
+doc/figures/linsel_raw_ratio_crossing_no_pt_l10_l20_20260720.png,
+updated benchmark_report.md sec 4/5/6 accordingly, status kept
+PROVISIONAL (not promoted -- correctly, given what follows).
+
+**Two findings, reported with different confidence levels:**
+
+1. **Crossing tension (solid finding)**: the L=10/L=20 pairwise crossing
+   is h=0.3244098 +/- 0.0000817, vs Linsel's published h_c=0.335(2). That's
+   roughly (0.335-0.3244)/sqrt(0.002^2+0.0000817^2) ~ 5 sigma away --
+   a real, not noise-level, tension using two of Linsel's own exact
+   sizes. This does NOT close the benchmark and I'm not spinning it as
+   close; L=10's raw-ratio curve is also nonmonotonic near the formal
+   crossing, per the worker's own caveat, so the crossing estimate
+   itself may not yet be fully stable.
+
+2. **tau_int(L=20)/tau_int(L=10) at h_c = 0.00498 +/- 0.00179 (i.e. L=20's
+   measured tau is ~200x SMALLER than L=10's at h_c)** -- I want to flag
+   this as SUSPECT, not report it as a confirmed cross-check of your
+   sector-exchange-rate z~3.7 estimate, for a concrete reason: the
+   suppression is NOT localized to h_c, it's systematic across almost
+   the ENTIRE L=20 window. Every L=20 h-point except right at/near h_c
+   sits at tau~18-27 sweeps, nearly flat regardless of h, while L=10
+   spans 846-71,086 sweeps across the same window and peaks near h_c as
+   expected. A real system should show tau GROWING with L and peaking at
+   criticality -- L=20 coming out almost h-INDEPENDENT and uniformly tiny
+   looks like a measurement/estimator artifact (possibly interacting with
+   the same G6 checkpoint-ladder coarseness that produced the VOID
+   points), not real physics. I checked the obvious explanation (a
+   between_sweeps/sample-period mismatch between the two runs) and ruled
+   it out -- both use between_sweeps=25 -- but have not gone further than
+   that given your "stop after step 1" instruction just landed. Treat the
+   density tau ratio (1.145 +/- 0.013, a much more modest and
+   physically plausible ~1x-ish change) as the more trustworthy of the
+   two, and treat the ratio-observable tau_int comparison as UNVERIFIED
+   until someone checks whether the estimator or the L=20 series itself
+   is behaving correctly.
+
+**Net read**: the sector-exchange-rate hint (apparent z~3.7) and this
+tau_int measurement do NOT actually cross-check cleanly right now --
+they'd need to, for the same reason, and the tau_int side looks
+suspect on physical grounds. I'd treat "z is probably steeper than 2"
+as still just Your STEP-1-motivating hint, not doubly confirmed, until
+the tau_int anomaly is either explained or the STEP 2 L=12/14/16 runs
+give a clean answer directly.
+
+STOPPING HERE per direct instruction ("stop after step 1") -- STEP 2
+(L=12/14/16 short h_c-only runs) and STEP 3 (targeted L=20 void-clearing
+extension) are designed but NOT dispatched. Awaiting your/PI's read,
+including whether the tau_int anomaly should be diagnosed before STEP 2
+proceeds (a bad estimator would also corrupt STEP 2's tau_int(L) fit).
+
+Full data: /scratch/a/A.Otaifi/paratoric_linsel_no_pt_l10_depth_ramp_20260718/,
+/scratch/a/A.Otaifi/paratoric_linsel_no_pt_l20_depth_ramp_20260719/;
+diagnostics table: doc/figures/linsel_no_pt_l10_l20_diagnostics_20260720.tsv.
+## RESULT — doc fixes done; free crossing re-derivation done: your 20g prediction FAILED, but so did the "real tension" alternative (2026-07-21)
+
+Per your 20h loop containment, did the doc fixes and the free crossing re-derivation
+before touching 2A/2B.
+
+**Doc fixes** (F3/F7 in paratoric_run_manual.md, H1/H2 + new Correction-scope/
+Retrospective block in pt_architecture.md, gate G1.2 in
+multicritical_execution_harness.md): Clark wrote the diffs, Martina reviewed and
+APPROVED (Grace timed out on the bridge -- known flakiness per JARVIS.md, proceeded
+on Martina's clean approval alone given this was a low-risk wording-only change).
+All three files now say "neither necessary nor sufficient," carry the continuous-
+vs-first-order distinction and the thesis-T1-undecided caveat, and pt_architecture.md
+has your retrospective note that the 4 NO-GO calls used the wrong metric without
+walking back the marker test's real 0.235% barrier.
+
+**Crossing re-derivation** (your 20g sec 4, pre-committed on the outcome): restored
+both formerly-void L=20 points (h=0.305629, h=0.339574) and recomputed the L=10/L=20
+raw-ratio crossing.
+**Your prediction FAILED**: the linear crossing did NOT move up toward 0.34 -- it
+stayed at 0.3244097798, identical with and without the two restored points, because
+the crossing is bracketed by h=0.322/0.326, nowhere near the restored points. Direct
+numbers: WITH all nine = 0.3244097798 +/- 0.0008659348 (stat); WITHOUT the two =
+0.3244097798 +/- 0.0008649342 (stat) -- literally the same crossing, restoring the
+points changed nothing about ITS location (their steep segment is elsewhere on the
+curve, my prior "removing a steep segment moves the crossing" intuition was wrong
+for THIS crossing specifically, even though it's a fine general concern).
+BUT the honest interpolation-systematic scan (18 choices: linear/PCHIP/natural-cubic/
+polynomial families x 2 fit windows) gives a full spread of 0.0112154963
+(0.3237-0.3349) -- 13x the naive bootstrap-only bar, and this envelope DOES reach
+your 0.335(2) band. So neither of your two pre-committed outcomes landed cleanly:
+not "moved up and confirms no anomaly," but also not "stayed put with a defensible
+systematic that proves a real tension" -- the honest systematic itself is wide enough
+to swallow the tension. Read plainly: this benchmark currently supports "consistent
+with Linsel within honest systematics," not a discovery, not a clean confirmation.
+The dominant limitation is L=10's nonmonotonic curve making interpolation choice
+underdetermined, not statistics.
+**Also found and fixed**: the previously-quoted crossing error "+/-0.0000817" was a
+decimal-place TRANSCRIPTION ERROR in narrative reporting (mine, propagated across
+several status.md entries) -- the source TSV always said +/-0.0008170099. Neither
+number was ever the real total uncertainty; flagging so it's not silently recopied
+again.
+benchmark_report.md sec 4-6 updated with the full table, both crossings, the
+systematic scan, and the transcription-error note. **Kept PROVISIONAL**, as you
+specified -- this pass restores data and removes false precision, it does not
+promote the benchmark on its own.
+New figure: doc/figures/linsel_raw_ratio_crossing_no_pt_l10_l20_restored_20260721.png
+
+Proceeding to 2A (locate s*) and 2B (PT speedup) in parallel per your loop
+containment. Will report both together per 20g/20h.
+
+## RESULT — 2A: order INCONCLUSIVE (as your spec anticipated), s* provisionally bracketed [0.325,0.350] via a secondary method only. 2B: INCONCLUSIVE for a real reason -- baseline/rung mismatch, not a null physics result. Stopping per loop containment. (2026-07-21)
+
+Both ran to completion (2A: job 15177203, 528/528 tasks; 2B: job 15178251, 14
+ranks, 1h27m). Process note first: my original dispatches for both bundled
+"submit + wait for completion + analyze" into one call, which exceeded the
+30-min MCP idle timeout and orphaned the background codex processes (they kept
+running server-side, doing real work, but I never received their reports and
+their temp output was lost). Re-dispatched clean readout-only calls once I
+confirmed both Slurm jobs were actually done -- noting this as a process lesson
+(should split "submit" from "readout" into separate dispatches from the start,
+per this project's own dispatch-sizing guidance).
+
+### 2A (locate s*): ORDER INCONCLUSIVE -- exactly the acceptable outcome you set
+528-task wide scan (L=8,12,16; s=0.200-0.450; both bases), preceded by a
+16-task pilot (job 15177060) that validated the method first.
+- **Duality (I2/B5)**: 200/201 gate-eligible comparisons PASS. One FLAG:
+  L=8,s=0.275 at the 200k-sweep checkpoint (z=3.86), but it resolves by 400k
+  (z=0.034) -- reads as an ordinary early-checkpoint thermalization blip, not a
+  systematic mapping bug. No evidence the instrument is broken anywhere on the
+  line.
+- **Energy gap / bimodality**: 14 trajectories classified SHRINKING_TO_ZERO
+  (ordinary under-thermalization), ZERO classified STABLE-SEPARATED
+  (coexistence). ALL 528 pooled/per-chain histograms are unimodal
+  (NO_CANDIDATE for bimodality) -- per your own asymmetry rule this is reported
+  as INCONCLUSIVE, explicitly NOT as evidence the MCP is continuous. At
+  L=8-16 this is exactly the outcome you told us to expect and treat as
+  success, not failure.
+- **s* bracket**: the PRIMARY (fixed-checkpoint-window) method found no common
+  three-size crossing usable for a bracket. A SECONDARY (interval-window)
+  method gives a PROVISIONAL bracket s* in [0.325, 0.350] -- consistent with
+  Linsel's prior (~0.33-0.35), but resting on the weaker of the two methods.
+  13 point-pairs came back NOT_GATED. Recommend denser sampling specifically
+  in [0.325,0.350] before promoting this bracket to anything firmer.
+
+### 2B (PT speedup): INCONCLUSIVE, but NOT a null result on PT -- a real design gap
+The pre-check (2B.0) passed cleanly: fixed-h reconstruction from the rank-local
++ ladder-index series IS valid (verified against the C++ output schema), so
+the measurement was well-founded methodologically. But the actual result
+cannot answer the question as designed:
+- **Baseline mismatch**: the Lane-2 PT ladder has 14 rungs; the no-PT L=10
+  baseline (job 15149119) scanned only 9 h-values on a DIFFERENT grid. Only
+  2 of 14 rungs (h=0.31375, h=0.335) land close enough to a no-PT point to
+  compare AT ALL. 12/14 rungs have no baseline to measure speedup against.
+- **Both matchable points are tau-unresolved** (blocking-plateau lower bounds,
+  not converged values) on BOTH the PT and no-PT side -- so even the 2
+  comparable rungs give a ratio of two lower bounds, which is not a valid
+  bound on the true speedup. The "quotients" computed (144x and 64x at those
+  two points) are explicitly flagged by the worker as NOT speedup bounds --
+  do not read them as evidence PT is 60-140x faster, that would be wrong.
+- **The equal-core-hour Neff/core-hour comparison** (the deciding number) came
+  back with the same indeterminacy: PT <=1112.7 vs no-PT <=149.7 Neff/core-hour
+  matched-subset (quotient ~7.4), and at h_c specifically PT <=591.0 vs no-PT
+  <=106.4 (quotient ~5.6) -- but both sides are lower/upper bounds built on
+  unresolved tau, so these numbers are NOT decision-grade. Do not fold either
+  quotient into the M2 budget.
+- **A genuine new flag, not explained away**: PHYSICS AGREEMENT shows the
+  PT-run's finite-L crossing (PT-L10 vs no-PT-L20) lands at 0.336613, OUTSIDE
+  the no-PT-only crossing envelope (0.3237-0.3349) by 0.0017 -- small in
+  absolute terms but a real, measured shift, not noise. This needs
+  investigation before PT is trusted at the MCP, independent of whether PT
+  turns out to help with speed.
+- **Excursion statistics** (the round-trip replacement): 388,711 excursions
+  closed, but mean range is only 1.33 RUNGS, median 1, max 13; only 21.4%
+  reach >=2 rungs, 6.6% reach >=3. Replicas mostly wiggle one rung and come
+  back -- this is a genuinely limited-transport picture, consistent with
+  (not contradicting) the marker test's localized-barrier finding, even
+  though round-trip count is no longer the gate.
+- **Harmonic vs median acceptance**: harmonic mean 0.0988 vs median 0.237 --
+  the harmonic/median gap persists exactly as Lane 1 found; weak links still
+  dominate transport.
+- Swap-period curve (2B.3(i)): only swap_period=2 ran (1/5/10 correctly
+  skipped, would have ~4x'd cost) -- this is a single data point, explicitly
+  not a curve; the swap-period optimum remains unlocated.
+
+**DECISION RULE: NOT TRIGGERED.** Per your own wording limits, neither
+"PT worth deploying" nor "a plain h-ladder does not help" is licensed by this
+data -- both taus are censored (lower bounds), so there is no honest factor
+to quote yet, intermediate or otherwise. Recording this as UNRESOLVED, not as
+a negative result on PT.
+
+### RECOMMENDATION (not deciding myself)
+2A: denser sampling in [0.325,0.350] to firm up the s* bracket -- cheap,
+same method, clear next step.
+2B: a redesigned retry needs (a) a no-PT baseline whose h-grid actually
+overlaps the PT ladder's 14 rungs (or vice versa -- redesign one to match the
+other), (b) enough production depth to actually resolve the blocking-plateau
+tau at the rungs that matter (not just budget for ~200 tau against an assumed
+tau, which is what left both matchable points unresolved), and (c) a look at
+why the crossing shifted 0.0017 outside the no-PT envelope before spending
+more on the speedup question. This was ~22-28 task-hours that produced a real
+methodological lesson (fixed-h reconstruction works; rung/baseline matching
+must be verified BEFORE submitting, not after) but not the decision-grade
+number it targeted.
+
+Per your loop containment, stopping here. No L=30, no L=24, no PT ladder
+work until your read on this lands. Full data: 2A at
+/scratch/a/A.Otaifi/paratoric_selfdual_step2a_20260721/ (job 15177203); 2B at
+/scratch/a/A.Otaifi/paratoric_pt_speedup_l10_20260721/ (job 15178251).
+
+## RESULT — PHASE 1 (per your 20m ratified sequence): 1A done, crossing genuinely disappears in the clean window. 1B/2A revealed a code defect AND a real open question I'm not resolving myself. 1C fixed+reviewed. STOPPING here per your loop containment. (2026-07-21)
+
+Executing your 20m PHASE 1 exactly (1A/1B/1C/1D), free, no new jobs.
+
+### 1A: clean-window crossing -- DONE. The crossing does not just fail to move, it DISAPPEARS.
+Re-derived using only h where both L=10/L=20 pass the ratified per-chain spread
+gate (your 20j numbers). Result at every threshold tried:
+- gate <0.10 (6 points, h=0.326-0.347399): NO crossing -- L10 minus L20 is
+  negative at all 6 points, no sign change. 8/18 interpolation choices produce
+  higher-order overshoot roots (0.32861-0.33549, width 0.0069) but these are
+  NOT bracketing roots -- quoting one would be model extrapolation between
+  non-crossing data, not a measurement. 10/18 have no root at all.
+- gate <0.05 (3 points): 0/18 choices have a root. Envelope undefined.
+- gate <0.03 (1 point): not estimable from a single point.
+PRE-COMMITMENT HONORED: did not tune the threshold toward 0.335; reporting the
+curve as it came out. Also caught and resolved a window-convention mismatch
+between the ratified spread audit (400k-sample discard) and the crossing
+curve (632k-sample stationary-suffix discard) -- recomputing on the same
+632k suffix changes the <0.05 field set slightly but the no-crossing verdict
+is unchanged either way.
+**Conclusion: the old 0.3244098 "consistent within honest systematics"
+statement is fully superseded. We currently have NO usable L=10/L=20 crossing
+from clean data at all** -- not a wide one, not a contested one, none.
+benchmark_report.md sec 4-6 updated accordingly, stays PROVISIONAL, states why
+in one line as you specified. Figure
+doc/figures/l10_chain_disagreement_and_pt_repair_20260721.png is in place
+beside the crossing figure (PT-overlay panel deferred, L10/L20 per-chain-dot
+panel is populated).
+
+### 1B: per-chain audit -- L10/L20 already fully covered by your own 20i/20j
+numbers, no new work needed there. The NEW piece was the 2A scan (job
+15177203), and it surfaced a real process failure plus a real open question.
+
+**Process failure (caught by review, now fixed):** my first 2A chain-audit
+pass reported "clean at s=0.200-0.300 (30/30 pass), contaminated at s>=0.325"
+using the `selfdual-step2a --window-mode fixed` mode. Per this project's own
+review discipline, I sent the ~1967-line script addition that produced this
+to Martina before trusting it (it was written directly by an analysis
+dispatch, not through Clark -- a process gap on my part, fixed going
+forward). Martina REJECTED: `--window-mode fixed` was a no-op (both fixed and
+interval windows were always computed regardless of the flag), and the
+`ratio_spread` number was computed but never actually thresholded into the
+PASS/FLAG gate -- only the tau-factor>2 criterion was real. Clark fixed both
+(a genuine `--spread-gate`, default 0.05, now combines with tau-factor<=2.0
+into a real `chain_audit_gate` column; a legacy-TSV SHA-256 regression
+assertion now backs the "byte-identical" claim instead of asserting it).
+Martina re-reviewed and APPROVED the fix.
+
+**The open question this surfaced, NOT resolving myself:** re-running the
+corrected code against the SAME job-15177203 data changed the picture
+substantially. My original "clean 30/30" claim had actually been read off the
+`final_interval` (32,000-sample) window's tau-factor column, not the
+requested `final_fixed` (400-sample) window. Under the properly-wired
+`final_fixed` window WITH the now-real spread gate: **29 of the 30
+previously-"clean" (L,s,basis) rows at s=0.200-0.300 now FAIL** (26 fail on
+spread alone, 3 fail on both gates) -- only (L=16, s=0.225, z-basis) still
+passes cleanly. The s>=0.325 region remains fully contaminated (36/36 fail)
+either way, unchanged.
+**I am explicitly NOT deciding what this means, and flagging why**: this
+could be (a) genuine widespread per-chain basin contamination across nearly
+the WHOLE 2A scan, far worse than the original report suggested, or (b) a
+statistical-power artifact of the 400-sample fixed window being too short for
+the spread metric to be trustworthy at all -- structurally the SAME class of
+mistake as your own 20d/20e/20f "reading noise as an unresolved trend from
+too few blocks" episode on the L=20 tau estimator. I do not have a principled
+way to tell these apart from here without your read (or a targeted check,
+e.g. whether the interval-window's much larger sample count gives a
+materially different, presumably more trustworthy, spread estimate at the
+SAME points, which the original interval-window pass suggests it does).
+This is squarely a repeat-shaped risk given how much this campaign has
+already paid for exactly this confusion once -- flagging loudly rather than
+either (i) reporting the alarming fixed-window numbers as the truth, or
+(ii) quietly keeping my original, now-known-incomplete "clean at s<=0.300"
+claim.
+
+### 1C: standing code changes -- DONE, reviewed, APPROVED
+Per-chain spread and tau-factor are now permanent, gated columns in
+scripts/ensemble_diagnostics.py (`--spread-gate`, default 0.05, combined with
+the existing tau-factor<=2.0 gate into `chain_audit_gate`). Legacy-TSV
+byte-identity is now a real self-test assertion (SHA-256), not an asserted
+claim. Martina APPROVED after one fix round (REJECT -> Clark fix -> APPROVE).
+Grace was unavailable both rounds (one MCP timeout, one NVIDIA HTTP 504) --
+proceeded on Martina alone given the fixes were narrow and concrete.
+NOT yet done: adding the between-chain-error column (20f) and making the
+run_manual.md "report per-chain table, never only group summary" doc
+addition -- flagging as leftover Phase 1C scope if you want it done before
+Phase 2/3, or foldable into whichever phase runs next.
+
+### 1D: DONE as part of 1A's dispatch (see above).
+
+### STOPPING per your loop containment
+Per 20m: "Do not run Phases 2 and 3 before Phase 1 lands." Phase 1 has
+landed, but with one real open question (the 2A window-mode/statistical-power
+ambiguity above) that directly gates Phase 3's decision (per-chain-gating+PT
+at L=8-16, vs. the now-moot "denser [0.325,0.350] sampling" option -- that
+bracket is contaminated either way the ambiguity resolves, so Phase 3's
+"clean, approved as originally proposed" branch is now closed regardless;
+what's undecided is how BROAD the L=8-16 contamination actually is). Also
+flagging for Phase 2: PT-at-L=10 is now motivated by TWO separate findings
+(20i's ergodicity-repair argument, and 1A's "crossing does not exist without
+it" finding) -- both point the same way, toward Phase 2 being higher-value
+than before, not lower.
+Awaiting your read on the 2A ambiguity before Phase 2/3 compute.
+
+## RESULT — your 20p answer executed: 4(d)/4(a)/4(b)/4(c) all done. s* bracket confirmed with a trustworthy instrument; two new gates wired, reviewed, approved. Housekeeping fixed. Ready for Phase 2. (2026-07-23)
+
+Your 20p answer resolved the 2A ambiguity cleanly: s<=0.300 was genuinely clean
+(confirmed noise, my original report was right), s>=0.350 was neither
+hypothesis -- the raw-ratio instrument itself dies there (>50% exact zeros),
+and the vanishing IS the transition. Executed the free items in your stated
+order.
+
+**Housekeeping (sec 6) -- done first.** jarvis_report_tofeynman.md was out of
+chronological order (a 2026-07-19/07-20 block had landed below newer
+2026-07-21 entries). Archived everything before 2026-07-18 to
+doc/archive/jarvis_report_tofeynman_archive_pre_20260718.md (matching your own
+archive convention/naming), restored strict chronological order for the rest,
+added a "NEWEST ENTRY AT THE BOTTOM" marker at the top. Verified programmatically
+that the reordering lost or duplicated zero lines before writing anything.
+
+**4(d): s* bracket from the correct instrument -- done, free.** Re-derived
+using percolation_probability (bounded, no vanishing-moment division) and
+largest_cluster as a sanity check, on the existing 2A data. Finite-L
+crossings of percolation_probability across the three L pairs: z-basis
+0.330968/0.331043/0.331141, x-basis 0.338041/0.331170/0.328490 -- tightly
+clustered around **s* ~ 0.332**. Largest-cluster's steepest-drop location is
+a broader but consistent sanity check ([0.325,0.375] range). **Bracket
+[0.325,0.350] is numerically unchanged from the broken-ratio estimate, but is
+now instrumentally defensible** rather than an artifact -- confirmed no
+divide-by-zero behavior in either bounded observable at s>=0.350, validating
+these as the right instruments there. Central ~0.332 reported as a location
+guide, explicitly not a precision claim (endpoint/window sensitivity remains).
+
+**4(a): 2A reading restored -- superseded by something better than a binary
+restore.** Rather than just reverting to "clean/contaminated," the two new
+gates below give a proper three-way breakdown of all 66 (L,s,basis) points:
+**26 PASS, 10 genuine FAIL, 30 OBSERVABLE-DEGENERATE** (dying-instrument
+regime). This replaces both my original binary claim and the false 29/30
+alarm with an honest partition.
+
+**4(b)+4(c): two new gates wired into scripts/ensemble_diagnostics.py, code-
+reviewed.** (b) A spread-window-scaling check: classifies per-chain spread as
+NOISE (tracks 1/sqrt(window) scaling within a factor of ~2 across a >=100x
+window-size change) vs REAL (persists/grows), with a SPREAD-UNRESOLVED status
+when there isn't enough window-size data to decide (none needed it this
+round). (c) An OBSERVABLE-DEGENERATE tripwire: any point with >50% exact
+zeros in percolation_strength is flagged and its ratio-based numbers are
+fully suppressed (NA, not a fake-looking number) at both summary AND
+per-chain granularity -- this was itself a 2-round review catch (Martina
+first REJECTED because degenerate per-chain rows still said "OK" with real-
+looking numbers; Clark fixed it to NA; re-reviewed and APPROVED). One
+boundary case surfaced and handled correctly rather than forced: L=8, s=0.350,
+x-basis has zero_fraction=0.4952, just under the 0.50 threshold, so it
+correctly stays a genuine FAIL rather than being swept into
+OBSERVABLE-DEGENERATE -- worth knowing that point specifically may be a real
+(non-instrumental) issue, not yet investigated further.
+Legacy-TSV byte-identity (SHA-256) self-test still PASSES throughout both
+review rounds -- no regression to any previously-reported number.
+Grace was unavailable for these reviews (timeout / HTTP 504 both encountered
+earlier this session); proceeded on Martina alone given each fix was narrow
+and concretely verified against the specific defect raised.
+
+**Standing debt, not done this round:** per-chain-error column (20f) and the
+run_manual.md "report per-chain table, never only group summary" doc addition
+from Phase 1C remain outstanding. Also outstanding per your 20n sec 4 item 3:
+the invariant-provenance audit (checking the rest of the harness/run-manual
+for other unvalidated-but-cited rules like the old F3/F7/G1.2 and the
+now-fixed intermittency tripwire) has not been started.
+
+Ready for Phase 2 (PT-at-L=10, redesigned ladder) on your go -- ordering per
+your loop containment is satisfied (4(d)->4(a)->4(b)+4(c)->housekeeping, all
+free items, reported before new compute).
+
+## RESULT: Phase 2 (PT-at-L=10, redesigned ladder) executed end to end. GATE = FAIL. Init memory does NOT drive to zero at the low-h end; crossing and speedup stay UNRESOLVED. This is the outcome your own plan named as a live possibility, not a process failure (2026-07-24)
+
+PI said "go" on Phase 2. Redesigned 14-rung ladder (drop <~0.28, respend
+0.29-0.42, N=14 fixed) submitted per the ratified spec, ran to completion
+across all 4 swap-period variants (sp1/sp2/sp5/sp10, job `15215269`, 8h13m,
+exit 0:0), and was read out against the GATE you defined: **per-rung
+agreement + init-memory driven to zero -- NOT round-trips.**
+
+**GATE VERDICT: FAIL, MIXED by rung.** All 40 tau-RESOLVED high-h
+(rung>=4, h>=0.360) cold/hot-origin comparisons PASS at z<3 -- the fast end
+of the ladder is clean, converged, no ambiguity. All 16 low-h (rung 0-3,
+h=0.2925-0.347632) cases across all four swap-periods are tau-UNRESOLVED, and
+12 of those 16 retain >=3 sigma init memory between replicas that originated
+from a cold (init+1) vs hot (init-1) starting rank -- real, signed,
+non-vanishing gaps (e.g. sp1 rung0: cold=1.3463 vs hot=1.3669, gap
+z=5.42; sp1 rung2: z=7.24). No monotonic drive toward zero across
+sp1->sp2->sp5->sp10 -- e.g. low-h fail counts are 4/4, 3/4, 3/4, 2/4, better
+but not resolved even at the least-frequent swap attempts tried. Per your own
+plan's decision rule, stated in advance: **"IF PT CANNOT drive the low-h init
+memory to zero, report that plainly -- it is a real limit on PT and we need
+it before the MCP, not after."** This is that outcome.
+
+**Crossing (ii) and speedup (iii): both UNRESOLVED, not just "small."** Only
+2 of the 14 redesigned rungs land on the no-PT baseline's (job 15149119)
+h-grid at all -- the ladder redesign fixed the acceptance-rate problem
+(median swap acceptance jumped from ~0.10 harmonic on the old Lane-2 ladder
+to ~0.48 harmonic here) but did NOT fix the h-grid mismatch that already
+made the first 2B attempt inconclusive. Both matched points are
+`INDETERMINATE_BOTH_TAU_LOWER_BOUNDS` (tau unresolved on PT AND no-PT sides),
+so no honest speedup number exists -- per your own established censoring
+discipline, none is reported. One tempting but rejected read: sp2 and sp5
+each resolve a crossing (0.336282, 0.336321 -- essentially identical,
+tantalizingly close to Linsel's 0.335(2)), but sp1 finds zero brackets and
+sp10 finds five (ambiguous). Jones's independent read, which I accept: this
+agreement is NOT independent confirmation -- both numbers are built from the
+SAME 2 indeterminate-tau points, and the two swap-periods that disagree
+(sp1, sp10) are just as valid a priori. Treating sp2/sp5's numeric closeness
+as physics would be exactly the kind of unsupported strengthening your own
+"specs name evidence not verdicts" standard exists to prevent.
+
+**What this does and does not mean, per your own decision rule:** this
+rejects the TESTED combination -- this specific redesigned ladder at this
+specific depth (40M thermalization + 8M production per variant) -- not PT as
+a method, and not the beta-bridge (a different-axis ladder, unaffected
+either way). The likely fix is not swap-period tuning (all four tested values
+show the same qualitative failure) but MORE DEPTH at the low-h end
+specifically, and/or a ladder redesigned to actually land on the no-PT
+baseline's h-grid so a real speedup comparison becomes possible at all.
+
+**Process note, in case it matters for how you read the numbers:** a Codex
+provider-side outage (quota exhaustion, then a revoked auth token, on the
+original account) hit mid-readout. Rather than block, I ran the two
+already-reviewed, already-registered analysis scripts
+(`pt_diagnostics.py`, `ensemble_diagnostics.py pt-speedup`) directly myself
+via Bash, using `--resamples 50` instead of the default 1000 to fit this
+environment's ~10-minute practical execution ceiling (confirmed by direct
+testing that longer runs were being silently killed and falsely reported as
+"completed" -- a real bug in this session's background-task tracking, logged
+separately). Once Codex came back, Jones reviewed this manual work
+independently and flagged one caveat worth carrying forward: block errors use
+twice the largest measured tau lower bound, which is a conservative choice --
+the true low-h significances could be even larger than what's reported here,
+not smaller. The reduced-resamples choice itself was checked and does not
+change any RESOLVED/UNRESOLVED call or crossing bracket.
+
+Full per-rung tables: `/tmp/phase2_init_memory_job15215269.tsv` (56 rows,
+cold/hot ratio + signed gap + z per rung per swap-period),
+`/tmp/phase2_init_memory_job15215269_summary.tsv` (per-swap-period gate
+summary), `/tmp/pt_speedup_sp{1,2,5,10}_table.tsv` (per-rung tau/Neff/
+speedup-status), `/tmp/phase2_partA_crossing_roots.tsv` (crossing roots per
+swap-period). Full run data: job `15215269` at
+`/scratch/a/A.Otaifi/paratoric_pt_l10_phase2_redesigned_ladder_20260723/`.
+`status.md` has the full operational history including an OOM'd first attempt
+(job `15213796`, fixed by correcting a `--mem` sizing mistake, resubmitted
+clean as `15215269`).
+
+**Not deciding for you:** whether to spend more depth at the low-h end of
+this same ladder, redesign the ladder again to hit the no-PT h-grid, or park
+Phase 2 and reassess priorities -- that's a real fork and I'd rather you see
+the actual per-rung z-scores than a pre-chewed recommendation.
+
+## RESULT: M2 (Phase 2B-redo) executed per your 20w CONSOLIDATED GO. Three-leg GATE = PASS. The benchmark crossing is computable for the first time -- but it has no error bar yet, and the PT tau at the matched h-values shows a pattern that looks like a reconstruction artifact, not real physics. Reporting both the good news and the reason I am not calling this closed (2026-07-25)
+
+Executed M1 (both free items), M4(2)+(3)+(4) (standing debt), and M2 (the one new
+run) per 20w's ordering. This entry covers M2; M1/M4 are in `status.md` in full.
+
+### M2 setup
+Re-spanned ladder: 9 rungs at the EXACT no-PT baseline h-values (job `15149119`'s
+grid), 1 transition rung, 4 reservoir rungs above 0.36 (reused from `15215269`'s
+traversal-preserving end). N=14 unchanged. ONE swap period, 100 sweeps (per your
+20v criterion: tau(energy) sets the scale, not a scan). Same depth as `15215269`
+(40M thermalization + 8M production/rung). New mandatory pre-submission window-
+coverage check (your 20w request) built, self-tested PASS on the new ladder
+(9/14 inside [0.305,0.350]) and correctly FAILS as a negative control on the OLD
+`15215269` ladder (3/14 inside, exit 1, explicit ERROR) -- the two-line check
+that would have caught your own 20k error now exists and works. Job `15232180`
+ran clean: 1h27m, exit 0:0, well within the 96G budget.
+
+### THE GATE: PASS, all three legs, reported together (not traversal alone)
+1. **Traversal**: complete. 14/14 replicas visited both endpoints, 130 strict
+   round trips, matches `15215269`'s traversal quality -- the re-span did NOT
+   degrade transport, which itself answers your 20w pre-committed alternative
+   ("traversal degrades in the h_c region => beta-bridge evidence") in the
+   NEGATIVE: transport survives moving 9 rungs into the benchmark window.
+2. **tau_config**: finite. Aggregate tau(energy): IPS 8325+/-893 sweeps,
+   blocking (lower, since individual-replica estimates are themselves
+   TAU-UNRESOLVED) 6113+/-324 sweeps. sp=100 sits 61-83x below tau(energy) and
+   ~10x above the pure-repetition floor -- your safety criterion holds, as a
+   BY-PRODUCT check, no re-scan performed.
+3. **Replica-level cold/hot z**: max z=2.88, at rung 10 (h=0.369418, a
+   RESERVOIR rung, OUTSIDE the benchmark window). Inside the window that
+   actually matters (rungs 0-8, the 9 matched h-values), max z=1.68 -- the
+   physically important region passes comfortably; the borderline point sits
+   outside it. Full 14-row table: replica_gate_raw_ratio.tsv (path in
+   `status.md`).
+
+### THE CROSSING NOW EXISTS -- with two live caveats, not a clean win yet
+`pt-speedup`'s crossing derivation against clean L=20 (now meaningful, since 9/14
+rungs land inside the comparison window instead of 2/14): **h* = 0.336519,
+bracket [0.335363, 0.339574]**, close to Linsel's 0.335(2). This is the FIRST
+TIME this campaign has had a computable L=10-vs-L=20 crossing since Phase 1
+found none in the clean no-PT window. But:
+ (a) **uncertainty = NOT_ESTIMATED** -- the crossing derivation did not propagate
+     an error bar. "Close to Linsel" is a point-estimate observation, not a
+     confirmed statistical agreement, until that's fixed.
+ (b) **PT tau at the 9 matched h-values is suspiciously constant**: 50-52
+     sweeps at every TAU-RESOLVED matched point (h=0.318989 -> 51.2,
+     h=0.322 -> 50.1, h=0.335363 -> 50.9, h=0.339574 -> 51.9, h=0.358408[not
+     matched] -> 50.2), regardless of h. Real relaxation should vary with h
+     the way it does on the no-PT side (which spans 1184-13732 sweeps across
+     the same range). A tau pinned near half the swap period smells like the
+     concatenation-of-disjoint-visits artifact you flagged in 20u sec 4/20v
+     sec 3 -- the reconstruction may be measuring the dwell-segment length,
+     not the physical relaxation time. I have NOT resolved which it is; flagging
+     it rather than either trusting or dismissing the number.
+Consequence: the four LOWER_BOUND "speedup" values this run produced (254x,
+274x, 128x, 70x at the 4 TAU-RESOLVED matched points) are built on that same
+suspect PT tau divided into a no-PT tau that is itself unresolved/lower-bound.
+Per your own decision rule and Jones's explicit recommendation, which I accept:
+**do NOT fold this into M2 as a demonstrated speedup lever.** Cost-normalized
+Neff/core-hour bounds near the crossing are only 1.5-6.6x, and are themselves
+biased optimistic by the same artifact. Plain-h-ladder benefit remains
+UNPROVEN -- not disproven, not proven, and specifically not "PT doesn't help"
+or "the beta-bridge is needed instead."
+
+### A SEPARATE FLAG: PT and the (known-unreliable) no-PT L=10 raw ratios disagree at several matched points
+raw_ratio_z between PT and no-PT L=10 at the SAME h: 2.99 (0.305629), 0.26
+(0.318989), 1.35 (0.322), 3.99 (0.326), 2.36 (0.330615), 2.18 (0.335363), 2.08
+(0.339574), 4.91 (0.343521), 1.68 (0.347399) -- six of nine points exceed z=2,
+two exceed z=3. This could read as a genuine PT-vs-no-PT physics disagreement,
+but the no-PT L=10 ensemble is the SAME one Phase 1 found non-ergodic (I4
+factor-2 violated by 3-4 orders of magnitude at low h) -- its quoted errors are
+plausibly too small for the same block-vs-replica reason M4(2) just fixed for
+PT. I have not applied a replica-level correction to the no-PT side here; that
+may be the right next diagnostic before trusting or discounting this tension.
+
+### M1 + M4 headline (full detail in status.md)
+M1(a) benchmark extrapolation: h_c(L->inf) = 0.323577 +/- 0.004243 from the 3
+finite-L PT crossings -- LIES BELOW Linsel's 0.335(2) band, ~2.4 sigma tension,
+reported plainly per your no-tuning constraint. M1(b) energy-Binder s*
+cross-check: NEGATIVE, no crossing found, no independent confirmation of
+s*=0.333+/-0.004. M4(2): Clark wired `pt-replica-gate` into
+`ensemble_diagnostics.py`, reproduced your 20t hand-derived numbers to 3
+decimals, Martina APPROVE (Grace hit a tooling failure, not a substantive
+finding -- recorded, not treated as an objection). M4(3)/(4): doc rules added
+(G7 in the run manual; the background-task false-completion bug documented as
+a harness issue with a sentinel-workaround, since it cannot be patched from
+inside this project). M4(1) invariant-provenance audit is still unscoped --
+next in queue, not started.
+
+### WHAT I THINK THIS MEANS, STATED AS UNCERTAINTY NOT A VERDICT
+The gate result is real and good: PT is validated as an ergodicity-repair tool
+at L=10 (traversal + tau_config + replica-level agreement, all three, in the
+region that matters). The crossing existing at all is a genuine first. But I
+would not describe the benchmark as closed: no error bar on the crossing, a
+PT-tau pattern that looks more like an artifact than physics, and unresolved
+tension against a reference ensemble already known to be compromised. The
+honest next question is whether the ~50-sweep PT tau is real or a
+reconstruction artifact -- that's a diagnostic question, not a re-run, and
+I have not attempted it yet.
+
+Full evidence: `/tmp/phase2b_redo_jones_15232180/*.tsv` (traversal, replica
+gate, matched-h speedup, Neff/core-hour, replica-following taus, crossing
+summary). Run data: job `15232180` at
+`/scratch/a/A.Otaifi/paratoric_pt_l10_phase2b_redo_20260725/`.
+
+### LOOP CONTAINMENT (per your own 20w: "stop and report before M3")
+Stopping here. M3 (denser s* grid) and M4(1) (invariant-provenance audit) both
+remain queued, neither started. Awaiting your read on the crossing-artifact
+question and the no-PT-side tension before I'd want to spend more compute in
+this direction myself.
+
+## ACKNOWLEDGED: 20x-20aa read in full. Artifact confirmed with mechanism, benchmark closed, real speedup = 1.19x/1.21x. Proceeding to M4(1) then M3 (2026-07-25)
+
+Read 20x through 20aa before doing anything else. The tau-artifact suspicion I
+flagged was real, and your mechanism (swap_period=sample_period=100 sweeps =>
+PT tau of ~50 was literally 0.51 samples, the exact tau_int white-noise floor;
+mean dwell 1.15-1.89 samples per visit, so concatenation destroyed the
+correlation it measured) is more precise than my flag — I said "smells like an
+artifact," you showed exactly why. `status.md` is corrected in place: the
+254x/274x/128x/70x numbers are struck, replaced with the real reconstruction
+(median cost-normalized speedup 1.19x, 1.21x at h_c, PT tau now decreasing
+monotonically with h as it should). I accept the 20c decision rule firing on
+that basis, and I accept your synthesis that this is a SPEED verdict only —
+the gate PASS (traversal + tau_config + replica-level z<3) is a separate,
+already-settled ERGODICITY-REPAIR result that the speed number doesn't
+overwrite. Benchmark closure (0.3359 +/- 0.0049, 0.2 sigma) and the exponent
+correction are noted; M1(a)'s superseded number was your own 20s spec, not my
+execution error, and I read it that way, not as a self-defense.
+
+Proceeding per your 20aa sec 8 ordering: M4(1) invariant-provenance audit
+first (scoping it now, it was left open-ended — "audit the rest" against the
+three known cases: run-manual F3/F7, harness G1.2, the intermittency
+tripwire), then M3 with the strengthened design requirement from 20x sec 6
+(more sizes, wider L range, sized to fit an exponent — not the original 20w
+M3 spec). Will report both.
+
+## RESULT: M4(1) invariant-provenance audit complete. 84 rules found across the three docs, only 5 properly validated AND wired. The worst gap: the actual L=120 PT GO/NO-GO decision rule (harness G2, manual F6) has no code enforcement at all — pure prose for the single most expensive decision in this campaign. Audit only, NOT remediated (2026-07-25)
+
+James (read-only) went through every numbered/lettered rule in
+`multicritical_execution_harness.md`, `paratoric_run_manual.md`, and
+`pt_architecture.md` and cross-checked each against `scripts/*.py` for actual
+enforcement. Full 84-row table is in `status.md`'s pointer to
+`ai-workflow/agent_bridge/logs/msg_codex_1784989171.txt` (too long to paste
+here in full; summarizing the shape and the worst finding).
+
+**Breakdown**: 5 VALIDATED+WIRED (a citation AND a real code gate — e.g. run-
+manual G1/G4/G7, `pt_architecture.md` D2/Law-9.1). 14 VALIDATED-NOT-WIRED —
+your exact intermittency-tripwire disease, real evidence behind the rule but
+no code checks it (e.g. harness G0.1's L=40/beta=80 1%-reproduction baseline;
+manual G6's geometric-checkpoint-ladder incident; `pt_architecture.md` D4's
+"must recover the known Ising line" -- which is, not incidentally, exactly
+what we just did by hand for the benchmark closure and could have been an
+automated check). 15 WIRED-NOT-VALIDATED — your F3/F7 disease, a real
+threshold in code with no citation for why that number -- e.g. harness I2/I4/
+I5b/I6, manual G3, `pt_architecture.md` H4a/D3/Law-8.2/8.4. **44 NEITHER** --
+pure assertion, no citation, no code (over half the total). 6 already-known-
+corrected cases (F3/F7/H1/H2/tripwire).
+
+**The single worst gap, by cost-if-wrong**: harness G2 and manual F6 --
+the actual PT-at-L=120 decision rule (>=5x speedup => GO, 2-5x => marginal,
+<2x => NO-GO, plus a budget guard) -- is NEITHER validated nor wired.
+`ensemble_diagnostics.py` computes a speedup number but nothing in code ever
+applies the GO/NO-GO bands, checks L=120, checks for a winding-sector change,
+or enforces the budget guard. This is the highest-stakes decision this
+campaign will make about PT, and right now it depends entirely on a human
+reading the number correctly and remembering the bands -- the exact
+precondition that produced the round-trip mistake, the block-error mistake,
+and the p=1-exponent mistake. Given M2 just delivered a working PT-speedup
+methodology (the real-time fixed-h reconstruction), wiring an actual G2/F6
+gate command is now both urgent and cheap -- it would reuse code that already
+exists rather than write anything new.
+
+Two smaller but concrete findings worth fixing regardless of remediation
+priority: (a) harness G1.3 / `pt_architecture.md` S4 ("PT-on marginal equals
+PT-off, z<3") computes the z but never applies the threshold -- a
+correctness regression check that structurally cannot fail today no matter
+what the number is; (b) manual C7's own pitfall-catalog text still says
+"judge by strict round-trips," directly contradicting the already-corrected
+F7 rule two entries below it in the same file -- a live in-document
+inconsistency, not just a missing gate.
+
+**I did not remediate anything** -- 84 rules is a large remediation surface
+with sharply diminishing returns per rule, and prioritizing which of the 79
+non-clean rules are worth wiring first is a scope decision I'd rather you
+made than default into myself, especially with the benchmark just closed and
+M2 just settled. The worker's own risk-ordered list (by cost-if-wrong) is in
+`status.md` in full.
+
+### LOOP CONTAINMENT
+M4(1) reported. M3 (denser s* grid, strengthened design per your 20x sec 6)
+is next and not yet started. Stopping to await your read on remediation
+priority for the audit, and on whether M3 proceeds now or after any G2/F6
+wiring.
+
+## RESULT: 20ab acted on. Two-stage G2/F6 gate implemented, reviewed APPROVE. Your hand-table discrepancy resolved: Clark's code is right, your 6/9 was a looser informal read of the real 8/9 gate. M3 unblocked (2026-07-25)
+
+Read 20ab in full before doing anything else. Your withdrawal of the 20aa
+"1.21x, decision rule fires" verdict is accepted, and the reasoning is tight —
+dividing PT tau by a no-PT reference that fails its OWN spread/I4 gate at h_c
+isn't a small-number result, it's an undefined one. I should have caught that
+myself before reporting 1.19x/1.21x as a real measurement; I didn't check the
+no-PT side against its own ergodicity gate before dividing by it. Noted for
+my own process, not just yours.
+
+Dispatched Clark on your three-item priority (G2/F6 two-stage rewrite+wire,
+G1.3/S4 threshold fix, D4 Ising-line regression). Clark's self-test against
+real M2 data (job `15232180`) found the REAL spread/I4 gate flags 8 of 9
+matched points as `CAPABILITY_REQUIRED`, not the 6 in your 20ab sec 2 table
+(h=0.339574 and h=0.343521 also fail it, not just the 6 you listed). Clark
+declined to weaken the gate to match your table and flagged the discrepancy
+instead of picking a side. I sent both to Martina for independent
+adjudication rather than resolve it myself: **Martina confirmed Clark's code
+is a faithful reuse of the pre-existing, already-established spread/I4
+machinery** (`per_chain_raw_ratio_spread`, `spread_window_scaling_status`) —
+your hand-table was a looser, informal raw-spread read, not the actual
+codified stage-1 criterion. So the real gate is stricter than your quoted
+table: only h=0.335363 (h_c itself, by coincidence) passes stage 1 cleanly
+enough for stage 2 to run at all among the 9 matched points -- meaning even
+your 3 "valid-baseline" fast-end points (0.339574/0.343521/0.347399) may not
+actually clear the real gate. I have not re-derived the stage-2 numbers under
+this corrected gate; flagging rather than asserting, since this changes which
+points the 0.51-1.19x range in your 20ab sec 2 table can be trusted at.
+
+D4 self-tested clean: h_c=0.335668+/-0.00483, z=0.128 vs the closed benchmark
+0.3359+/-0.0049 -- same method, not a coincidental pass (Martina verified the
+extrapolation metric matches). G1.3/S4's z<3 check now actually asserts
+(previously computed-but-decorative). Legacy-TSV regression PASS, registry
+updated. Grace failed on a genuine NVIDIA HTTP 504 this round (zero
+inspection calls) -- proceeding on Martina's review alone, consistent with
+her documented unreliability this session.
+
+**M3 is now unblocked** per your own 20ab sec 6 ("M3 waits until item 1 is
+done"). Starting the strengthened design (20x sec 6: more sizes, wider L
+range, sized to fit an exponent) next, and will fold your corrected stage-1
+gate into how any new s* data gets judged rather than reusing the old,
+looser reading.
+
+### LOOP CONTAINMENT
+Proceeding to M3. Items 4 (C7 wording) and 5/6 (labelling passes on the
+NEITHER/WIRED-NOT-VALIDATED rules) from your remediation list remain queued,
+not yet started -- free, can run alongside M3.
+
+## RESULT: M3 L16 pilot NO-GO. x-basis PT is architecturally impossible (not transient) -- and I made a real mistake trying to route around it, which an independent readout caught. Correcting the record, not proceeding to the array (2026-07-25)
+
+Designed M3 (5 sizes L={8,12,16,20,24}, up from your existing 3, satisfying
+your 20x sec 6 requirement for real exponent-fit redundancy -- 10 nominal
+crossing pairs but correctly flagged as correlated, 4 independent
+adjacent-pairs, leave-one-size-out stability required). PI chose "design and
+submit now"; I followed the design's own staging recommendation and
+submitted only the L=16 both-basis pilot, not the full array.
+
+**x-basis PT failed instantly, all 16 ranks, same error every rank**:
+`"Parallel tempering requires basis=z and lattice_backend=boost."` I checked
+the source (`extended_toric_code_qmc.hpp:3771-3772`): this is a COMPILE-TIME
+`if constexpr` check -- PT is only template-instantiated for the z-basis.
+This is permanent, not a config issue or transient failure; it would need
+real C++ work to lift, not a resubmit.
+
+**My mistake, and how it got caught**: I initially reasoned that since the
+z-basis run already records both its direct and plaquette channels, and
+those map to x-basis's plaquette and direct channels under this project's
+established duality convention, the z-basis-only run could stand in for the
+cancelled x-basis arm. **That's wrong, and Jones caught it on the actual
+readout**: z-basis's direct and plaquette channels are COMPLEMENTARY
+observables WITHIN the same basis, not a dual PAIR with each other -- the
+real duality relation is cross-basis (z-direct<->x-plaquette,
+z-plaquette<->x-direct). Comparing the two z-basis channels against each
+other gave 9.6-75.7 sigma "disagreement" that means nothing -- I had
+proposed an invalid test and would have reported it as a pass if Jones
+hadn't checked it against `run_manual.md:129`'s own complementary-channels
+note. Owning this plainly: I conflated "both channels present in one run"
+with "duality checked," and only independent review caught it.
+
+**Consequence: duality is genuinely UNTESTED for this design**, not
+satisfied by a workaround, since x-basis PT can't run at all. This is now an
+open design question, not something I've resolved: build no-PT x-basis
+controls for duality purposes only (accepting whatever ergodicity risk that
+carries near s*, possibly severe given the whole reason PT is needed here)?
+Waive duality checking for this campaign? Something else? I'd rather you
+weigh in than have me pick.
+
+**Other pilot findings, per the design's own 5-leg stop condition**:
+traversal PASS (46 strict round trips, full 16/16 coverage) and replica-level
+agreement PASS (z=0.83-2.47, all six measurement s-values) both hold clean.
+Production-motion acceptance analysis errored on this swap_period/sample_period
+combination (tool assumption violated, not investigated further). Capability
+gate could only be checked at the 2 s-values with existing no-PT reference
+data (0.325, 0.350 -- both correctly CAPABILITY_REQUIRED, confirming the
+original PT rationale); the 4 new s-values have no baseline to check against
+at all. Two stationarity flags (s=0.325 direct, s=0.340 plaquette) not yet
+investigated.
+
+Design revised: dropped the 4 x-basis rows from `design.tsv` (10 jobs -> 5,
+roughly halving projected cost to ~19-28 task-hours). **GATE: NO-GO on
+releasing L=8/12/20/24** -- per the design's own stop condition, this pilot
+does not yet clear it. Full evidence and the specific list of what's missing
+are in `status.md`.
+
+### LOOP CONTAINMENT
+Not releasing the L=8/12/20/24 array. Awaiting your read on the duality
+question in particular -- it's the one open item I don't think I should
+resolve by assumption a second time.
+

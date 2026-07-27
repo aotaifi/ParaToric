@@ -1,0 +1,44 @@
+[
+{
+  "directory": "/project/theorie/a/A.Otaifi/ParaToric/build-current",
+  "command": "/usr/lib64/ccache/c++ -DBOOST_ALL_NO_LIB -DBOOST_ATOMIC_DYN_LINK -DBOOST_CHRONO_DYN_LINK -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_LOG_DYN_LINK -DBOOST_LOG_SETUP_DYN_LINK -DBOOST_REGEX_DYN_LINK -DBOOST_THREAD_DYN_LINK -I/project/theorie/a/A.Otaifi/ParaToric/src -I/project/theorie/a/A.Otaifi/ParaToric/include -O3 -DNDEBUG -std=gnu++23 -ffast-math -Wall -Wextra -Wfatal-errors -Wno-unused-parameter -Wno-reorder -Wno-unknown-pragmas -fdiagnostics-color=always -pipe -o CMakeFiles/paratoric_core.dir/src/lattice/lattice.cpp.o -c /project/theorie/a/A.Otaifi/ParaToric/src/lattice/lattice.cpp",
+  "file": "/project/theorie/a/A.Otaifi/ParaToric/src/lattice/lattice.cpp",
+  "output": "CMakeFiles/paratoric_core.dir/src/lattice/lattice.cpp.o"
+},
+{
+  "directory": "/project/theorie/a/A.Otaifi/ParaToric/build-current",
+  "command": "/usr/lib64/ccache/c++ -DBOOST_ALL_NO_LIB -DBOOST_ATOMIC_DYN_LINK -DBOOST_CHRONO_DYN_LINK -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_LOG_DYN_LINK -DBOOST_LOG_SETUP_DYN_LINK -DBOOST_REGEX_DYN_LINK -DBOOST_THREAD_DYN_LINK -I/project/theorie/a/A.Otaifi/ParaToric/src -I/project/theorie/a/A.Otaifi/ParaToric/include -O3 -DNDEBUG -std=gnu++23 -ffast-math -Wall -Wextra -Wfatal-errors -Wno-unused-parameter -Wno-reorder -Wno-unknown-pragmas -fdiagnostics-color=always -pipe -o CMakeFiles/paratoric_core.dir/src/mcmc/extended_toric_code.cpp.o -c /project/theorie/a/A.Otaifi/ParaToric/src/mcmc/extended_toric_code.cpp",
+  "file": "/project/theorie/a/A.Otaifi/ParaToric/src/mcmc/extended_toric_code.cpp",
+  "output": "CMakeFiles/paratoric_core.dir/src/mcmc/extended_toric_code.cpp.o"
+},
+{
+  "directory": "/project/theorie/a/A.Otaifi/ParaToric/build-current",
+  "command": "/usr/lib64/ccache/c++ -DBOOST_ALL_NO_LIB -DBOOST_ATOMIC_DYN_LINK -DBOOST_CHRONO_DYN_LINK -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_LOG_DYN_LINK -DBOOST_LOG_SETUP_DYN_LINK -DBOOST_REGEX_DYN_LINK -DBOOST_THREAD_DYN_LINK -I/project/theorie/a/A.Otaifi/ParaToric/src -I/project/theorie/a/A.Otaifi/ParaToric/include -O3 -DNDEBUG -std=gnu++23 -ffast-math -Wall -Wextra -Wfatal-errors -Wno-unused-parameter -Wno-reorder -Wno-unknown-pragmas -fdiagnostics-color=always -pipe -o CMakeFiles/paratoric_core.dir/src/mcmc/extended_toric_code_c.cpp.o -c /project/theorie/a/A.Otaifi/ParaToric/src/mcmc/extended_toric_code_c.cpp",
+  "file": "/project/theorie/a/A.Otaifi/ParaToric/src/mcmc/extended_toric_code_c.cpp",
+  "output": "CMakeFiles/paratoric_core.dir/src/mcmc/extended_toric_code_c.cpp.o"
+},
+{
+  "directory": "/project/theorie/a/A.Otaifi/ParaToric/build-current",
+  "command": "/usr/lib64/ccache/c++ -DBOOST_ALL_NO_LIB -DBOOST_ATOMIC_DYN_LINK -DBOOST_CHRONO_DYN_LINK -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_LOG_DYN_LINK -DBOOST_LOG_SETUP_DYN_LINK -DBOOST_PROGRAM_OPTIONS_DYN_LINK -DBOOST_REGEX_DYN_LINK -DBOOST_THREAD_DYN_LINK -I/project/theorie/a/A.Otaifi/ParaToric/include -I/project/theorie/a/A.Otaifi/ParaToric/src -O3 -DNDEBUG -std=gnu++23 -o CMakeFiles/paratoric.dir/src/cli/paratoric.cpp.o -c /project/theorie/a/A.Otaifi/ParaToric/src/cli/paratoric.cpp",
+  "file": "/project/theorie/a/A.Otaifi/ParaToric/src/cli/paratoric.cpp",
+  "output": "CMakeFiles/paratoric.dir/src/cli/paratoric.cpp.o"
+},
+{
+  "directory": "/project/theorie/a/A.Otaifi/ParaToric/build-current",
+  "command": "/usr/lib64/ccache/c++ -DBOOST_ALL_NO_LIB -DBOOST_ATOMIC_DYN_LINK -DBOOST_CHRONO_DYN_LINK -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_LOG_DYN_LINK -DBOOST_LOG_SETUP_DYN_LINK -DBOOST_PROGRAM_OPTIONS_DYN_LINK -DBOOST_REGEX_DYN_LINK -DBOOST_THREAD_DYN_LINK -I/project/theorie/a/A.Otaifi/ParaToric/include -I/project/theorie/a/A.Otaifi/ParaToric/src -O3 -DNDEBUG -std=gnu++23 -o CMakeFiles/paratoric.dir/src/io/io.cpp.o -c /project/theorie/a/A.Otaifi/ParaToric/src/io/io.cpp",
+  "file": "/project/theorie/a/A.Otaifi/ParaToric/src/io/io.cpp",
+  "output": "CMakeFiles/paratoric.dir/src/io/io.cpp.o"
+},
+{
+  "directory": "/project/theorie/a/A.Otaifi/ParaToric/build-current/tests",
+  "command": "/usr/lib64/ccache/c++ -DBOOST_ALL_NO_LIB -DBOOST_ATOMIC_DYN_LINK -DBOOST_CHRONO_DYN_LINK -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_LOG_DYN_LINK -DBOOST_LOG_SETUP_DYN_LINK -DBOOST_REGEX_DYN_LINK -DBOOST_TEST_DYN_LINK -DBOOST_THREAD_DYN_LINK -DBOOST_UNIT_TEST_FRAMEWORK_DYN_LINK -I/project/theorie/a/A.Otaifi/ParaToric/include -I/project/theorie/a/A.Otaifi/ParaToric/src -O3 -DNDEBUG -std=gnu++23 -o CMakeFiles/test_lattice.dir/lattice/test_lattice.cpp.o -c /project/theorie/a/A.Otaifi/ParaToric/tests/lattice/test_lattice.cpp",
+  "file": "/project/theorie/a/A.Otaifi/ParaToric/tests/lattice/test_lattice.cpp",
+  "output": "tests/CMakeFiles/test_lattice.dir/lattice/test_lattice.cpp.o"
+},
+{
+  "directory": "/project/theorie/a/A.Otaifi/ParaToric/build-current/tests",
+  "command": "/usr/lib64/ccache/c++ -DBOOST_ALL_NO_LIB -DBOOST_ATOMIC_DYN_LINK -DBOOST_CHRONO_DYN_LINK -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_LOG_DYN_LINK -DBOOST_LOG_SETUP_DYN_LINK -DBOOST_REGEX_DYN_LINK -DBOOST_TEST_DYN_LINK -DBOOST_THREAD_DYN_LINK -DBOOST_UNIT_TEST_FRAMEWORK_DYN_LINK -I/project/theorie/a/A.Otaifi/ParaToric/include -I/project/theorie/a/A.Otaifi/ParaToric/src -O3 -DNDEBUG -std=gnu++23 -o CMakeFiles/test_extended_toric_code_qmc.dir/mcmc/test_extended_toric_code_qmc.cpp.o -c /project/theorie/a/A.Otaifi/ParaToric/tests/mcmc/test_extended_toric_code_qmc.cpp",
+  "file": "/project/theorie/a/A.Otaifi/ParaToric/tests/mcmc/test_extended_toric_code_qmc.cpp",
+  "output": "tests/CMakeFiles/test_extended_toric_code_qmc.dir/mcmc/test_extended_toric_code_qmc.cpp.o"
+}
+]

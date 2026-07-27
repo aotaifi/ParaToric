@@ -1,0 +1,2 @@
+/usr/bin/llvm-ar-20 qc libparatoric_core.a CMakeFiles/paratoric_core.dir/src/lattice/lattice.cpp.o CMakeFiles/paratoric_core.dir/src/mcmc/extended_toric_code.cpp.o CMakeFiles/paratoric_core.dir/src/mcmc/extended_toric_code_c.cpp.o
+/usr/bin/llvm-ranlib-20 libparatoric_core.a

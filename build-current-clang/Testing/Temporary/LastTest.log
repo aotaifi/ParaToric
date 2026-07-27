@@ -1,0 +1,261 @@
+Start testing: Jun 17 16:54 CEST
+----------------------------------------------------------
+1/3 Testing: test_lattice
+1/3 Test: test_lattice
+Command: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang/tests/test_lattice"
+Directory: /project/theorie/a/A.Otaifi/ParaToric/build-current-clang/tests
+"test_lattice" start time: Jun 17 16:54 CEST
+Output:
+----------------------------------------------------------
+Running 70 test cases...
+
+[1;32;49m*** No errors detected
+[0;39;49m
+<end of output>
+Test time =   0.13 sec
+----------------------------------------------------------
+Test Passed.
+"test_lattice" end time: Jun 17 16:54 CEST
+"test_lattice" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/3 Testing: test_flat_square_lattice
+2/3 Test: test_flat_square_lattice
+Command: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang/tests/test_flat_square_lattice"
+Directory: /project/theorie/a/A.Otaifi/ParaToric/build-current-clang/tests
+"test_flat_square_lattice" start time: Jun 17 16:54 CEST
+Output:
+----------------------------------------------------------
+Running 5 test cases...
+
+[1;32;49m*** No errors detected
+[0;39;49m
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"test_flat_square_lattice" end time: Jun 17 16:54 CEST
+"test_flat_square_lattice" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/3 Testing: test_extended_toric_code_qmc
+3/3 Test: test_extended_toric_code_qmc
+Command: "/project/theorie/a/A.Otaifi/ParaToric/build-current-clang/tests/test_extended_toric_code_qmc"
+Directory: /project/theorie/a/A.Otaifi/ParaToric/build-current-clang/tests
+"test_extended_toric_code_qmc" start time: Jun 17 16:54 CEST
+Output:
+----------------------------------------------------------
+Running 24 test cases...
+[2026-06-17 16:54:33.800748] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_static_susceptibility" is 6.9093, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.800912] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_dynamical_susceptibility" is 6.50205, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.806081] [0x000014cc58942180] [warning] Autocorrelation time for observable "largest_cluster" is 6.11045, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.806219] [0x000014cc58942180] [warning] Autocorrelation time for observable "largest_plaquette_cluster" is 6.26863, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.806334] [0x000014cc58942180] [warning] Autocorrelation time for observable "string_number" is 6.87211, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.806448] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy" is 9.5518, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.806562] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_h" is 6.87211, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.806675] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_mu" is 49.5, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.806802] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_J" is 9.8628, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.806986] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x" is 6.87211, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.807232] [0x000014cc58942180] [warning] Autocorrelation time for observable "plaquette_z" is 9.8628, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.807425] [0x000014cc58942180] [warning] Autocorrelation time for observable "delta" is 9.8628, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.807760] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_static_susceptibility" is 8.80881, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.807845] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_dynamical_susceptibility" is 8.50419, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.810421] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_h" is 8.97096, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.810507] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_mu" is 5.72765, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.810789] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x" is 8.97096, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.810992] [0x000014cc58942180] [warning] Autocorrelation time for observable "star_x" is 5.72765, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.811644] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_static_susceptibility" is 8.97096, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.811733] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_dynamical_susceptibility" is 8.00747, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.815923] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy" is 9.56589, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.816015] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_h" is 6.23398, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.816097] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_mu" is 9.55594, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.816176] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_J" is 49.5, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.816336] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x" is 6.23398, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.816497] [0x000014cc58942180] [warning] Autocorrelation time for observable "star_x" is 9.55594, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.816767] [0x000014cc58942180] [warning] Autocorrelation time for observable "delta" is 9.55594, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.817087] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_static_susceptibility" is 6.23398, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.819956] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_J" is 9.63107, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.820040] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_lmbda" is 9.44721, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.820202] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z" is 9.44721, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.820362] [0x000014cc58942180] [warning] Autocorrelation time for observable "plaquette_z" is 9.63107, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.820925] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_static_susceptibility" is 8.15248, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.821014] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_dynamical_susceptibility" is 7.42644, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.821094] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_static_susceptibility" is 9.44721, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.821182] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_dynamical_susceptibility" is 7.79, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.824597] [0x000014cc58942180] [warning] Autocorrelation time for observable "percolation_strength" is 6.4188, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.824682] [0x000014cc58942180] [warning] Autocorrelation time for observable "percolation_probability" is 6.07781, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.824944] [0x000014cc58942180] [warning] Autocorrelation time for observable "largest_cluster" is 6.04559, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.825148] [0x000014cc58942180] [warning] Autocorrelation time for observable "string_number" is 5.86624, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.825238] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy" is 8.80565, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.825372] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_h" is 5.86624, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.825503] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_mu" is 49.5, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.825633] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_J" is 9.44988, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.825914] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x" is 5.86624, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.826256] [0x000014cc58942180] [warning] Autocorrelation time for observable "plaquette_z" is 9.44988, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.826474] [0x000014cc58942180] [warning] Autocorrelation time for observable "delta" is 9.44988, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.826910] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_static_susceptibility" is 7.58147, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.827027] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_dynamical_susceptibility" is 7.00687, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.830247] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_h" is 9.96086, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.830351] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_mu" is 9.56191, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.830700] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x" is 9.96086, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.831007] [0x000014cc58942180] [warning] Autocorrelation time for observable "star_x" is 9.56191, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.831722] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_static_susceptibility" is 9.96086, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.831810] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_dynamical_susceptibility" is 7.76275, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.831899] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_static_susceptibility" is 9.21033, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.831983] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_dynamical_susceptibility" is 8.35633, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.836603] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy" is 9.81921, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.836693] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_h" is 5.44435, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.836774] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_mu" is 9.73521, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.836854] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_J" is 49.5, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.837019] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x" is 5.44435, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.837214] [0x000014cc58942180] [warning] Autocorrelation time for observable "star_x" is 9.73521, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.837450] [0x000014cc58942180] [warning] Autocorrelation time for observable "delta" is 9.73521, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.837801] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_static_susceptibility" is 5.44435, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.840495] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_J" is 8.92198, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.840579] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_lmbda" is 10.149, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.840774] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z" is 10.149, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.840938] [0x000014cc58942180] [warning] Autocorrelation time for observable "plaquette_z" is 8.92198, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.841490] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_static_susceptibility" is 7.15729, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.841575] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_dynamical_susceptibility" is 5.81324, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.841656] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_static_susceptibility" is 10.149, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.841742] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_dynamical_susceptibility" is 7.99321, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.845561] [0x000014cc58942180] [warning] Autocorrelation time for observable "string_number" is 5.61275, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.845646] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy" is 8.55419, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.845727] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_h" is 5.61275, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.845808] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_mu" is 49.5, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.845891] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_J" is 9.7581, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.846047] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x" is 5.61275, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.846289] [0x000014cc58942180] [warning] Autocorrelation time for observable "plaquette_z" is 9.7581, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.846449] [0x000014cc58942180] [warning] Autocorrelation time for observable "delta" is 9.7581, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.846791] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_static_susceptibility" is 8.89747, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.846877] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_dynamical_susceptibility" is 8.69985, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.849575] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_h" is 9.31517, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.849662] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_mu" is 7.2845, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.849990] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x" is 9.31517, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.850196] [0x000014cc58942180] [warning] Autocorrelation time for observable "star_x" is 7.2845, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.850913] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_static_susceptibility" is 9.31517, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.851015] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_dynamical_susceptibility" is 8.43736, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.851105] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_static_susceptibility" is 5.6439, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.851191] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_dynamical_susceptibility" is 5.31539, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.855560] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy" is 9.83074, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.855649] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_h" is 7.17988, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.855730] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_mu" is 9.75748, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.855811] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_J" is 49.5, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.855972] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x" is 7.17988, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.856169] [0x000014cc58942180] [warning] Autocorrelation time for observable "star_x" is 9.75748, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.856406] [0x000014cc58942180] [warning] Autocorrelation time for observable "delta" is 9.75748, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.856747] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_static_susceptibility" is 7.17988, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.865253] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_J" is 10.3782, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.865341] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_lmbda" is 8.80555, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.865535] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z" is 8.80555, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.865696] [0x000014cc58942180] [warning] Autocorrelation time for observable "plaquette_z" is 10.3782, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.866208] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_static_susceptibility" is 9.99708, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.866292] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_dynamical_susceptibility" is 9.83899, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.866374] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_static_susceptibility" is 8.80555, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.866462] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_dynamical_susceptibility" is 8.2611, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.877541] [0x000014cc58942180] [warning] Autocorrelation time for observable "plaquette_percolation_strength" is 6.82933, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.877628] [0x000014cc58942180] [warning] Autocorrelation time for observable "plaquette_percolation_probability" is 6.91393, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.877709] [0x000014cc58942180] [warning] Autocorrelation time for observable "largest_cluster" is 7.01436, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.877799] [0x000014cc58942180] [warning] Autocorrelation time for observable "largest_plaquette_cluster" is 7.17689, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.877890] [0x000014cc58942180] [warning] Autocorrelation time for observable "string_number" is 9.44406, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.878058] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_h" is 9.44406, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.878143] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_mu" is 49.5, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.878224] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_J" is 9.76406, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.878382] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x" is 9.44406, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.878631] [0x000014cc58942180] [warning] Autocorrelation time for observable "plaquette_z" is 9.76406, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.878806] [0x000014cc58942180] [warning] Autocorrelation time for observable "delta" is 9.76406, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.879127] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_static_susceptibility" is 9.68617, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.879213] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_dynamical_susceptibility" is 9.51661, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.887376] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_h" is 9.75929, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.887464] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_mu" is 7.74361, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.887760] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x" is 9.75929, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.887946] [0x000014cc58942180] [warning] Autocorrelation time for observable "star_x" is 7.74361, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.888231] [0x000014cc58942180] [warning] Autocorrelation time for observable "delta" is 5.94221, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.888616] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_static_susceptibility" is 9.75929, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.888705] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_dynamical_susceptibility" is 8.89711, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.888790] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_static_susceptibility" is 6.48235, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.888879] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_dynamical_susceptibility" is 6.31306, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.900836] [0x000014cc58942180] [warning] Autocorrelation time for observable "percolation_strength" is 5.41683, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.901055] [0x000014cc58942180] [warning] Autocorrelation time for observable "plaquette_percolation_strength" is 5.63269, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.901245] [0x000014cc58942180] [warning] Autocorrelation time for observable "largest_cluster" is 5.51808, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.901329] [0x000014cc58942180] [warning] Autocorrelation time for observable "largest_plaquette_cluster" is 5.79643, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.901418] [0x000014cc58942180] [warning] Autocorrelation time for observable "string_number" is 6.19111, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.901498] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy" is 9.62107, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.901581] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_h" is 6.06674, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.901662] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_mu" is 9.59119, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.901909] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x" is 6.06674, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.901993] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z" is 6.19111, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.902080] [0x000014cc58942180] [warning] Autocorrelation time for observable "star_x" is 9.59119, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.902314] [0x000014cc58942180] [warning] Autocorrelation time for observable "delta" is 9.59119, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.902676] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_static_susceptibility" is 6.06674, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.902890] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_static_susceptibility" is 6.36831, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.902979] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_dynamical_susceptibility" is 6.3167, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.912285] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_J" at hysteresis point 0 (h=0.9, lmbda=1) is 9.13967, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.912373] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_lmbda" at hysteresis point 0 (h=0.9, lmbda=1) is 9.9967, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.912551] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z" at hysteresis point 0 (h=0.9, lmbda=1) is 9.9967, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.912748] [0x000014cc58942180] [warning] Autocorrelation time for observable "plaquette_z" at hysteresis point 0 (h=0.9, lmbda=1) is 9.13967, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.913574] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_static_susceptibility" at hysteresis point 0 (h=0.9, lmbda=1) is 9.9967, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.913664] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_dynamical_susceptibility" at hysteresis point 0 (h=0.9, lmbda=1) is 9.19094, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.921853] [0x000014cc58942180] [warning] Autocorrelation time for observable "largest_cluster" at hysteresis point 0 (h=0.9, lmbda=0.05) is 7.17842, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.921946] [0x000014cc58942180] [warning] Autocorrelation time for observable "largest_plaquette_cluster" at hysteresis point 0 (h=0.9, lmbda=0.05) is 7.72113, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.922029] [0x000014cc58942180] [warning] Autocorrelation time for observable "string_number" at hysteresis point 0 (h=0.9, lmbda=0.05) is 6.83716, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.922110] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy" at hysteresis point 0 (h=0.9, lmbda=0.05) is 7.54534, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.922192] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_h" at hysteresis point 0 (h=0.9, lmbda=0.05) is 6.83716, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.922382] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_J" at hysteresis point 0 (h=0.9, lmbda=0.05) is 10.4772, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.922467] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_lmbda" at hysteresis point 0 (h=0.9, lmbda=0.05) is 5.58887, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.922548] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x" at hysteresis point 0 (h=0.9, lmbda=0.05) is 6.83716, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.922631] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z" at hysteresis point 0 (h=0.9, lmbda=0.05) is 5.58887, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.922820] [0x000014cc58942180] [warning] Autocorrelation time for observable "plaquette_z" at hysteresis point 0 (h=0.9, lmbda=0.05) is 10.4772, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.923391] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_static_susceptibility" at hysteresis point 0 (h=0.9, lmbda=0.05) is 9.34281, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.923476] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_dynamical_susceptibility" at hysteresis point 0 (h=0.9, lmbda=0.05) is 9.30226, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.923559] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_static_susceptibility" at hysteresis point 0 (h=0.9, lmbda=0.05) is 5.58887, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.931603] [0x000014cc58942180] [warning] Autocorrelation time for observable "largest_cluster" at hysteresis point 0 (h=0.9, lmbda=1) is 6.23083, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.931705] [0x000014cc58942180] [warning] Autocorrelation time for observable "largest_plaquette_cluster" at hysteresis point 0 (h=0.9, lmbda=1) is 5.29949, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.931787] [0x000014cc58942180] [warning] Autocorrelation time for observable "string_number" at hysteresis point 0 (h=0.9, lmbda=1) is 8.7729, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.931875] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy" at hysteresis point 0 (h=0.9, lmbda=1) is 8.43798, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.931963] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_h" at hysteresis point 0 (h=0.9, lmbda=1) is 9.26175, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.932050] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_mu" at hysteresis point 0 (h=0.9, lmbda=1) is 7.84321, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.932248] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_lmbda" at hysteresis point 0 (h=0.9, lmbda=1) is 8.7729, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.932335] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x" at hysteresis point 0 (h=0.9, lmbda=1) is 9.26175, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.932415] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z" at hysteresis point 0 (h=0.9, lmbda=1) is 8.7729, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.932497] [0x000014cc58942180] [warning] Autocorrelation time for observable "star_x" at hysteresis point 0 (h=0.9, lmbda=1) is 7.84321, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.933174] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_static_susceptibility" at hysteresis point 0 (h=0.9, lmbda=1) is 9.26175, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.933269] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_dynamical_susceptibility" at hysteresis point 0 (h=0.9, lmbda=1) is 7.50615, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.933356] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_static_susceptibility" at hysteresis point 0 (h=0.9, lmbda=1) is 9.03563, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.933440] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_dynamical_susceptibility" at hysteresis point 0 (h=0.9, lmbda=1) is 9.01124, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.946017] [0x000014cc58942180] [warning] Autocorrelation time for observable "percolation_strength" at hysteresis point 0 (h=0.9, lmbda=0.05) is 8.3654, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.946097] [0x000014cc58942180] [warning] Autocorrelation time for observable "percolation_probability" at hysteresis point 0 (h=0.9, lmbda=0.05) is 8.09433, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.946171] [0x000014cc58942180] [warning] Autocorrelation time for observable "plaquette_percolation_strength" at hysteresis point 0 (h=0.9, lmbda=0.05) is 6.9937, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.946259] [0x000014cc58942180] [warning] Autocorrelation time for observable "plaquette_percolation_probability" at hysteresis point 0 (h=0.9, lmbda=0.05) is 7.29175, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.946345] [0x000014cc58942180] [warning] Autocorrelation time for observable "largest_cluster" at hysteresis point 0 (h=0.9, lmbda=0.05) is 7.45336, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.946430] [0x000014cc58942180] [warning] Autocorrelation time for observable "largest_plaquette_cluster" at hysteresis point 0 (h=0.9, lmbda=0.05) is 7.52671, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.946514] [0x000014cc58942180] [warning] Autocorrelation time for observable "string_number" at hysteresis point 0 (h=0.9, lmbda=0.05) is 8.83737, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.946595] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy" at hysteresis point 0 (h=0.9, lmbda=0.05) is 8.60215, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.946676] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_h" at hysteresis point 0 (h=0.9, lmbda=0.05) is 9.91463, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.946758] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_mu" at hysteresis point 0 (h=0.9, lmbda=0.05) is 10.1678, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.946923] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy_lmbda" at hysteresis point 0 (h=0.9, lmbda=0.05) is 8.83737, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.947004] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x" at hysteresis point 0 (h=0.9, lmbda=0.05) is 9.91463, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.947085] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z" at hysteresis point 0 (h=0.9, lmbda=0.05) is 8.83737, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.947166] [0x000014cc58942180] [warning] Autocorrelation time for observable "star_x" at hysteresis point 0 (h=0.9, lmbda=0.05) is 10.1678, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.947438] [0x000014cc58942180] [warning] Autocorrelation time for observable "delta" at hysteresis point 0 (h=0.9, lmbda=0.05) is 10.0352, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.947755] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_static_susceptibility" at hysteresis point 0 (h=0.9, lmbda=0.05) is 9.91463, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.947846] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x_dynamical_susceptibility" at hysteresis point 0 (h=0.9, lmbda=0.05) is 6.21797, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.947934] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_static_susceptibility" at hysteresis point 0 (h=0.9, lmbda=0.05) is 10.2954, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:33.948018] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_z_dynamical_susceptibility" at hysteresis point 0 (h=0.9, lmbda=0.05) is 10.1087, greater than 0.1 * number of samples (5 for 50 samples).
+[2026-06-17 16:54:34.131286] [0x000014cc58942180] [warning] Autocorrelation time for observable "energy" is 0.5, greater than 0.1 * number of samples (0.2 for 2 samples).
+[2026-06-17 16:54:34.131300] [0x000014cc58942180] [warning] Autocorrelation time for observable "anyon_count" is 0.5, greater than 0.1 * number of samples (0.2 for 2 samples).
+[2026-06-17 16:54:34.131305] [0x000014cc58942180] [warning] Autocorrelation time for observable "sigma_x" is 0.5, greater than 0.1 * number of samples (0.2 for 2 samples).
+[2026-06-17 16:54:34.131309] [0x000014cc58942180] [warning] Autocorrelation time for observable "star_x" is 0.5, greater than 0.1 * number of samples (0.2 for 2 samples).
+[2026-06-17 16:54:34.131313] [0x000014cc58942180] [warning] Autocorrelation time for observable "plaquette_z" is 0.5, greater than 0.1 * number of samples (0.2 for 2 samples).
+
+[1;32;49m*** No errors detected
+[0;39;49m
+<end of output>
+Test time =   0.44 sec
+----------------------------------------------------------
+Test Passed.
+"test_extended_toric_code_qmc" end time: Jun 17 16:54 CEST
+"test_extended_toric_code_qmc" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Jun 17 16:54 CEST

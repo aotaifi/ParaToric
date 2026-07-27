@@ -35,6 +35,9 @@ class AdaptResult:
     raw_bottleneck_acceptance: float | None
     bottleneck_link: int | None
     bottleneck_acceptance: float | None
+    input_rung_count: int
+    target_rung_count: int
+    resampling_applied: bool
 
 
 def finite_acceptances(values: Iterable[float]) -> list[float]:
@@ -153,6 +156,34 @@ def enforce_min_spacing(
     out[-1] = float(ladder[-1])
     changed = any(abs(a - b) > 1e-14 for a, b in zip(out, ladder))
     return out, changed
+
+
+def resample_ladder_by_index(
+    ladder: Sequence[float], target_count: int
+) -> list[float]:
+    """Resample a PM-shaped ladder without hand-placing added rungs."""
+    validate_ladder(ladder)
+    if target_count < 2:
+        raise ValueError("target_count must be >= 2")
+    if target_count == len(ladder):
+        return list(ladder)
+
+    source_edges = len(ladder) - 1
+    target_edges = target_count - 1
+    out: list[float] = []
+    for target_index in range(target_count):
+        source_position = source_edges * target_index / target_edges
+        left_index = min(int(math.floor(source_position)), source_edges - 1)
+        fraction = source_position - left_index
+        if target_index == target_edges:
+            out.append(float(ladder[-1]))
+        else:
+            out.append(
+                float(ladder[left_index])
+                + fraction * (float(ladder[left_index + 1]) - float(ladder[left_index]))
+            )
+    validate_ladder(out)
+    return out
 
 
 def adapt_span_to_target(
@@ -289,6 +320,9 @@ def adapt_ladder(
         raw_bottleneck_acceptance=raw_bottleneck_acceptance,
         bottleneck_link=bottleneck_link,
         bottleneck_acceptance=bottleneck_acceptance,
+        input_rung_count=len(ladder),
+        target_rung_count=len(ladder),
+        resampling_applied=False,
     )
 
 
@@ -329,6 +363,18 @@ def run_from_acceptance(args: argparse.Namespace) -> int:
         lower_bound=args.lower_bound,
         upper_bound=args.upper_bound,
     )
+    target_count = args.target_count if args.target_count is not None else len(result.proposed_ladder)
+    if target_count != len(result.proposed_ladder):
+        result = AdaptResult(
+            **{
+                **asdict(result),
+                "proposed_ladder": resample_ladder_by_index(
+                    result.proposed_ladder, target_count
+                ),
+                "target_rung_count": target_count,
+                "resampling_applied": True,
+            }
+        )
     print(json.dumps(asdict(result), indent=2, sort_keys=True))
     return 0
 
@@ -385,6 +431,12 @@ def self_test() -> int:
     assert capped.iterations_run == 3
     assert capped.stopped_by == "max_iterations"
 
+    resampled = resample_ladder_by_index([0.10, 0.20, 0.40], 5)
+    assert all(
+        math.isclose(actual, expected, rel_tol=0.0, abs_tol=1.0e-14)
+        for actual, expected in zip(resampled, [0.10, 0.15, 0.20, 0.30, 0.40])
+    )
+
     smoothed = smooth_acceptance([0.30, 0.95, 0.30], window_radius=1)
     assert smoothed[1] < 0.95
 
@@ -417,6 +469,11 @@ def build_parser() -> argparse.ArgumentParser:
     propose.add_argument("--max-span-step", type=float, default=0.35)
     propose.add_argument("--lower-bound", type=float)
     propose.add_argument("--upper-bound", type=float)
+    propose.add_argument(
+        "--target-count",
+        type=int,
+        help="resample the PM-shaped ladder to this fixed rung count",
+    )
     propose.set_defaults(func=run_from_acceptance)
 
     validate = sub.add_parser("validate-synthetic", help="run the required synthetic ladder scenarios")

@@ -988,4 +988,974 @@ overlay benchmark that may not need PT at all could be solving a harder
 problem than necessary.
 Reported to Feynman with this finding + candidate alternative; benchmark_report.md
 remains PROVISIONAL. Not proceeding to a 5th mechanical ladder attempt
+
+## Feynman GO (2026-07-18): decouple benchmark from PT + marker test + beta-bridge documented (not built)
+Feynman's UPDATE 2026-07-18 in doc/feynman_thesis_tojarvis.md confirms Jarvis's
+decouple proposal, adds two more decisions, ORDER: (1) close benchmark NO-PT,
+(2) marker test on an existing failed PT run, (3) resume self-dual PT path.
+beta-bridge spec already written (pt_architecture.md sec 9, 2026-07-18) — DOCUMENT
+only, build IFF self-dual PT stalls at s* with first-order signature.
+
+## L=10 NO-PT pilot: NOT VALIDATED — genuine h_c-localized critical slowing even at the cheapest L
+Executing Decision 1. Deep NO-PT (pure local Metropolis) pilot at L=10, 14 h-values
+in [0.28,0.40] denser near h_c=0.335, 4 cold+4 hot chains, checkpoints
+200k/500k/1M/2M/4M sweeps, 2M production window. Job **15141215**, 112/112
+COMPLETED cleanly. Full Part B checklist run (ensemble_diagnostics.py).
+**VERDICT: NOT VALIDATED, do not scale to L=20/30 yet.** Failures cluster tightly
+in h=[0.318989,0.343521] (brackets h_c exactly); everything outside that window
+passes cleanly. Inside: non-plateaued drift right at h_c (ratio still falling
+1.665->1.446 across 200k->4M checkpoints, slope z=3.71), cold/hot disagreement up
+to z=29.6, tau_int blowup to ~7,375 sweeps (~300-500x off-critical) with Neff
+135-172 built on a non-stationary series. global_single_spin_flip B6 tripwire
+(<1e-4 accept, 112/112 chains) is NOT new — already established as expected
+(run_tracker_multicritical.md:264, Martina 2026-07-11), not investigating further.
+**Strategic flag**: this is the same PT-shaped failure mode (basin disagreement +
+non-plateaued drift, localized at h_c) already showing at L=10, the cheapest size
+in the set — does not necessarily falsify Decision 1 (L=10 is cheap enough that
+20-40M sweeps, a 10-20x extension, is trivial: 4M sweeps took only ~5-7 min
+wall-clock), but "Linsel didn't need PT so this should just work" is not
+automatically true even at their smallest L. Reported to Feynman as a RESULT
+entry, flagging the premise risk rather than assuming a depth extension resolves
+it cleanly. Candidate next step (not decided): targeted depth extension for L=10
+h in [0.318989,0.343521] to 20-40M sweeps, re-run Part B, before touching L=20/30
+(where the same window would be far more expensive to push through by brute depth).
+Full data: /scratch/a/A.Otaifi/paratoric_linsel_no_pt_l10_pilot_20260718/.
+
+## Decision 2 marker test: h_c CONFIRMED as a genuine localized barrier (not distributed under-resourcing)
+Ran on L=30 Lane-2 PT run (job 15140246, 67-rung ladder, min acceptance 0.24% at
+h=[0.339,0.344]) per Feynman's Decision 2. **Hypothesis A (localized) confirmed,
+Hypothesis B (distributed) rejected**, with a quantitative refinement over the
+literal falsifiable prediction: h_c link 588/249,412 accepted (0.235%), only 4/67
+replicas ever crossed it, and those that do bounce back ~99.8-99.9% of the time;
+every OTHER link had >=11,400 crossings (median ~107,683) — 2-3 orders of
+magnitude more permeable. Turnarounds cluster hard at the two rungs bracketing
+h_c. Real, physical, localized barrier, consistent with specific-heat-like Var(E)
+enhancement — not a whack-a-mole artifact. Per Decision 3's own rule
+(pt_architecture.md sec 9.4), this does NOT by itself authorize building the
+beta-bridge (continuous benchmark, not the self-dual MCP) — treating it as
+confirmation the marker-test method itself is trustworthy, to be re-applied at
+s* if the self-dual PT stalls there. Reported to Feynman as a RESULT entry.
+
+## Feynman FINALIZED GO (UPDATE 2026-07-18c): L=10 depth-ramp to 40M sweeps — the single decisive open thread
+Feynman's read on the L=10 NOT-VALIDATED finding: RIGHT, refines (does not refute)
+Decision 1. Benchmark is continuous 3D Ising -> no thermodynamic barrier -> cold/hot
+MUST converge at sufficient depth; z=29.6 split is NOT first-order metastability.
+Leading mechanism: global_single_spin_flip (the sector-changing move) is dead, so
+the winding sector may only mix by slow string accumulation — critically slow at
+h_c. Pre-committed EXACT SPEC, submitted verbatim (job **15149119**, 72 tasks =
+9 h-points x 4cold+4hot, output
+/scratch/a/A.Otaifi/paratoric_linsel_no_pt_l10_depth_ramp_20260718/):
+- DECISIVE h: 0.318989179906, 0.322, 0.326, 0.330615254621, 0.335362847648,
+  0.339573841268, 0.343520981103 (the pilot's failing window).
+- POSITIVE CONTROLS h: 0.305629247317, 0.347398758564 (must stay converged or the
+  whole readout is void).
+- 40M sweeps/chain, checkpoints at 2/4/8/16/24/32/40M (post-hoc sliced from a
+  continuous --full_time_series 1 series, not live restart snapshots — confirmed
+  `percolation_probability` IS in the recorded observables this time, fixing the
+  pilot's gap that would have made the sector-exchange mechanism probe impossible).
+PRE_SUBMISSION_CHECK PASS. Concise alert notifier attached (job 15149172) after
+one manual retry (DNS transient, same class as the pilot's).
+**PRE-COMMITTED BINARY DECISION RULE** (do not re-litigate): PASS (cold/hot z<3 on
+BOTH ratio and base-edge-density at worst points AND decelerating increments) =>
+depth-solvable, Decision 1 holds, calibrate depth law, extrapolate to L=20/30.
+FAIL (still split z>>3, non-decelerating increments, and/or zero in-window
+sector-exchange events while controls exchange) => winding sector not ergodic
+under local updates at ALL => PT alone cannot fix it => WORM becomes MANDATORY,
+reorders the whole M0 strategy — biggest finding of the campaign if so.
+Pre-authorized ONE tiebreak extension to 80M sweeps only if ambiguous (decelerating
+increments but z not yet <3); any other ambiguity or a drifted control => stop and
+report. LOOP CONTAINMENT: one ramp (+ authorized tiebreak), then STOP — no ladder
+work, no PT, no new h-points until this binary is in. Nothing else in scope
+(explicitly supersedes Step 2/3 self-dual-line work until resolved).
+
+## L=10 depth-ramp binary: PASS — Decision 1 HOLDS, no worm needed (2026-07-18)
+Job 15149119 (72 tasks, EXACT SPEC) ran to full completion — 72/72 COMPLETED
+(exit 0:0), independently verified via HDF5 (series length exactly 1,592,000
+samples/chain = full 40M sweeps, not truncated). **VERDICT: PASS.** Both
+controls stayed converged (z40<=1.03, p=0.97/0.84). All 7 decisive points:
+cold/hot z<3 on BOTH ratio and density at 40M (max 1.52, most near-zero,
+including AT h_c: 0.041/0.767). Increments plateau into the late checkpoints
+(h=0.318989 shakiest, constant-fit p=0.054 borderline, but late-window
+16-40M slope-z drops to 0.609 from overall 3.24 — drift concentrated early,
+consistent with approaching plateau not runaway). Sector-exchange events:
+every chain (decisive AND control) shows hundreds of thousands of exchange
+events over 40M sweeps — the FAIL signature (zero in-window exchanges) is
+absent, directly killing the sector-trapping hypothesis. Reading: the
+pilot's z=29.6 split was ordinary depth-solvable critical slowing, not
+ergodicity breaking; tau_int at h_c (10,792 sweeps) matches the pilot's
+earlier estimate (~7,375 sweeps), same physical autocorrelation time, now
+resolved with real Neff (1848 vs 136) thanks to the larger production
+window. Reported to Feynman as a RESULT entry, with NEXT step (calibrate
+depth law, scale to L=20/30 at matched depth) flagged for confirm before
+committing the larger spend — not self-authorized. Aside: an earlier "they
+all timed out" report from the PI traced to unrelated TIMEOUT jobs in a
+different project (code_ruby_duy_pinning_lab), confirmed via sacct WorkDir
+— not this run; no action needed, noted for the record only.
+Full data: /scratch/a/A.Otaifi/paratoric_linsel_no_pt_l10_depth_ramp_20260718/.
+
+## L=20 no-PT depth-ramp submitted; L=30 proposal flagged, NOT submitted (cost + unmeasured exponent)
+Per PI's "1. first" (scale to L=20/30), calibrated a depth law from the L=10
+checkpoint ladder: plateau entry ~16M sweeps, adopted z=2 as a **conservative
+physics PRIOR, not a fit** (worker's own caveat — only ONE L point exists, an
+exponent cannot actually be fit from a single depth-ramp). L=20 submitted: job
+**15159599** (72 tasks, 9h x 8 chains, 64M sweeps, checkpoints 8/16/32/48/64M,
+24h walltime cap = 2x margin over the 10-12h/chain estimate), running cleanly.
+Notifier attached (15159644) after 3 DNS retries.
+**L=30 NOT submitted — flagged for explicit confirm.** Proposed design: 144M
+sweeps, projected **52-60h/chain** (~72 tasks -> thousands of core-hours if run
+as proposed). This is a real resource decision, not a mechanical scale-up: the
+z=2 exponent behind it is a guess, not measured. L=20's own checkpoint ladder
+(once it completes, up to 24h) will give a SECOND real calibration point,
+letting us actually FIT z from L=10 vs L=20 instead of assuming it — much lower
+risk of wasting the L=30 spend on a wrong guess. Recommending: wait for L=20,
+refit z from two real points, then design L=30 — not submitting L=30 on the
+current single-point guess. Awaiting PI direction.
+
+## L=20 readout: AMBIGUOUS, not clean PASS — L=30 correctly NOT submitted (calibration untrustworthy)
+Job 15159599 (L=20, 72 tasks, 64M sweeps) completed fully (verified via HDF5 series
+length 2,552,000/chain, untruncated). Readout found: at the final 64M checkpoint,
+z<3 everywhere and sector-exchange healthy at all h — no catastrophic FAIL
+signature. BUT most h-points already looked "converged" at the FIRST checkpoint
+(8M), too coarse to show real relaxation shape, and **two points never achieve a
+stable joint (z<3 AND stationary) state through 64M**: positive control
+h=0.305629247317 and decisive point h=0.339573841268 keep drifting in/out.
+The naive z-fit from L=10(16M)->L=20(64M) reproduces z=2 exactly — but this is
+CIRCULAR: 64M was chosen by extrapolating the z=2 guess in the first place, so it
+proves nothing independent. **L=30 was NOT submitted** — worker correctly declined
+despite being pre-authorized, given the calibration is unreliable. L=30's real
+projected cost if attempted: median 52.9h/mean 54.4h/worst 69.9h per chain,
+~3,919 task-hours total (72 tasks) — a large, genuine resource commitment that
+should not rest on an unverified exponent. Recommended NEXT (worker's, endorsed):
+extend checkpoints for L=20 PAST 64M (targeting the two non-converged points
+specifically) to get a real plateau-entry depth, THEN fit z properly, THEN design
+L=30. Awaiting PI direction — this is a real cost/schedule tradeoff, not a
+mechanical next step.
+
+## Feynman GO 2026-07-20: L=10 PASS accepted, L=20 formally VOID (not ambiguous), circularity was Feynman's spec error, sector-exchange rate hints z~3.7. 3-step plan issued (~100 task-hours vs 3,919 for L=30). G6 added to run manual (geometric checkpoint ladders). STEP 1 done, STOPPED per PI instruction.
+STEP 1 (free, existing data): tau_int extracted for L=10/L=20 (bootstrap/
+jackknife errors), L=10/20 raw-ratio overlay plot produced
+(doc/figures/linsel_raw_ratio_crossing_no_pt_l10_l20_20260720.png),
+benchmark_report.md sec 4/5/6 updated, PROVISIONAL correctly NOT promoted.
+**Crossing = 0.3244098 +/- 0.0000817 vs Linsel's 0.335(2) — ~5 sigma tension,
+a real finding, benchmark not closed.** **tau_int(L20)/tau_int(L10) at h_c =
+0.00498 +/- 0.00179 (L20 tau ~200x SMALLER than L10) — flagged SUSPECT, not
+accepted as a confirmed cross-check of Feynman's sector-exchange z~3.7 hint.**
+Reason for suspicion: suppression is NOT localized to h_c, it's systematic
+across almost the entire L=20 window (tau~18-27 sweeps nearly flat vs h,
+while L=10 spans 846-71,086 and peaks near h_c as expected) — physically
+backwards (larger L should slow down, not speed up); ruled out an obvious
+between_sweeps/sample-period mismatch (both=25) but did not investigate
+further. Density-observable tau ratio (1.145 +/- 0.013) is far more
+physically plausible and likely the more trustworthy of the two. Reported
+to Feynman with this caveat prominent — NOT presenting the tau_int reversal
+as confirming z~3.7. STOPPED after Step 1 per direct PI instruction; STEP 2
+(L=12/14/16 short h_c-only runs, ~20-60 task-hours) and STEP 3 (targeted
+L=20 void-clearing extension to 128M, geometric ladder, ~170-340 task-hours)
+are designed but NOT dispatched. Also flagged: a bad tau_int estimator would
+corrupt STEP 2's fit too, so this may need diagnosing before STEP 2 proceeds.
+
+## STEP 0 done: estimator fixed (4 review rounds), tested vs Feynman's 2 predictions on real data. VERDICT: STILL REAL, with nuance.
+Clark wrote blocking-plateau tau + between-chain-error estimator in
+scripts/ensemble_diagnostics.py (new `blocking-validity` subcommand) per
+Feynman's STEP 0 spec. Review took 4 rounds (PI-authorized extension beyond
+the normal 3-round cap, with round 4 using gpt-5.6-sol + higher reasoning
+per PI instruction): rounds 1-2 found real defects (wrong std convention,
+plateau criterion gameable by error-bar widening — Grace gave a concrete
+counterexample, aggregation bug hiding unresolved chains behind a median,
+NaN stationarity, wrong bootstrap-ratio denominator, raw h5py.File instead
+of the existing reader). Round 3 split (Martina REJECT on the missing
+constant-fit-p gate / Grace APPROVE); round 4 added the gate explicitly,
+Martina-only review (Grace dropped for this turn per PI) APPROVED.
+Ran on real L=10 (15149119) + L=20 (15159599) data, tested Feynman's 2
+pre-committed predictions: **BOTH FAIL as literally stated** (control's
+tau=21.6 sweeps not ~44; h=0.339574's error did NOT grow >=2x, came out
+~same, ratio 0.935) — **verdict per Feynman's own decision rule: STILL
+REAL, step 3 stays justified.** BUT: (1) instrument caveat — the driver's
+raw mean-strength error-ratio is mathematically DEGENERATE (jackknife SE
+of a simple mean is algebraically identical to ddof=1 sample SE, so its
+ratio to a ddof=0 version is sqrt(7/8)=0.935 for ANY data, not a real
+diagnostic); real numbers used are separately-computed raw-ratio-specific
+values (the nonlinear <P^4>/<P^2>^2 quantity, whose bootstrap error
+genuinely depends on tau). (2) h=0.339574's z=0.42 and suffix p=0.20 both
+look FINE — only tau itself remains unresolved at 64M sweeps, which may be
+a narrower/cheaper fix than the full 128M step-3 rerun. (3) Secondary
+tau-peak check: not cleanly established (0.326, 0.330615 also unresolved,
+so can't confirm an isolated peak vs a broad slow region); L=10's
+monotonic frozen-side rise IS supported but also all-unresolved.
+Reported to Feynman with both nuances flagged. STOPPED per loop
+containment — no 2A/2B/step-3 submission yet, awaiting Feynman's read.
+Full table: doc/figures/linsel_blocking_validity_l10_l20_20260720.md.
+
+## Feynman's 20d-20h saga resolved: L=20 void CLEARED (tau estimator was fine after all, nuanced), doc fixes done, crossing re-derived (2026-07-21)
+Caught up on an extensive Feynman self-correction chain (20d->20h) that happened
+between sessions: a separate Jarvis session already built a blocking-plateau tau
+estimator (scripts/ensemble_diagnostics.py, 4 review rounds) and ran STEP 1 (crossing
+= 0.3244098, tau_int ratio flagged suspect), then stopped per PI instruction.
+Feynman then went 20d ("void is an analysis artifact") -> 20f ("no, refuted myself,
+void is real") -> 20g (final: void genuinely CLEARED, but for a different reason —
+error bars were fine all along per a tau-free between-chain cross-check; the
+STATIONARITY test was what used the bad IPS tau, and with corrected blocking-plateau
+tau both disputed L=20 points actually PASS). Net: **STEP 3 (128M rerun) CANCELLED**
+— tau at those points stays unresolved but that doesn't block anything downstream.
+tau_int confirmed permanently WRONG INSTRUMENT for a dynamic exponent (conflates
+falling self-averaged amplitude with rising decay time) — STEP 4 (z-fit from
+tau_int(L)) retired as invalid, not just optional.
+Executed the ratified NEXT actions (20h loop containment):
+1. **Doc fixes**: run_manual.md F3/F7, pt_architecture.md H1/H2 + new correction-
+   scope/retrospective, harness.md G1.2 — round-trips now correctly "neither
+   necessary nor sufficient," continuous-vs-first-order distinction + thesis-T1
+   caveat added, retrospective on the 4 NO-GO calls using the wrong metric (without
+   walking back the marker test's real 0.235% h_c barrier). Clark wrote, Martina
+   APPROVED (Grace timed out, proceeded on Martina alone — low-risk wording fix).
+2. **Crossing re-derivation**: restored both former-void L=20 points. Feynman's
+   pre-committed prediction FAILED — crossing stayed at 0.3244098 identically
+   with/without the 2 points (bracketed by h=0.322/0.326, nowhere near them). BUT
+   honest interpolation-systematic scan (18 method/window choices) gives a full
+   spread of 0.0112 (13x the naive bootstrap bar) that DOES reach Linsel's 0.335(2)
+   band — so neither "confirmed no tension" nor "confirmed real tension" landed;
+   reads as "consistent within honest systematics," dominated by L=10's nonmonotonic
+   curve making interpolation choice underdetermined. Also caught: the previously
+   quoted "+/-0.0000817" crossing error was a decimal transcription error (real
+   value +/-0.000817, still not the total uncertainty either way) — propagated
+   across several of my own earlier status.md entries, now corrected.
+benchmark_report.md sec 4-6 updated, correctly kept PROVISIONAL. New figure:
+doc/figures/linsel_raw_ratio_crossing_no_pt_l10_l20_restored_20260721.png.
+Reported to Feynman. Proceeding to 2A (locate s*) + 2B (PT speedup) in parallel
+per loop containment. L=30/L=24 still HOLD throughout.
+
+## 2A + 2B readouts: 2A INCONCLUSIVE-as-expected, s* provisionally [0.325,0.350]; 2B INCONCLUSIVE from a real design gap (baseline/rung mismatch + unresolved tau), NOT a null result on PT (2026-07-21)
+Both jobs completed (2A: 15177203, 528/528; 2B: 15178251, 1h27m). Process lesson:
+original James/Jones dispatches bundled submit+wait+analyze into one call each,
+exceeded the 30-min MCP idle timeout, orphaned two background codex processes
+(confirmed still running server-side via `ps`, real work, but their reports were
+lost) — re-dispatched clean readout-only calls once both Slurm jobs were
+independently confirmed COMPLETED via sacct. Split submit/readout into separate
+dispatches going forward.
+**2A (locate s*)**: duality 200/201 PASS (1 FLAG at L=8,s=0.275@200k sweeps,
+resolves by 400k — thermalization blip, not a mapping bug). Energy-gap: 14
+trajectories SHRINKING (ordinary), ZERO stable-separated (no coexistence
+signature). ALL 528 histograms unimodal — per the asymmetry rule this is
+INCONCLUSIVE on order, explicitly NOT evidence of continuity (exactly the
+anticipated, acceptable L=8-16 outcome). s* bracket: PRIMARY method found no
+usable 3-size crossing; SECONDARY (interval-window) method gives PROVISIONAL
+s* in [0.325,0.350], consistent with Linsel's prior but resting on the weaker
+method; 13 pairs NOT_GATED. Recommend denser [0.325,0.350] sampling next.
+**2B (PT speedup)**: pre-check PASSED (fixed-h reconstruction from rank-local+
+ladder-index series verified valid against the C++ schema — methodologically
+sound). But: the Lane-2 14-rung PT ladder and the 9-point no-PT L=10 baseline
+(job 15149119) use DIFFERENT h-grids — only 2/14 rungs land close enough to
+compare at all, and BOTH those points are tau-UNRESOLVED (blocking-plateau
+lower bounds) on both sides, so the computed "144x"/"64x" quotients are
+explicitly NOT valid speedup bounds (worker correctly flagged this, did not
+spin it as evidence PT is fast). Equal-core-hour Neff/core-hour comparison
+also indeterminate for the same reason (both sides censored). New genuine
+flag: the PT-derived finite-L crossing (0.336613) sits 0.0017 OUTSIDE the
+no-PT crossing envelope (0.3237-0.3349) — small but real, needs investigation
+before trusting PT at the MCP regardless of speed. Excursion stats: mean
+range only 1.33 rungs (median 1), only 21.4% reach >=2 rungs — limited
+transport, consistent with the marker test's localized-barrier finding.
+Harmonic/median acceptance gap persists (0.099 vs 0.237). Swap-period: only
+swap_period=2 ran (1/5/10 correctly skipped, ~4x cost); single point not a
+curve. **DECISION RULE NOT TRIGGERED** — both taus censored, no honest
+speedup factor to quote either way; recorded as UNRESOLVED, not a negative
+result on PT. Recommend (not deciding): retry needs a matched h-grid between
+PT ladder and no-PT baseline, enough depth to actually resolve tau at the
+rungs that matter, and investigation of the crossing shift before more spend.
+Reported to Feynman. STOPPING per loop containment — no L=30, no L=24, no PT
+ladder work until Feynman's read on this lands.
+Full data: 2A /scratch/a/A.Otaifi/paratoric_selfdual_step2a_20260721/ (job
+15177203); 2B /scratch/a/A.Otaifi/paratoric_pt_speedup_l10_20260721/ (job
+15178251).
+
+## PI-ratified PHASE 1 (20m) executed: crossing genuinely DISAPPEARS in clean window; 2A audit revealed a code defect (fixed+reviewed) AND an unresolved statistical-power-vs-contamination question (2026-07-21)
+Per PI-ratified UPDATE 2026-07-20m: L=10 no-PT baseline found NOT ERGODIC at low
+h (per-chain spread up to 0.4433, I4 factor-2 violated by 3-4 orders of magnitude
+at 8/9 points) — invalidates the earlier "0.3244098, consistent within
+systematics" read. L=20 is clean everywhere (self-averaging, factor ~153/doubling)
+— small-L-specific disease, M2 program at L=120-192 NOT threatened.
+**1A (clean-window crossing)**: re-derived using only h where both sizes pass the
+spread gate. **No crossing exists at any threshold** (0.10/0.05/0.03) — not
+narrower, not contested, genuinely undefined (no sign change, no bracketing
+root). Old 0.3244098 statement fully superseded. benchmark_report.md updated,
+stays PROVISIONAL, states why. Figure
+doc/figures/l10_chain_disagreement_and_pt_repair_20260721.png in place.
+**1B (2A per-chain audit)**: L10/L20 already covered by Feynman's own 20i/20j
+numbers. NEW 2A work (job 15177203) hit a real process gap — an analysis
+dispatch wrote ~1967 lines directly into scripts/ensemble_diagnostics.py without
+Clark/review. Sent to Martina: REJECTED (`--window-mode fixed` was a no-op,
+spread gate computed but never actually thresholded into PASS/FLAG). Clark
+fixed both + added a real legacy-TSV SHA-256 regression assertion; Martina
+re-reviewed and APPROVED. Grace unavailable both rounds (timeout, then HTTP
+504) — proceeded on Martina alone. **Re-running with the FIXED code changed
+the 2A verdict substantially**: original "clean s<=0.300 (30/30), contaminated
+s>=0.325" had been read off the WRONG window (`final_interval`, 32k samples)
+despite `--window-mode fixed` being requested; under the properly-wired
+`final_fixed` (400-sample) window + real spread gate, 29/30 previously-clean
+rows now FAIL (26 on spread alone). s>=0.325 unchanged (36/36 fail either way).
+**NOT resolving myself**: is this genuine widespread contamination across
+nearly the whole 2A scan, or a statistical-power artifact of the 400-sample
+window being too short to trust (structurally the same class of mistake as
+Feynman's own 20d-20f "too few blocks reads noise as unresolved" episode)?
+Flagged prominently to Feynman rather than either alarming-number-as-truth or
+quietly keeping the incomplete original claim.
+**1C**: code fixed, reviewed, APPROVED. Between-chain-error column + run_manual
+per-chain-table doc addition NOT yet done — left as open Phase 1C scope.
+**1D**: done via 1A's dispatch.
+Reported to Feynman. STOPPING per loop containment (20m: "do not run Phases 2/3
+before Phase 1 lands") — the 2A ambiguity directly gates Phase 3's scope (how
+broad the L=8-16 contamination is), and Phase 2 (PT-at-L=10) is now motivated
+by two independent findings (20i ergodicity-repair + 1A's "no crossing exists
+without it") rather than one. Awaiting Feynman's read.
+
+## 20p executed: 2A ambiguity resolved (statistical noise at s<=0.300, dead instrument at s>=0.350), s* bracket confirmed ~0.332, two new gates wired+reviewed, report-file ordering fixed (2026-07-23)
+Feynman's 20p answered the 2A open question I refused to decide: s<=0.300 was
+confirmed genuine 1/sqrt(window) NOISE (not basin contamination) — my original
+"clean" report was correct, the 29/30 fail was a false alarm from applying a
+spread gate to a statistically-powerless 400-sample window. s>=0.350 is a
+THIRD thing: the raw-ratio instrument itself dies there (>50% exact zeros in
+percolation_strength, this project's own documented-but-never-wired
+intermittency tripwire) — the vanishing IS the transition (s*~0.32-0.36).
+**Housekeeping**: jarvis_report_tofeynman.md was out of chronological order
+(a 07-19/07-20 block had landed below newer 07-21 entries) — archived
+pre-07-18 content to doc/archive/jarvis_report_tofeynman_archive_pre_20260718.md
+(Feynman's own naming convention), restored strict order, added
+NEWEST-AT-BOTTOM marker, verified zero content loss programmatically before
+writing.
+**4(d)**: s* re-derived from percolation_probability (bounded, no vanishing-
+moment division) + largest_cluster sanity check on existing 2A data (free).
+Finite-L percolation_probability crossings cluster tightly: z-basis
+0.330968/0.331043/0.331141, x-basis 0.338041/0.331170/0.328490 → **s*~0.332**.
+Bracket [0.325,0.350] numerically unchanged from the broken-ratio estimate
+but now instrumentally defensible, confirmed no divide-by-zero at s>=0.350
+with these instruments.
+**4(a)**: superseded by a proper 3-way partition (see 4b/4c) rather than a
+binary restore: 26 PASS, 10 genuine FAIL, 30 OBSERVABLE-DEGENERATE (of 66
+total L,s,basis points).
+**4(b)+4(c)**: two new gates in scripts/ensemble_diagnostics.py — spread-
+window-scaling check (NOISE vs REAL vs SPREAD-UNRESOLVED) and
+OBSERVABLE-DEGENERATE tripwire (>50% exact zeros, ratio numbers suppressed to
+NA at both summary and per-chain granularity). 2-round review: Martina
+REJECTED round 1 (degenerate per-chain rows still said "OK" with real-
+looking numbers), Clark fixed to NA, Martina APPROVED round 2. Grace
+unavailable both times (timeout, HTTP 504) — proceeded on Martina alone,
+narrow/concrete fixes. Legacy-TSV SHA-256 self-test PASS throughout, no
+regression. One boundary case correctly NOT swept into DEGENERATE: L=8,
+s=0.350, x-basis (zero_fraction=0.4952, just under threshold) stays a
+genuine FAIL — flagged as possibly a real, non-instrumental issue, not yet
+investigated.
+**Standing debt**: between-chain-error column + run_manual per-chain-table
+doc addition (Phase 1C) and the invariant-provenance audit (20n item 3) not
+yet done.
+Reported to Feynman. Phase 1 (20m) is now fully complete per its own loop
+containment. Ready for Phase 2 (PT-at-L=10, redesigned ladder) on go.
+
+## Operational: codex-worker bridge model drift (2026-07-18)
+Bridge backend's Codex CLI account no longer supports `gpt-5.3-codex` (ParaToric/
+AGENTS.md's stated "Model routing policy" default) OR `gpt-5.6` (a name that does
+not exist) — both hard-reject with "model not supported when using Codex with a
+ChatGPT account." Root cause of the FIRST dispatch failure this session: should
+have routed as **James** (run staging/analysis persona, ai-workflow/JARVIS.md:34-36,
+model=gpt-5.6-sol, reasoning=medium) rather than falling back to the tool's bare
+default. Verified working this session: `gpt-5.4` (ad hoc, pre-persona-check) and
+`gpt-5.6-sol` (James's actual contracted model, confirmed via codex_inspect
+sanity check). PI confirmed the full persona table is current and matches
+JARVIS.md (James/Jones=gpt-5.6-sol, Clark=gpt-5.6-terra, Martina=gpt-5.4-mini,
+Grace=z-ai/glm-5.2). ParaToric/AGENTS.md's "Model routing policy" section
+(lightweight-task default, GPT-5.3-codex) is stale/broken on this backend and
+was flagged to the PI rather than silently edited — needs a fix to a working
+lightweight model id before it's relied on again for mechanical tasks.
 without explicit direction.
+
+## L=10 deep NO-PT benchmark pilot: SUBMITTED with checkpointed cold/hot ramps
+Per the 2026-07-18 PI/Feynman decision to DECOUPLE the exact-size Linsel
+overlay from PT, staged and submitted a one-node no-PT L=10 pilot under
+`/scratch/a/A.Otaifi/paratoric_linsel_no_pt_l10_pilot_20260718/` as Slurm
+array job `15141215`. Grid = 14 h points spanning `0.280000000000` to
+`0.400000000000`, with the dense core borrowed from the old targeted L20
+h_c ladder (`0.305629247317, 0.312438864933, 0.318989179906,
+0.325131841384, 0.330615254621, 0.335362847648, 0.339573841268,
+0.343520981103, 0.347398758564`). Each h gets 8 independent chains
+(4 cold `default_spin=+1`, 4 hot `default_spin=-1`), pure local
+Metropolis, beta=L=10, mu=J=1, lmbda=0.3, z basis, Boost square periodic,
+observables `plaquette_percolation_probability`,
+`plaquette_percolation_strength`, `largest_cluster`, `sigma_z`. Thermalization
+is judged via continuous checkpoint windows at 200k/500k/1M/2M sweeps; each
+chain then continues to 4M total sweeps so the 2M->4M tail is available as
+the post-thermalization production window if the deepest checkpoint is needed.
+Pre-submission verification PASS in
+`/scratch/a/A.Otaifi/paratoric_linsel_no_pt_l10_pilot_20260718/PRE_SUBMISSION_CHECK.md`:
+`bash -n` PASS, rendered design-vs-intended diff empty PASS, full 112-task map
+PASS, scheduler `--test-only` PASS. Immediate queue confirmation before a
+transient controller-DNS outage showed tasks `0-28` RUNNING and `29-111`
+PENDING on `QOSMaxJobsPerUserLimit`. The concise alert wrapper hit the same
+DNS issue and did not create a notifier job; main array `15141215` itself was
+already accepted.
+
+## Phase 2 SUBMITTED: redesigned PT-at-L=10 ladder, job 15213796 (2026-07-23)
+PI said "go" on Phase 2 (feynman_thesis_tojarvis.md ~1535-1551). Dispatched James
+(workspace-write, gpt-5.6-sol, reasoning=medium, FRESH) to design+submit ONLY
+(readout is a separate later dispatch, per process rule). Job `15213796` RUNNING
+(single sacct check, node th-cl-hua22) at
+`/scratch/a/A.Otaifi/paratoric_pt_l10_phase2_redesigned_ladder_20260723/`.
+Reused registry: ran `pt_diagnostics.py` for real per-link acceptance off the
+old Lane-2 job 15178251's HDF5 (median 0.237420, harmonic 0.098802 — matches the
+already-reported gap); extended `adaptive_ladder_pm.py` with a new `--target-count`
+flag (algorithmic PM resampling to fixed N=14, not hand-spaced) and reused
+`submit_pt_speedup_l10.sbatch` as the harness template. New 14 h-values, all in
+[0.2925,0.42] as specified (dropped the 5 sub-0.28 rungs + 2 super-0.42 rungs):
+0.2925, 0.313004, 0.333509, 0.347632, 0.360480, 0.369418, 0.376402, 0.382348,
+0.387257, 0.392587, 0.398761, 0.405143, 0.412572, 0.42.
+Config: 4 swap-period variants (2,1,5,10), each 40M thermalization + 8M
+production = 48M sweeps/rung, 14 MPI ranks/variant, 1 node, 4G, 18:00:00.
+PRE_SUBMISSION_CHECK PASS (bash -n, self-tests, 14-rung range/uniqueness,
+task map, cold/hot count, exe/MPI linkage, design-vs-reference diff,
+`sbatch --test-only`). One prior attempt (15213777) failed pre-simulation on a
+ladder-quoting bug, caught and corrected before this submission.
+CAVEATS: (1) PT checkpoint/restart still unimplemented (throws) — continuous
+blocks used instead, per the known M0 gap. (2) Concise-alert notifier failed,
+same controller-DNS issue as 2026-07-18 — no notifier job exists for 15213796,
+must check via sacct manually. (3) Self-review flag: this dispatch ran 48 Codex
+tool-calls in one session, over JARVIS.md's 25-call FRESH-split threshold —
+logged in `ai-workflow/jarvis_selfreview.md`; work product looks sound but the
+dispatch should have been split (e.g. ladder-design-only, then submit-only).
+NEXT: readout as a separate FRESH dispatch once 15213796 completes — gate is
+per-rung agreement + init-memory -> 0, NOT round-trips.
+
+## Phase 2 job 15213796 FAILED (OOM); root-caused, resubmitted as 15213796->15215269 RUNNING (2026-07-23)
+`sacct` showed 15213796 FAILED, step `.0` OOM-killed after 2h31m, `MaxRSS=302160K`
+(~295MB/rank, still climbing) against `--mem=4G`/14 ranks. First fix dispatch
+(James) computed a THEORETICAL worst case from `extended_toric_code_qmc.hpp:
+3644-3654` (`acc_ratio_vector`/`observable_vector` both `.reserve(thermalization_
+count)`, thermalization_count = 40M sweeps x 200 moves/sweep = 8e9, 7 observables
+x sizeof(variant)=24B) and got ~25TB required — WRONG, verdict STOPPED, no
+resubmission. Refuted empirically (checked myself via `sacct` on the reference job
+15178251: same code path, 16M-sweep thermalization, `--mem=8G`, COMPLETED with
+`MaxRSS=485100K`, ~474MB/rank) — `reserve()` capacity is virtual, not committed
+RAM (standard Linux overcommit/demand-paging for large allocations); real RSS
+tracks actual touched pages, not nominal reserve size. Second, narrow James
+dispatch (told explicitly not to re-derive the sizeof math) set `--mem=96G`
+(empirically-grounded, generous margin over the ~20-30GB linear-growth
+extrapolation from the 295MB/2h31m data point) and resubmitted as job `15215269`.
+`sbatch --test-only`, `sinfo`, and the dispatch's own `sacct` check all failed on
+a transient controller-DNS outage (same recurring issue as 2026-07-18); I verified
+directly afterward (once DNS recovered) — `15215269` RUNNING, 96G, 14 tasks,
+confirmed via my own `sacct` call. No source files touched (`git diff --stat --
+src/` empty, verified both dispatches). Concise notifier failed (same DNS issue),
+no notifier job exists for either 15213796 or 15215269 — check manually.
+**Self-review**: 3rd flag this session — the first fix dispatch's mistaken
+25TB/"impossible" verdict is a CONTRACT-GAP (codex workers reasoning from
+allocation-size theory instead of checking empirical `sacct` MaxRSS data that was
+sitting right there from a near-identical completed job) — logged in
+`ai-workflow/jarvis_selfreview.md`.
+NEXT: readout (unchanged) once 15215269 completes or reaches a checkpoint;
+consider whether 96G is enough for all 4 swap-period variants or only variant 1
+(swap_period=2) — worth a memory sanity check at the next natural checkpoint
+rather than waiting for a second OOM.
+
+## Job 15215269 CONFIRMED COMPLETED (8h13m, exit 0:0, 96G sufficient); readout NOT YET OBTAINED — Codex bridge flaky (2026-07-24)
+Verified via `sacct`: all 4 swap-period steps (.0-.3) COMPLETED, peak MaxRSS
+1,935,808K (~1.9GB/rank, step .1/sp1) — 96G was ample, no second OOM. 56 result
+dirs present (`results/pt_L10_phase2_job15215269_sp{1,2,5,10}_rank{0..13}_
+init{1,-1}/`); 14 leftover PARTIAL dirs from the OOM'd `job15213796_sp2_rank*`
+attempt still sit alongside them in the same `results/` folder and must be
+excluded from any readout.
+**Readout dispatch (Jones, read-only, reasoning=high) attempted 3x, none
+returned**: attempt 1 hung 1800s (bridge reconnect churn, 3 concurrent
+`mcp_server.py` processes observed via `ps`, unrelated jupyter MCP server also
+dropped/reconnected around the same time); attempt 2 hung 1800s again; a cheap
+PING probe then surfaced the real cause progressively: first
+`ERROR: You've hit your usage limit... try again at Jul 29th, 2026 10:34 AM`
+(Codex quota), then on retry `Error: Your access token could not be refreshed
+because your refresh token was revoked` (auth), then a PING succeeded cleanly
+moments later, but the SAME full readout dispatch (attempt 3, identical prompt)
+still hung another 1800s. Root cause of the hang itself remains unconfirmed —
+possibly the large multi-script analysis + reasoning=high combination is
+genuinely slow/unstable on this bridge right now, separate from the quota/auth
+blips already surfaced. No result obtained from any of the 3 attempts; nothing
+lost/damaged (all read-only, job data untouched).
+NEXT: retry the readout dispatch (same prompt is staged above in this file's
+history / repeat verbatim); consider first re-running the cheap PING probe to
+confirm the bridge is healthy before re-attempting the full analysis, and/or
+splitting the 4 deliverables into 2 smaller dispatches if a full retry hangs
+again a 4th time.
+
+## JARVIS.md self-edit: new "split by scope" rule (2026-07-24)
+PI asked for a direct diagnosis of the token/quota burn this session (two
+separate Codex usage-limit hits: a 5-day reset then a same-day 2:59 PM reset).
+Root cause of the larger one: the Phase 2 design+submit dispatch bundled
+design + registry-script extension + submit + a mid-task debug-and-retry (job
+15213777's ladder-quoting bug) into ONE FRESH session — 48 calls, ~5.4M tokens
+(already logged as a guardrail-slip, see above). PI's instruction: submission
+doesn't need design's context, so these should have been split into separate
+dispatches to save tokens. Added a new rule to `ai-workflow/JARVIS.md` (after
+the existing 25-call hard-split rule, in "Every dispatch must declare"):
+**"Split by scope, not just by call-count"** — before bundling adjacent steps,
+check whether the later step needs the earlier step's full reasoning/context or
+only its OUTPUT; if only the output, split into separate FRESH dispatches and
+pass the output forward as a pointer/value, not inherited session context. Cites
+this exact incident as the motivating case.
+**Self-edit justification (per JARVIS.md's own rule)**: edited directly, no
+Clark/Martina review — Codex is quota-exhausted right now (both the 5-day and
+the same-day limit are active), so routing through a Codex-based reviewer isn't
+possible until the quota resets. This is a small, self-contained prose addition
+to Jarvis's own process contract, not a scientific or code change.
+
+## Phase 2 READOUT COMPLETE: GATE=FAIL, MIXED by rung. Reported to Feynman (2026-07-24)
+Full readout obtained (partly via direct manual script execution during the
+Codex outage, partly via Jones once the bridge/credentials recovered — see
+below). **Deliverable (iv)** operational calibration: acceptance flat across
+sp1/2/5/10 (median ~0.645, harmonic ~0.484-0.486) — physically expected,
+swap acceptance depends on config not attempt frequency; sp1 best round-trips
+(137) but that alone doesn't determine the gate.
+**Deliverable (i) GATE, the project's stated criterion**: per-rung
+agreement + init-memory (cold/init+1 vs hot/init-1 origin), computed by Jones
+via `ensemble_diagnostics.py`'s PT reconstruction, `/tmp/phase2_init_memory_
+job15215269.tsv` (56 rows) + `_summary.tsv`. **FAIL overall, MIXED by rung**:
+all 40 tau-RESOLVED high-h cases (rung>=4) PASS z<3; all 16 low-h cases
+(rung 0-3, h=0.2925-0.347632) are TAU-UNRESOLVED, 12/16 retain >=3sigma init
+memory (e.g. sp1 rung0 z=5.42, rung2 z=7.24) with NO monotonic drive to zero
+across sp1->sp10 (low-h fail counts 4/4, 3/4, 3/4, 2/4). Per the ratified
+plan's own decision rule ("IF PT CANNOT drive the low-h init memory to zero,
+report that plainly"): this is that outcome.
+**Deliverable (ii)+(iii)**: only matched_rungs=2/14 land on the no-PT baseline
+h-grid (job 15149119) — same grid-mismatch as the original 2B attempt, NOT
+fixed by this ladder redesign. Both matched points
+INDETERMINATE_BOTH_TAU_LOWER_BOUNDS — no valid speedup number exists.
+sp2/sp5 each resolve a crossing (~0.3363, near Linsel 0.335(2)) but sp1 finds
+0 brackets and sp10 finds 5 — Jones's read (accepted): sp2/sp5 agreement is
+NOT independent confirmation, both built from the same 2 indeterminate-tau
+points; do not report this as evidence.
+**RECOMMENDATION per the standing decision rule**: this rejects the TESTED
+ladder+depth combination, NOT PT as a method and NOT the beta-bridge. Likely
+fix is more low-h depth (not swap-period tuning — all 4 tested values show
+the same qualitative failure) and/or a ladder that actually lands on the
+no-PT h-grid. Not deciding the next step myself — real fork for the PI/Feynman.
+**Process history this readout**: Codex hit a real 5-day quota exhaustion,
+then a revoked-auth-token error, then (on new credentials) a different account
+that also had exhausted usage and didn't support the persona models at all —
+all logged in `jarvis_selfreview.md`. During the outage I ran the already-
+registered, already-reviewed analysis scripts directly via Bash myself
+(`pt_diagnostics.py`, `ensemble_diagnostics.py pt-speedup`), using
+`--resamples 50` instead of default 1000 to fit a ~10-minute practical
+execution ceiling discovered this session (longer background runs were
+silently killed and FALSELY reported as "completed exit 0" by this session's
+task-notification system — confirmed via direct `REAL_EXIT=143` in redirected
+logs; treat any future background-task "completed" claim with independent
+verification until this is understood). Once the bridge/original account
+recovered, Jones (read-only, reasoning=high) independently reviewed this
+manual work, computed the missing init-memory deliverable, and confirmed the
+resamples=50 reduction did not change any RESOLVED/UNRESOLVED call or
+crossing bracket.
+Full evidence: `/tmp/phase2_init_memory_job15215269*.tsv`,
+`/tmp/pt_speedup_sp{1,2,5,10}_{table,physics}.tsv`,
+`/tmp/phase2_partA_crossing_roots.tsv`, `/tmp/sp{1,2,5,10}_{motion,flow,
+excursions}.tsv`. Reported in full to Feynman (`jarvis_report_tofeynman.md`).
+NEXT: awaiting PI/Feynman decision on the fork above. L=30/L=24 stay HOLD.
+
+## Feynman OVERTURNED Phase 2 gate to PASS (20t-20w); M1 done, M2 (Phase 2B-redo) next (2026-07-25)
+Feynman re-derived from job 15215269 and overturned: gate is **PASS** on replica-
+level errors (14 replicas as statistical units, no tau/block model) — z=0.04-0.82
+at the low-h rungs vs my/Jones's block-error z=5.4-7.2 (block errors ~10x too
+small when replicas share a slow mode; corroborated by cold-hot gap SIGN being
+random across the 4 swap-period runs: +,+,-,-). Traversal is a genuine milestone:
+14/14 replicas visited all 14 rungs, every swap period. Crossing/speedup stayed
+unresolved because of Feynman's OWN ladder-span error, not PT or depth: 12/14
+rungs (86%) sat outside the benchmark window [0.305,0.350]. Swap-period "optimum"
+(20u, sp=5) was ALSO withdrawn (20v): tau(energy)~5400 sweeps is independent of
+swap period; all 4 tested values (1,2,5,10) sit in the same over-attempting
+regime — sp should be ~50-200 sweeps instead, one value, not a 4-way scan.
+CONSOLIDATED GO = UPDATE 2026-07-20w, supersedes 20t/20u/20v specs; this is the
+plan of record now. Full text: `doc/feynman_thesis_tojarvis.md` lines 2308-2406.
+**Standing rules added**: replica-level errors now the DEFAULT gate basis
+(`doc/paratoric_run_manual.md` new G7); background-task false-"completed" bug
+documented as a harness issue with a sentinel-based mitigation
+(`ai-workflow/JARVIS.md` Cost rules section).
+**M1 (free, done)**: James — Task A benchmark extrapolation:
+h_c(L->inf) = 0.323577 +/- 0.004243 from the 3 finite-L PT crossings
+(20/24=0.34373, 20/28=0.34155, 24/28=0.34059), figure
+`doc/figures/linsel_crossing_extrapolation_pt_20260725.png`, added to
+`benchmark_report.md`. **Lies below Linsel's 0.335(2) band** (~2.4sigma tension,
+one-dof fit, provisional PT-input crossings, caveated in the figure caption per
+spec — does NOT close the benchmark). Task B energy-Binder s* cross-check on
+existing 2A data (job 15177203): **NEGATIVE** — no energy-Binder crossing found,
+no independent confirmation of s*=0.333+/-0.004. Both reported plainly, neither
+softened.
+NEXT: M2 (Phase 2B-redo, the one new run) — re-span ladder to cover
+h=[0.305,0.350] with >=8 rungs including exact no-PT h-values, keep 3-4 reservoir
+rungs above 0.36, ONE swap period ~50-200 sweeps (not a scan), same depth as
+15215269, NEW mandatory pre-submission window-coverage check. M4(1)
+invariant-provenance audit still needs scoping.
+
+## M4(2) DONE: replica-level error wired as default gate basis, Martina-reviewed APPROVE (2026-07-25)
+Clark added `pt-replica-gate` mode to `ensemble_diagnostics.py` (new code
+`:1495-1591` grouping+SE+quadrature+z logic, `:3143-3157` CLI subcommand),
+extending the EXISTING `between_chain_error`/`independent_chain_mean_error`
+machinery already used by `run_cold_hot` for no-PT chains — same statistical
+pattern, generalized to PT replicas grouped by ORIGIN rank init. Self-test
+reproduced Feynman's hand-derived 20t numbers almost exactly: sp1 z=0.8236
+(Feynman 0.82), sp2 z=0.2410 (0.24), sp5 z=0.4336 (0.43), sp10 z=0.0447 (0.04).
+`pt_diagnostics.py` has no group-comparison gate path to extend (trajectory-only
+diagnostics) — Clark reported this rather than force-fitting, correct per scope.
+Registry extended, legacy-TSV SHA-256 regression PASS, no self-approval.
+**Review**: Martina APPROVE with concrete file:line evidence (confirmed
+origin-init grouping via `init(?P<spin>-?1)` regex not current occupancy,
+quadrature via `math.hypot`, explicit `group_gate_basis=REPLICA_LEVEL` vs
+`within_replica_block_errors=NON_GATE_BASIS` labeling — spec's "block errors
+alongside, never sole gate basis" requirement is met). One flagged caveat:
+origin-init parsed from `rank*_init+-1` directory naming, not HDF5 metadata —
+a portability note, not a correctness defect on this dataset. Grace/OpenRouter
+REJECTED, but on inspection every finding was "UNEVIDENCED" — her read-access
+tool failed on "absolute paths are not permitted" before reading any real
+content (likely my path-format mistake in the dispatch prompt, not a real code
+issue) — treating this as Grace-unavailable (tooling failure), not a
+substantive objection, consistent with her documented unreliability this
+session; proceeding on Martina's concrete, verified review alone.
+
+## M2 (Phase 2B-redo) DESIGNED + SUBMITTED: job 15232180 RUNNING (2026-07-25)
+Design (James, FRESH, workspace-write): 14-rung ladder at
+`/scratch/a/A.Otaifi/paratoric_pt_l10_phase2b_redo_20260725/` — 9 exact no-PT
+baseline h-matches (job 15149119's grid) + 1 hand-placed transition rung
+(0.358408493726, midpoint of the seam) + 4 reservoir rungs reused from
+15215269's high-h end (0.369418,0.387257,0.405143,0.420000). NEW mandatory
+pre-submission window-coverage check (`check_measurement_window`, extends the
+existing inline verification pattern): PASS on new ladder (inside=9,
+outside=5), correctly FAILS as negative control on the OLD 15215269 ladder
+(inside=3, outside=11, exit 1, explicit ERROR) — the two-line check Feynman
+said would have caught the original design error now exists and works.
+Swap period: ONE value, 100 sweeps (central in the specified 50-200 range,
+per 20v's tau(energy)~5400-sweep analysis — no scan this time). Depth
+unchanged from 15215269 (40M therm + 8M production/rung). --mem=96G reused
+(same per-rank depth/rank count, single swap-period variant only REDUCES
+memory pressure vs the 4-variant 15215269). Design NOT self-submitted —
+reviewed by me before authorizing submission.
+Submit-only dispatch hit the same transient Slurm-controller-DNS issue seen
+before (2026-07-18, 2026-07-23) on `sbatch --test-only` — correctly STOPPED
+without submitting rather than force it. DNS cleared minutes later (confirmed
+via my own `sacct` call); since the design was already fully verified and
+this was a purely mechanical retry, I ran `sbatch --test-only` then
+`sbatch` myself directly (no worker dispatch needed for this step, per
+JARVIS.md's cheap-mechanical-step allowance). **Job 15232180 RUNNING**
+(1 node, 14 tasks), concise-alert notifier `15232181` submitted cleanly.
+Projected runtime ~2h (roughly 1/4 of 15215269's 8h13m, since this is one
+swap-period variant not four).
+NEXT: readout once 15232180 completes — traversal stats, replica-level
+cold/hot gap via the new `pt-replica-gate` mode, tau at the 9 matched h-values
+vs no-PT baseline 15149119 (with the concatenation-bias caveat per 20u sec 4),
+Neff/core-hour, and tau(energy) for this new ladder (re-check the swap-period
+criterion, do not re-scan). Gate: traversal complete AND tau_config AND
+replica-level z<3, all three legs reported together, never traversal alone.
+
+## M2 READOUT COMPLETE: GATE=PASS (all 3 legs), crossing NOW COMPUTABLE but no
+## error bar + PT-tau artifact suspected. Reported in full to Feynman (2026-07-25)
+Job 15232180 confirmed COMPLETED (1h27m, exit 0:0) via my own sacct check before
+trusting the readout dispatch. Jones (read-only, reasoning=high, 31 calls —
+over the 25-call split threshold, self-review-worthy but the task genuinely
+needed 4 registry-script invocations across a 14-rung dataset; noting rather
+than re-splitting after the fact).
+**GATE PASS**: (1) traversal complete, 14/14 replicas both endpoints, 130
+strict round trips — re-span did NOT degrade transport. (2) tau(energy)
+finite: IPS 8325+/-893, blocking-lower 6113+/-324 sweeps; sp=100 confirmed
+61-83x below tau(energy), ~10x above the ~10-sweep repetition floor — safety
+criterion holds as a by-product check, no re-scan. (3) replica-level max
+z=2.88 at rung10 (h=0.369418, a RESERVOIR rung OUTSIDE the benchmark window)
+— inside the window that matters (rungs 0-8) max z=1.68, comfortable PASS.
+Full table: /tmp/phase2b_redo_jones_15232180/replica_gate_raw_ratio.tsv.
+**CROSSING NOW EXISTS**: h*=0.336519, bracket [0.335363,0.339574], close to
+Linsel 0.335(2) — first computable L10-vs-L20 crossing this campaign has had.
+TWO CAVEATS, not yet a closure: (a) uncertainty=NOT_ESTIMATED, no error bar
+propagated; (b) PT tau at the 9 matched h-values is suspiciously CONSTANT
+(50-52 sweeps at every TAU-RESOLVED point regardless of h, vs no-PT's
+1184-13732 sweep range over the same h) — looks like the concatenation-of-
+disjoint-visits artifact (20u/20v), not real physics; NOT resolved, flagged
+not trusted-or-dismissed. Consequence: the 4 LOWER_BOUND "speedup" values
+(254x/274x/128x/70x) rest on that same suspect tau — per Jones's recommendation
+(accepted), NOT folding this into M2 as a demonstrated speedup lever;
+cost-normalized bounds near the crossing are only 1.5-6.6x and likely
+optimistic-biased. Plain-h-ladder benefit stays UNPROVEN (not disproven).
+**SEPARATE FLAG**: PT vs no-PT-L10 raw_ratio disagree at 6/9 matched points
+(z>2), 2/9 exceed z=3 (0.326: z=3.99; 0.343521: z=4.91) — but the no-PT L=10
+side is the SAME ensemble Phase 1 found non-ergodic; its errors are plausibly
+too small for the same block-vs-replica reason M4(2) just fixed for PT — no
+replica-level correction applied to the no-PT side yet, flagged as the likely
+next diagnostic.
+Full evidence: /tmp/phase2b_redo_jones_15232180/*.tsv (traversal, replica gate,
+matched-h speedup, Neff/core-hour, replica-following taus, crossing summary).
+Reported in full to Feynman (jarvis_report_tofeynman.md), stopping per 20w's
+own loop containment ("stop and report before M3"). M3 (denser s* grid) and
+M4(1) (invariant-provenance audit) both remain queued, neither started.
+
+## CORRECTION (Feynman 20aa): artifact suspicion CONFIRMED with mechanism; real
+## PT speedup = 1.19x median, 1.21x at h_c. STRIKE the 254x/274x/128x/70x numbers
+## above — they were never real (2026-07-25)
+Mechanism: swap_period=100 sweeps = the sample interval, so PT tau~50-52 sweeps
+was 0.51 SAMPLES — exactly tau_int's white-noise floor (0.5 + sum rho(t), rho
+all ~0 => 0.5 identically). Mean dwell per rung visit was 1.15-1.89 SAMPLES —
+concatenating these disjoint sub-series destroyed the correlation it was
+measuring. Confirmed directly on job 15232180 (per-rung dwell/rho(1) table in
+20aa sec 1). **The 254x/274x/128x/70x LOWER_BOUND numbers reported in the M2
+readout above are struck — not lower bounds, not optimistic, meaningless
+(no-PT tau / estimator-floor).**
+FIX: real-time fixed-h reconstruction (whichever replica occupies rung k at
+each timestep, continuous not concatenated) at the 9 matched h-values gives
+PT tau DECREASING monotonically with h (606->226 sweeps, physically correct
+direction, vs the old flat-50 artifact) and:
+  MEDIAN COST-NORMALIZED SPEEDUP (PT uses 14 cores) = **1.19x**. AT h_c = **1.21x**.
+h=0.305629 row uninterpretable (no-PT tau=45 there is the frozen-chain-reports-
+low-tau non-ergodic trap, not fast mixing) — excluded from the median.
+**PRE-COMMITTED DECISION RULE (20c) FIRES**: speedup~1 at h_c => a plain
+single-parameter h-ladder is NOT justified at MCP scale on SPEED grounds;
+beta-bridge stays ranked above it. BUT this is about SPEED only — PT's
+separate, already-passed three-leg gate (traversal+tau_config+replica-level
+z<3) means PT still buys CORRECTNESS/ERGODICITY-REPAIR at L=10, which no
+amount of no-PT depth or extra chains can do (independent chains populate
+basins by arrival, not weight). **Synthesis: PT buys correctness, not
+throughput. Which one dominates at s* (thesis T1) is still undecided.** This
+does NOT retire the beta-bridge and does NOT mean "PT doesn't help" either.
+**Crossing now has a real error bar**: h_cross=0.3366+/-0.0010 (bracketed in
+71% of resamples, reproduces my point estimate 0.336519). This is a FINITE-L
+(10/20) crossing, lies ABOVE h_c(inf) BY CONSTRUCTION (same FSS logic as the
+now-closed benchmark) — NOT directly comparable to Linsel 0.335(2), NOT a
+second benchmark confirmation.
+**No-PT-side tension (6/9 points z>2) is now MOOT for physics purposes**: the
+no-PT L=10 ensemble is KNOWN non-ergodic (I4 violated 3-4 orders of magnitude)
+so it's not a valid reference at any error bar — this campaign doesn't use it
+for physics anywhere; benchmark closed via the separate PT-resourced
+L=20/24/28 route instead. No further diagnostic needed on this point.
+**M1(a) superseded, not wrong**: my h_c(inf)=0.323577+/-0.004243 used p=1 per
+Feynman's OWN 20s spec; Feynman corrected the FSS drift exponent afterward
+(p=omega+1/nu=2.42 for 3D Ising, correct for a dimensionless-ratio crossing) —
+redone with proper error propagation: **BENCHMARK CLOSED, h_c(inf)=0.3359+/-
+0.0049 vs Linsel 0.335(2), agreement at 0.2sigma** (`benchmark_report.md`
+rewritten 304->245 lines, verdict up front, two residuals recorded not
+buried: R1=provisional PT input data quality; R2=whether Linsel's 0.335(2)
+is itself finite-L or infinite-L, still open, doesn't block). M1(b) energy-
+Binder NEGATIVE accepted as a legitimate null, not retried — s* now rests on
+percolation_probability alone.
+NEXT per Feynman 20aa sec 8: **M4(1) invariant-provenance audit is now the
+TOP item** (free, unscoped, highest-value debt). M3 denser s*-grid proceeds
+but its design requirement got STRONGER (20x sec 6): sizing a crossing
+extrapolation to fit an exponent (as just done for the benchmark) needs MORE
+than 3 sizes and a WIDER L range than the original 20w M3 spec states — s*
+work at the MCP cannot borrow a known exponent the way the benchmark could,
+since determining the universality class IS the campaign.
+
+## M4(1) AUDIT COMPLETE: 84 rules found across harness/manual/architecture docs,
+## only 5 properly validated+wired. Reported to Feynman, NOT remediated (2026-07-25)
+James (read-only, reasoning=high, 18 calls) audited every numbered/lettered
+rule in `multicritical_execution_harness.md`, `paratoric_run_manual.md`, and
+`pt_architecture.md` against actual code enforcement in `scripts/*.py`.
+**84 distinct rules: 5 VALIDATED+WIRED, 14 VALIDATED-NOT-WIRED (the
+intermittency-tripwire disease — real evidence, no code check), 15
+WIRED-NOT-VALIDATED (the old F3/F7 disease — a check exists, no cited
+measurement justifies its threshold), 44 NEITHER (pure assertion, no
+citation, no code), 6 ALREADY CORRECTED (known F3/F7/H1/H2/tripwire cases).**
+Full 84-row table: `/project/theorie/a/A.Otaifi/ai-workflow/agent_bridge/logs/msg_codex_1784989171.txt`.
+**Single highest-stakes gap**: harness G2 and run-manual F6 — the actual
+L=120 PT GO(>=5x)/marginal(2-5x)/NO-GO(<2x)/budget-guard decision rule for
+committing MCP-scale compute to PT — is **NEITHER validated by a real
+measurement NOR wired into any code check**. `ensemble_diagnostics.py` reports
+a speedup number but never applies the GO/NO-GO bands, L=120 condition,
+winding-sector-change condition, or budget guard. Given M2 just established a
+real PT-speedup-measurement methodology (the real-time fixed-h reconstruction
+fix from 20aa), this is now both urgent AND cheap to wire — it would directly
+reuse code that already exists.
+Other notable findings: harness G1.3/pt_architecture S4 ("PT-on marginal
+equals PT-off, z<3") computes the z-value but never applies the pass/fail
+threshold — a correctness REGRESSION check that currently can't fail no
+matter what the number is. `paratoric_run_manual.md`'s own C7 pitfall entry
+still contains STALE "judge by strict round-trips" wording that contradicts
+the already-corrected F7 rule — a live in-doc inconsistency. I5's threshold
+is inconsistent between files (harness says z<2, manual says z<3, code
+defaults differ by command).
+Worker's own risk-ordered remediation priority (not yet executed, Feynman's
+call): (1) G2/F6 PT GO/NO-GO + budget gate; (2) H3/H4b/H5/H6/F1/F2/F8 +
+Decision 9.4 ladder-health/barrier rules; (3) G1.1-G1.5/S0-S6 correctness
+gates (pre-expensive-PT checks); (4) manual G2/G6/C3/C8 thermalization-depth
+rules; (5) harness G4 universality/first-order claim gates; (6) G5/C1/C5/C6
+observable semantics.
+NOT REMEDIATED — audit only, per the task scope. This is a substantial new
+work item on its own; scoping/prioritizing the fix is Feynman/PI's call, not
+mine to start unilaterally given its size (84 rules) relative to the rest of
+this session's already-large scope.
+
+## Feynman OVERTURNED his own 20aa verdict (20ab): 1.19x/1.21x speedup INVALID
+## -- no-PT baseline fails ergodicity at h_c itself. Two-stage gate implemented,
+## Martina-reviewed APPROVE (2026-07-25)
+Checking harness G2's actual wording (part of the M4(1) audit) surfaced a live
+contradiction: G2 says GO/NO-GO on RAW tau (>=5x/<2x), UPDATE 20c says judge on
+COST-NORMALIZED Neff/core-hour — SAME M2 data gives raw speedup 7-29x (G2: GO)
+vs cost-normalized 1.19x (20c: NO-GO), and neither doc said which metric
+governs. Worse: the no-PT baseline used for that 1.19x/1.21x number FAILS this
+project's own per-chain spread/ergodicity gate at 6-8 of 9 matched h-values
+**including h_c itself** — dividing PT tau by a non-ergodic reference. Per 20i,
+a basin-trapped chain reports LOW tau, so no-PT tau is UNDERestimated exactly
+there, meaning **1.21x at h_c is not a measurement, it's a lower bound off a
+broken denominator — UNMEASURABLE, not "measured and low."** Feynman withdrew
+the 20aa "decision rule fires" conclusion. Only at 3 points where the baseline
+IS valid (h=0.339574/0.343521/0.347399, the fast/easy end nobody needs PT for)
+is cost-normalized speedup genuinely measured: 0.51-1.19x.
+**Fix, Feynman's design**: G2/F6 need a TWO-STAGE gate, not a single number.
+STAGE 1 CAPABILITY (always runs): is the no-PT reference ergodic at this h
+(per-chain spread/I4 gate)? If NO -> `CAPABILITY_REQUIRED`, cost-normalization
+UNDEFINED, PT/beta-bridge/worm needed on capability grounds regardless of
+speed. STAGE 2 EFFICIENCY (only if stage 1 passes): cost-normalized
+Neff/core-hour vs G2's original bands (now explicitly applied to the
+cost-normalized ratio, resolving the metric ambiguity).
+**Implemented by Clark** (workspace-write, 5 calls): new `pt-capability-gate`
+mode (`ensemble_diagnostics.py:1771-1858`), G1.3/S4 z<3 assertion actually
+wired (`:1668-1734`, was computed-but-never-applied before), D4 Ising-line
+regression test wired (`:2034-2070`, self-test PASS: h_c=0.335668+/-0.00483,
+z=0.128 vs the closed benchmark). Doc rewrites: `multicritical_execution_
+harness.md:58-78` (G2), `paratoric_run_manual.md:279-288` (F6),
+`pt_architecture.md:212-217,309-313` (D4/S4). Registry updated, legacy-TSV
+SHA-256 regression PASS. Clark's self-test found the REAL gate flags 8/9
+points as CAPABILITY_REQUIRED (not Feynman's hand-quoted 6/9) — Clark
+correctly declined to weaken the gate to force a match, flagged the
+discrepancy rather than silently picking a side.
+**Martina APPROVE, and adjudicated the discrepancy**: Clark's code is a
+faithful reuse of the EXISTING, already-established spread/I4 gate
+(`per_chain_raw_ratio_spread`, `spread_window_scaling_status`, confirmed via
+file:line evidence) — Feynman's hand-table was a looser informal raw-spread
+read, not the actual codified criterion. So the code is right; the hand-table
+undercounted. One caveat: the z<3 check emits PASS/FLAG text but doesn't set
+a nonzero exit code — consistent with this campaign's read-the-printed-status
+convention throughout, not treated as a defect. Grace/OpenRouter failed on a
+genuine backend error (HTTP 504, zero inspection calls, not a prompt-format
+issue this time) — proceeding on Martina's substantive review alone.
+NEXT: report this resolution to Feynman; M3 was explicitly gated on this item
+landing (20ab sec 6: "M3 waits until item 1 is done") — now unblocked.
+
+## M3 DESIGNED + L16 PILOT SUBMITTED: jobs 15263626 (z-basis)/15263627 (x-basis)
+## PENDING (2026-07-25)
+PI chose "design and submit now" (no separate approval checkpoint) when asked
+how to proceed on M3. Design (James, FRESH, workspace-write) at
+`/scratch/a/A.Otaifi/paratoric_selfdual_m3_denser_grid_20260725/`
+(`DESIGN.md`+`design.tsv`): 5 sizes L={8,12,16,20,24} (existing 2A data only
+had 3 — satisfies 20x's "more sizes, wider range" exponent-fit requirement),
+grid s={0.325,0.330,0.335,0.340,0.345,0.350}, both bases, 16-rank PT per
+(L,basis) — PT chosen on EVIDENCE not assumption: existing L=16 near-s* data
+already shows FAIL (x-basis s=0.325, tau factor 2.23>I4 bar) and
+OBSERVABLE-DEGENERATE (both bases s=0.350, zero-fraction 0.81-0.83) under
+plain chains. 10 unique size-pair crossings nominal (d.o.f.=8) but correctly
+flagged as CORRELATED (shared sizes) — conservative independent adjacent-pair
+count is only 4 crossings (d.o.f.=2); design mandates joint replica
+bootstrap/full covariance AND leave-one-size-out stability checks, avoiding
+the benchmark's own "3 points, zero power to determine p" mistake. Cost:
+~37-56 task-hours across 10 one-node jobs, 32G each. Design's OWN stop
+condition: stage L=16 both-basis pilot first, gate on capability+ladder-
+health, do NOT release L=8/12/20/24 until that pilot passes.
+I followed the design's own staging recommendation rather than submitting
+the full 10-job array at once: submitted ONLY the L=16 pilot (2 jobs, one per
+basis). Self-dual PT ladder convention verified against actual CLI parsing
+(`src/cli/paratoric.cpp`/`extended_toric_code_qmc.hpp:3821-3823`: omitting
+`--pt_ladder_lmbda_start/end` sets `runtime_lmbda=runtime_h`, confirming
+s=h=lambda tracks together per rung, NOT Phase 2's h-only convention).
+Binary reuse verified independently (not just trusted from DESIGN.md): SHA-256
+`a804b53f...`, commit `98c45e8e` confirmed ancestor of current HEAD, `git diff
+--quiet` over `src`/`CMakeLists.txt` returned zero — safe to reuse without a
+rebuild. Ladder: 16 rungs, 6 exact measurement s-values + 10 reservoir/bridge
+rungs, `0.285...0.380`.
+Worker's own `sbatch --test-only` hit a SANDBOX socket restriction this time
+(`Operation not permitted`, not the recurring transient controller-DNS issue —
+a genuine capability gap in the worker's execution sandbox, distinct from the
+earlier known DNS flakiness) — correctly stopped without forcing it, all
+local checks (bash -n, ladder correctness, binary provenance, task maps)
+already PASS. I ran `--test-only` (PASS both) and the real `sbatch` myself
+directly (unrestricted Bash access). **Jobs 15263626 (z) / 15263627 (x)
+PENDING**, notifiers 15263628/15263629 submitted cleanly.
+NEXT: readout the L16 pilot once both complete — capability gate (per-chain
+spread/I4 via the new `pt-capability-gate`), ladder health (traversal,
+per-link acceptance, tau_config), replica-level agreement. Only if that PASSES
+does the L=8/12/20/24 array release; the design's own stop condition, not
+mine to waive.
+
+## L16 pilot MIXED: z-basis COMPLETED clean; x-basis FAILED instantly — hard
+## architectural limit, NOT a transient bug, and NOT actually needed (2026-07-25)
+Verified independently via `sacct` before trusting "job done": z-basis
+(15263626) COMPLETED 19m56s exit 0:0. x-basis (15263627) FAILED in 1 second,
+exit 2:0, ALL 16 ranks: `"Exception caught: Parallel tempering requires
+basis=z and lattice_backend=boost."` Checked the source directly
+(`src/mcmc/extended_toric_code_qmc.hpp:3771-3772`): this is a COMPILE-TIME
+`if constexpr` check — PT is only template-instantiated for `Basis=='z'` with
+the Boost backend. **This is a permanent architectural limit, not a transient
+failure — retrying would fail identically every time**, and fixing it for
+real would need actual C++ template work, not a config change. James's
+pre-submission smoke test did not catch this (a real gap in that check).
+**But it turns out not to matter**: confirmed directly via h5py on the
+COMPLETED z-basis run's `obs.h5` that it already records BOTH channel
+families — `percolation_probability`/`percolation_strength` (z-native) AND
+`plaquette_percolation_probability`/`plaquette_percolation_strength`
+(z-basis's plaquette channel). Per this project's own established duality
+mapping (`z-percolation_probability == x-plaquette_percolation_probability`,
+`z-plaquette_percolation_probability == x-percolation_probability`, already
+used for the I2 duality check and cited in `DESIGN.md`), **the "x-basis"
+physics this campaign needs is already fully present in the z-basis PT run's
+plaquette channel.** The M3 design's inclusion of a literal separate x-basis
+PT job was the actual mistake — not the job's failure. A working PT-based
+duality check needs z-basis-only PT plus the existing direct-vs-plaquette
+comparison within that SAME run, not two separate basis runs.
+**Consequence**: dropping the 4 x-basis rows from `design.tsv`'s
+`HOLD_AFTER_L16_PILOT` set roughly HALVES the total M3 array cost (10 jobs ->
+5 jobs, ~37-56 task-hours -> ~19-28). Revising `design.tsv` accordingly before
+any array release.
+NEXT: readout the SUCCESSFUL z-basis pilot (capability gate, ladder health,
+replica agreement, AND the direct-vs-plaquette duality cross-check within
+that same run standing in for the cancelled x-basis arm) — this is the real
+gate for releasing L=8/12/20/24 (z-basis only now).
+
+## L16 z-basis pilot readout: NO-GO. MY OWN duality-workaround reasoning was
+## WRONG — correcting it, not glossing over it (2026-07-25)
+Jones (read-only, reasoning=high) assessed the z-basis pilot against the
+design's own 5-leg stop condition. Results:
+1. **Traversal PASS**: strict_roundtrips=46, all 16 replicas visited both
+   endpoints — full traversal confirmed.
+2. **Production motion UNRESOLVED**: the analysis tool errored
+   (`ValueError: production-motion acceptance requires at most one swap
+   phase between stored samples`) — this swap_period/sample_period
+   combination doesn't satisfy that tool's assumption. A cruder combined
+   thermalization+production link-acceptance number was obtained instead
+   (median=0.391, harmonic=0.157, min=0.0274) but is NOT the same
+   measurement and is flagged as such.
+3. **Capability gate PARTIAL**: only s=0.325 and s=0.350 (the 2 points with
+   EXISTING no-PT reference data from job 15177203) could be checked —
+   both CAPABILITY_REQUIRED (tau factor 4.98 and 8.56 respectively),
+   confirming the original design rationale. The 4 NEW s-values
+   (0.330/0.335/0.340/0.345) have NO_BASELINE — no existing no-PT data to
+   compare against, so capability is simply unassessed there, not passed.
+4. **Duality: MY OWN ERROR, corrected here.** I had instructed the readout
+   to compare z-basis's direct channel (percolation_probability) against
+   z-basis's plaquette channel (plaquette_percolation_probability) as a
+   substitute for the failed x-basis PT arm, reasoning that the established
+   duality mapping meant this was equivalent. **Jones correctly caught that
+   this is wrong**: those two z-basis channels are COMPLEMENTARY quantities
+   WITHIN the same basis (see `doc/paratoric_run_manual.md:129`), not a dual
+   PAIR with each other — the actual duality relation is CROSS-basis
+   (z-direct <-> x-plaquette, z-plaquette <-> x-direct). Comparing them
+   directly gives huge, physically-expected disagreement (9.6-75.7 sigma)
+   that means NOTHING about duality — it was never a valid test. **Duality
+   remains genuinely UNTESTED**, not satisfied by a shortcut, since x-basis
+   PT cannot run at all (architectural limit) and no x-basis data exists for
+   this ladder/s-grid otherwise. This is my mistake to own, not Jones's or
+   Clark's — I conflated "both channels present in one run" with "duality
+   checked," and it took an independent read to catch it.
+5. **Replica-level agreement PASS**: all 6 s-values comfortably under z<3
+   (z=0.83-2.47).
+Also flagged: stationarity concerns at s=0.325 (direct channel) and s=0.340
+(plaquette channel) specifically — not pooled across all 6 points.
+**GATE: NO-GO on releasing L=8/12/20/24.** Per Jones's explicit list of what's
+needed first: (a) production-motion analysis compatible with this
+swap_period/sample_period combination (or an explicit acceptance of the
+cruder combined number as good enough); (b) actual no-PT controls at the 4
+new s-values, OR an explicit decision to skip capability-checking new points
+and trust the existing s=0.325/0.350 evidence generalizes; (c) a genuine
+x-basis duality control (via no-PT x-basis chains, since PT can't do it) or
+an explicit decision to defer/waive duality checking for this campaign; (d)
+resolve the 2 flagged stationarity points.
+NOT resolving these myself in this session — this needs either more design
+work (item c in particular is a real open question: build no-PT x-basis
+controls despite their own possible ergodicity risk near s*? skip duality
+entirely? something else?) or Feynman/PI's read on which gaps are acceptable
+to waive vs must be closed. Full evidence:
+`/tmp/paratoric_m3_l16_gate_20260725/{pt_traversal.txt,
+production_motion_attempt.txt, capability_measurement.tsv,
+replica_measurement.tsv, duality_measurement.tsv, i5_measurement.tsv}`.

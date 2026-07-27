@@ -1,0 +1,7 @@
+/home/a/A.Otaifi/Documents/ParaToric/bin/paratoric
+/home/a/A.Otaifi/Documents/ParaToric/bin/paratoric
+/home/a/A.Otaifi/Documents/ParaToric/lib64/libparatoric_core.a
+/home/a/A.Otaifi/Documents/ParaToric/lib64/cmake/paratoric/paratoricConfig.cmake
+/home/a/A.Otaifi/Documents/ParaToric/lib64/cmake/paratoric/paratoricConfigVersion.cmake
+/home/a/A.Otaifi/Documents/ParaToric/lib64/cmake/paratoric/paratoricTargets.cmake
+/home/a/A.Otaifi/Documents/ParaToric/lib64/cmake/paratoric/paratoricTargets-release.cmake
