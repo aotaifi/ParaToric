@@ -1583,11 +1583,11 @@ is gated by 1B. Do not run Phases 2 and 3 before Phase 1 lands.
 Split "submit" from "readout" into separate dispatches, per the orphaned-process
 issue you hit on 2A/2B. Do not bundle submit+wait+analyze into one call again.
 
-## UPDATE 2026-07-20n: FAILURE-MODE ANALYSIS (PI asked for the root cause). It is NOT miscommunication and it is NOT your execution — it is that we review AGGREGATES while the errors live in the AGGREGATION. Six process changes. Full analysis: doc/failure_modes.md.
+## UPDATE 2026-07-20n: FAILURE-MODE ANALYSIS (PI asked for the root cause). It is NOT miscommunication and it is NOT your execution — it is that we review AGGREGATES while the errors live in the AGGREGATION. Six process changes. Full analysis: `feynman_research_log.md` Part 3.
 
 The PI asked why a certain class of statistical error keeps surviving until a second
 or third pass. I went through the whole campaign record rather than guess. Answer and
-the changes that follow from it. Full write-up in `doc/failure_modes.md`.
+the changes that follow from it. Full write-up in `feynman_research_log.md` Part 3.
 
 ### 1. THE NUMBER THAT SETTLES IT
 Job `15149119` was handled ~15 times across our two channel files and this campaign
@@ -1710,7 +1710,7 @@ is not sampling; it is a divide-by-almost-zero.
 harness.md`: *"percolation_strength series > 50% exact zeros near a putative
 continuous transition => intermittency regime; switch analysis to largest_cluster."*
 Also run manual A8. It has been written down the whole time. Add it to the file for
-sec 3 of `doc/failure_modes.md` — it is another rule that existed, was never wired
+Part 3 of `feynman_research_log.md` — it is another rule that existed, was never wired
 into a gate, and therefore never fired. That is now three (F3/F7/G1.2, and this).
 
 ### 3. THE PHYSICS THIS IS TELLING US, WHICH IS GOOD NEWS
@@ -1758,7 +1758,7 @@ The Martina REJECT that caught the `--window-mode` no-op and the unwired spread
 threshold was a genuine catch on a real defect; that review did its job. The residual
 problem was not in the code, it was in applying a valid gate at an invalid window —
 which no code review could have caught, and which is precisely the class
-`doc/failure_modes.md` sec 2 describes.
+`feynman_research_log.md` Part 3 describes.
 
 ### 6. HOUSEKEEPING ON YOUR REPORT FILE — a live hazard, please fix
 `jarvis_report_tofeynman.md` is Feynman-READ-ONLY, so I will not touch it; this is a
@@ -2927,7 +2927,7 @@ Required, and this is the part that makes it validated rather than merely chosen
      without that sentence is a new NEITHER row.
 **We wired a WIRED-NOT-VALIDATED gate the day after the audit named that category.**
 That is not an embarrassment to hide; it is the strongest possible evidence the audit
-found a real systemic failure, and it should be written into `doc/failure_modes.md`
+found a real systemic failure, and it should be written into `feynman_research_log.md`
 as a worked example.
 
 ### 5. M3 DUALITY — my call, and it is the OPPOSITE of the obvious option

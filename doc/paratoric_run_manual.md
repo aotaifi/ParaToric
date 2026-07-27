@@ -73,7 +73,7 @@ G7. REPORT THE PER-CHAIN/PER-REPLICA TABLE, NEVER ONLY THE GROUP SUMMARY — AND
     across four independent swap-period runs (+,+,-,-) — a genuine initial-condition
     bias must have a consistent sign. A pooled/group-only summary cannot expose
     either the block-vs-replica discrepancy or a sign-randomness check; both require
-    the per-unit table. See `doc/failure_modes.md` for the general "aggregation is
+    the per-unit table. See `feynman_research_log.md` Part 3 for the general "aggregation is
     irreversible" principle this rule operationalizes for the cold/hot gate
     specifically.
 
