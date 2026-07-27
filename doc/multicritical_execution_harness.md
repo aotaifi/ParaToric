@@ -58,12 +58,24 @@ one line per gate: date, evidence path, PASS/FAIL, decision).
 ## Gate G2 — pilot go/no-go (blocks all production compute)
 
 - PT ladder through multicritical region at L=120, beta=120, walltime <= 2 days,
-  >= 4 chains. GO if tau_worst drops >= 5x vs the L120 baseline (tau ~ 9000-10000).
-- 2x-5x improvement = MARGINAL: try winding move / ladder retuning once, then
-  re-decide. < 2x = NO-GO: stop, report, do not submit the FSS ladder.
-- Record Neff/day at the pilot point; extrapolate the full M2 budget BEFORE
-  submitting anything: if projected total > 5x the compute budget in the plan,
-  stop and renegotiate scope with the user.
+  >= 4 chains. Run the callable `ensemble_diagnostics.py pt-capability-gate` at
+  every matched h point. This is a two-stage gate; never replace it with a raw-tau
+  ratio.
+- **Stage 1 — CAPABILITY (always first):** is the no-PT ensemble ergodic? Apply the
+  existing per-chain raw-ratio spread scaling gate and I4 factor-2 per-chain-tau
+  gate. If either fails or is unresolved, output `CAPABILITY_REQUIRED`: PT (or a
+  beta bridge/worm) is required on capability grounds and cost-normalization is
+  **UNDEFINED**. Do not compute, print, or use a speedup number against that broken
+  reference.
+- **Stage 2 — EFFICIENCY (only after Stage 1 PASS):** compare cost-normalized
+  Neff/core-hour, with PT charged its rank count and no-PT charged its chain count.
+  `>=5x = GO`; `2x--5x = MARGINAL` (retune once, then re-decide); `<2x = NO-GO`.
+  These are G2's inherited 5x/2x bands, now applied to the cost-normalized metric;
+  their suitability for that metric is a PI/Feynman judgment call, not a new
+  empirically calibrated threshold.
+- Record the Stage-1 verdict and, only where defined, Stage-2 Neff/core-hour ratio;
+  extrapolate the full M2 budget BEFORE submitting anything. If projected total >5x
+  the plan budget, stop and renegotiate scope with the user.
 
 ## Gate G3 — per-point production acceptance (M2)
 

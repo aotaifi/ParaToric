@@ -2863,3 +2863,115 @@ Do 1-4 (they are small and concrete), then 5 as a single labelling pass. **M3 wa
 until item 1 is done** — the denser s* grid feeds the MCP decision that G2/F6 governs,
 and I would rather fix the gate before generating the data that will be judged by it.
 Everything else in 20w stands.
+
+## UPDATE 2026-07-20ac: The Clark-vs-Feynman gate discrepancy is NEITHER of us being "looser" — **three reasonable stage-1 criteria give 3, 7 and 7 failures out of 9 on the same data, and they disagree at h_c.** We have just wired a WIRED-NOT-VALIDATED gate, the exact category the audit flagged one day earlier. Fix below. Plus: the M3 duality answer (do NOT build no-PT x-basis controls near s*), and Jarvis's error owned correctly.
+
+### 1. THE ADJUDICATION WAS ON THE WRONG QUESTION
+Martina confirmed Clark's code "faithfully reuses the pre-existing spread/I4 machinery."
+That is a PROVENANCE check: it verifies the code calls the established functions. It
+does NOT verify the CRITERION is right. **Faithful reuse of an unvalidated threshold is
+still an unvalidated threshold.** So the discrepancy was never resolved, it was
+relabelled. I am not criticising the call to escalate — that was right — but the
+question sent for adjudication ("whose number is correct?") was not answerable by code
+review, and the answer that came back does not settle it.
+
+### 2. WHAT IS ACTUALLY TRUE — measured, three criteria, same 9 points
+  h          A: spread<0.05   B: window-scaling=NOISE   C: I4 tau-factor<2x
+  0.305629      FAIL               FAIL                     FAIL
+  0.318989      FAIL               FAIL                     FAIL
+  0.322000      FAIL               FAIL                     FAIL
+  0.326000      FAIL               **pass**                 FAIL
+  0.330615      FAIL               **pass**                 FAIL
+  **0.335363    FAIL               pass                     FAIL   <- h_c**
+  0.339574      FAIL               pass                     pass
+  0.343521      pass               pass                     FAIL
+  0.347399      pass               pass                     pass
+  FAILURES:      7                  3                        7      (of 9)
+**Three defensible criteria; 3 vs 7 vs 7 failures; and they disagree AT h_c**, which is
+the only point whose verdict changes the L=120 decision. My 20ab table (6) and Clark's
+(8) are two more points in this spread. Nobody was being loose — **the gate is
+threshold-sensitive exactly where it matters, and no criterion has been validated.**
+
+### 3. MY 20ab WITHDRAWAL: PARTLY WRONG, AND FOR AN IRONIC REASON
+I flagged h_c as BROKEN using a bare spread threshold (0.0886 > 0.05). **Criterion B —
+the window-scaling test — says the h_c spread shrinks like 1/sqrt(w), i.e. it is
+estimation NOISE, not basin contamination. By that test h_c is CLEAN.**
+And criterion B is the one I MYSELF introduced in 20p, where I wrote that a bare spread
+gate on a short window always fires and that the scaling check is the right
+discriminator. **I then applied a bare spread threshold in 20j/20ab and over-flagged.**
+Same error, one week apart, by the person who wrote the warning.
+So: 20aa's "the rule fires at h_c with 1.21x" is **REINSTATED under criterion B** and
+remains withdrawn under A and C. I am not going to pick the criterion that gives the
+answer I prefer. **The honest status: the 20c decision at h_c is
+THRESHOLD-DEPENDENT** — which is worse than either "fires" or "undefined", because it
+means the campaign's most expensive decision currently turns on an unvalidated choice
+among three reasonable definitions.
+
+### 4. THE FIX — validate the criterion, do not vote on it
+**Adopt criterion B (window-scaling) as the PRIMARY stage-1 test**, with A and C
+reported alongside as context, never as the gate. Reason, and it is principled rather
+than a preference: A and C compare a statistic to an ARBITRARY NUMBER (0.05, 2x),
+while **B tests a FUNCTIONAL FORM** — does the spread fall as 1/sqrt(window), as pure
+estimation noise must? That is a falsifiable prediction about scaling, not a
+line drawn on a plot, and it is the only one of the three that cannot be tuned by
+choosing a threshold.
+Required, and this is the part that makes it validated rather than merely chosen:
+ (i) B needs its own stated power condition — with too few window decades it cannot
+     discriminate, and must return SPREAD-UNRESOLVED rather than pass (same asymmetry
+     as tau-UNRESOLVED). State the minimum window range.
+ (ii) Wire B as stage 1 in the G2/F6 gate, replacing the current spread/I4 combination.
+ (iii) Re-run the M2 stage-2 numbers under B. Under B, six of the nine matched points
+     have a valid baseline, so the cost-normalized speedup becomes evaluable across
+     most of the window rather than only at the fast end.
+ (iv) Record in the doc WHY B is primary — the functional-form argument above. Any rule
+     without that sentence is a new NEITHER row.
+**We wired a WIRED-NOT-VALIDATED gate the day after the audit named that category.**
+That is not an embarrassment to hide; it is the strongest possible evidence the audit
+found a real systemic failure, and it should be written into `doc/failure_modes.md`
+as a worked example.
+
+### 5. M3 DUALITY — my call, and it is the OPPOSITE of the obvious option
+You asked rather than assumed. Correct, and your Jones-caught error was owned exactly
+right: comparing z-direct against z-plaquette is not a duality test, they are
+COMPLEMENTARY channels within one basis (run manual A8/C5), and the dual pairs are
+cross-basis. Good catch by Jones, good record by you.
+**DECISION: do NOT build no-PT x-basis controls near s*.** They would be actively
+harmful. The entire reason PT is wanted at s* is that no-PT is expected to be
+non-ergodic there. A no-PT x-basis arm near s* would therefore be non-ergodic too, and
+comparing it against a PT z-basis arm would produce a duality "FAILURE" that reflects
+sampling, not the mapping. **We would manufacture a false instrument failure and then
+spend weeks chasing it** — precisely the pattern that cost this campaign the trend-
+inversion scare.
+**DO THIS INSTEAD, in priority order:**
+ (a) **Duality is an INSTRUMENT property, and it is already validated.** 2A (job
+     `15177203`) ran BOTH bases, no-PT, at L=8/12/16 across s=0.200-0.450 and passed
+     200/201 comparisons, including deep in the region where the ratio observable dies.
+     The duality mapping does not depend on L or on the sampler. **Cite that validation;
+     do not re-derive it per run.** It is recorded in benchmark_report.md sec 7.
+ (b) **If a fresh check is wanted, run the x-basis no-PT control OFF the critical
+     region** (s <= 0.30, deep deconfined), where no-PT is ergodic and 2A already shows
+     it passes. That tests the instrument without the ergodicity confound. Cheap.
+ (c) **Do NOT waive duality silently.** Record explicitly in the M3 design that the
+     per-run cross-basis check is NOT performed because x-basis PT is compile-time
+     unavailable, and that instrument validity rests on (a). A future reader must not
+     find a missing check and assume it passed.
+ (d) The compile-time restriction (`extended_toric_code_qmc.hpp:3771-3772`, PT
+     instantiated for z-basis only) should be recorded in `pt_architecture.md` as a
+     known architectural limit with its line reference. Lifting it is real C++ work and
+     is NOT justified by anything currently on the roadmap — the z-basis carries the
+     physics on the self-dual line, and duality is validated per (a).
+
+### 6. M3 PILOT: NO-GO ACCEPTED, and the staging was right
+Traversal PASS (46 strict round trips, 16/16) and replica-level PASS (z=0.83-2.47) are
+real and good. Holding the L=8/12/20/24 array on the design's own stop condition was
+correct. Two things to fold in before release: the 2 stationarity flags (s=0.325
+direct, s=0.340 plaquette) need a look, and the capability gate could only be checked
+at 2 of 6 s-values — under criterion B, re-check what that becomes. Note the 4 new
+s-values have NO no-PT baseline at all, so stage 1 is unevaluable there by ANY
+criterion; say so in the design rather than defaulting to a pass.
+
+### 7. ORDERING
+ 1. Sec 4 (i)-(iv): make stage 1 criterion-B-based and VALIDATED. Blocks M3 release.
+ 2. Sec 5 (c)+(d): record the duality decision and the architectural limit.
+ 3. Re-run M2 stage-2 under criterion B; re-issue the speedup table.
+ 4. Then M3 release. Items 4/5/6 of the 20ab remediation list stay queued.

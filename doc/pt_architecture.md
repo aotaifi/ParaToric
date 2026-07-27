@@ -209,6 +209,12 @@ scheduling, and diagnostic logic transfer; the swap payload is different.
   plumbing, no new physics. NOT for benchmarking PT "acceleration" (the Ising
   line is easy, uninformative about the hard MCP) — strictly a CORRECTNESS-at-
   scale check against ground truth.
+  AUTOMATED REGRESSION: after a benchmark rerun, invoke
+  `scripts/ensemble_diagnostics.py ising-line-regression` with the three crossing
+  values and errors. It uses the inverse-variance fixed-3D-Ising-drift
+  extrapolation and asserts h_c=0.335(2) compatibility at <=3 sigma (the 3-sigma
+  default is a PI/Feynman judgment call). It protects the manually closed
+  benchmark from silent drift; it does not claim a precise nu measurement.
   SEQUENCING: after (observable validated + swap_period fixed), reuse the same
   Linsel lmbda=0.3 benchmark point, before the MCP pilot. If PT+FSS recovers
   h_c=0.335 and nu=0.65 there, PT is trustworthy for the MCP; if not, we found a
@@ -303,7 +309,8 @@ S3 FULL TRAVERSAL (killer integration; N=4 AND N=8, spread ladder, ~5000 swap
 S4 DETAILED BALANCE / PHYSICS (integration, N=4 spread). Reorganize PT-on samples
    by ladder_index; compare each position's marginal (energy + one more obs) to an
    independent PT-OFF single chain run at that s (4 chains).
-   PASS: z<3 for every position and observable.
+   PASS: z<3 for every position and observable. Print per-row PASS/FLAG and an
+   overall G1.3/S4 status; a raw z without threshold application is not a gate.
 
 S5 ACCEPTANCE SHAPE (from the S3 run). Per-link acceptance (by ladder position)
    for all N-1 links.

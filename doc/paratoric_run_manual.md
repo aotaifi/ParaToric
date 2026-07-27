@@ -276,8 +276,16 @@ F4. UP/DOWN FLOW: visited-LOW and visited-HIGH per replica -> flow fraction f(ru
     should be ~monotonic; non-monotonic f / plateau pins the bottleneck rung.
 F5. tau_ergodic (round-trip time, IN SWEEPS) — this, not raw sample count, sets the
     effective decorrelation at the s* rung. Budget Neff at s* in tau_ergodic units.
-F6. tau(percolation_strength) at s* — the PHYSICAL slow mode. PT GO requires it to
-    actually DROP (>=5x vs no-PT baseline) AND replicas to change the winding sector.
+F6. Two-stage PT decision at s* — run `ensemble_diagnostics.py pt-capability-gate`
+    per matched h before claiming any PT speedup. **Stage 1 CAPABILITY (always):**
+    reuse the per-chain raw-ratio spread-scaling and I4 factor-2 tau gates on no-PT.
+    A fail/unresolved reference is `CAPABILITY_REQUIRED`: no-PT is not an alternative,
+    so cost-normalized Neff/core-hour is **UNDEFINED** and must not be reported.
+    **Stage 2 EFFICIENCY (only Stage-1 PASS):** compare cost-normalized
+    Neff/core-hour (PT ranks versus no-PT chains), not raw tau: >=5x GO, 2x--5x
+    MARGINAL (one retune), <2x NO-GO. The inherited 5x/2x bands are a PI/Feynman
+    judgment call pending calibration. Report winding-sector change as mechanism
+    evidence, never as a substitute for either stage's stated metric.
 F7. KEY WARNING: round-trips are NEITHER NECESSARY NOR SUFFICIENT — when genuine,
     they are sufficient evidence of mixing, but not required for a tau reduction:
     a replica can decorrelate through local excursions over a few rungs without a
