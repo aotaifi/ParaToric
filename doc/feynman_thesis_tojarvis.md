@@ -2975,3 +2975,56 @@ criterion; say so in the design rather than defaulting to a pass.
  2. Sec 5 (c)+(d): record the duality decision and the architectural limit.
  3. Re-run M2 stage-2 under criterion B; re-issue the speedup table.
  4. Then M3 release. Items 4/5/6 of the 20ab remediation list stay queued.
+
+---
+
+## 2026-07-25 — stage-1 criterion, and the M3 duality question
+
+**What changed:** Stage 1 of the G2/F6 gate now uses the window-scaling test, not a spread or tau-factor threshold; and M3 will not run an x-basis arm near s*.
+
+**Why:** Three thresholds that all look reasonable disagree about h_c — the one point whose answer changes the L=120 decision — so the gate has to test a scaling law rather than a number; and a no-PT x-basis arm near s* would be non-ergodic and fake a duality failure.
+
+**Cost:** none. Both are analysis changes on existing data.
+
+**Needs from PI:** nothing.
+
+### The measurement behind it
+
+Per-chain agreement of the no-PT L=10 baseline at the 9 matched fields, three criteria:
+
+    h            spread<0.05   spread scales as 1/sqrt(w)   tau spread <2x
+    0.305629        FAIL              FAIL                      FAIL
+    0.318989        FAIL              FAIL                      FAIL
+    0.322000        FAIL              FAIL                      FAIL
+    0.326000        FAIL              pass                      FAIL
+    0.330615        FAIL              pass                      FAIL
+    0.335363        FAIL              pass                      FAIL     <- h_c
+    0.339574        FAIL              pass                      pass
+    0.343521        pass              pass                      FAIL
+    0.347399        pass              pass                      pass
+    failures          7                 3                         7
+
+At h_c the spread falls as 1/sqrt(window), which is what pure estimation noise does. The chains are not in different basins there; they agree within their own resolution. So h_c has a valid baseline and the 1.21x cost-normalized speedup from job `15232180` stands.
+
+### Steps
+
+1. Make stage 1 the window-scaling test. Fail only when the spread does NOT fall as 1/sqrt(w).
+2. Give it a power condition: with fewer than two decades of window range it returns SPREAD-UNRESOLVED, not pass. State the minimum range in the code.
+3. Re-run the M2 stage-2 speedup table under it. Six of nine fields now have a valid baseline instead of three, so quote the speedup across the window, not only at the fast end.
+4. Write one line in the doc saying why: the other two criteria compare a statistic to an arbitrary number; this one asks whether the spread obeys the scaling law that noise must obey. That is falsifiable and cannot be tuned.
+
+### M3 duality — decided, do not build the x-basis controls
+
+x-basis PT is compile-time unavailable (`extended_toric_code_qmc.hpp:3771-3772`). Do not substitute no-PT x-basis runs near s*. PT is wanted at s* precisely because no-PT is expected to be non-ergodic there, so that arm would be non-ergodic too and the cross-basis comparison would fail for sampling reasons that have nothing to do with the mapping. We would then chase a false instrument failure.
+
+Duality is a property of the observables and the model, not of the sampler or of L, and it is already measured: job `15177203` ran both bases at L=8/12/16 across s=0.200-0.450 and passed 200 of 201 comparisons, including where the ratio observable dies. Cite that.
+
+5. If a fresh check is wanted, run the x-basis no-PT control at s <= 0.30, where no-PT is ergodic and the confound is absent.
+6. Record in the M3 design that the per-run cross-basis check is not performed, and why. A missing check must not read as a passed one.
+7. Record the compile-time z-basis-only restriction in `pt_architecture.md` with its line reference. Lifting it is real C++ work and nothing on the roadmap needs it.
+
+Your z-direct vs z-plaquette proposal was not a duality test — those two are complementary channels inside one basis, and the dual pairs are cross-basis (run manual A8/C5). Jones was right.
+
+### On the pilot
+
+NO-GO accepted, and holding the L=8/12/20/24 array was correct. Traversal (46 round trips, 16/16) and replica-level agreement (z=0.83-2.47) are clean. Before release: look at the two stationarity flags (s=0.325 direct, s=0.340 plaquette), and note in the design that the four new s-values have no no-PT baseline at all, so stage 1 is unevaluable there under any criterion. Say unevaluable; do not default to pass.
