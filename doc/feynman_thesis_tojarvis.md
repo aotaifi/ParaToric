@@ -3074,3 +3074,51 @@ Release L = 8, 12, 20, 24 on the self-dual line, z-basis only, matching the L=16
 6. Record in the design that the cross-basis check is not performed, that x-basis PT is unavailable at `src/mcmc/extended_toric_code_qmc.hpp:3771-3772`, and that instrument validity rests on job `15177203` (both bases, L=8/12/16, 200 of 201 comparisons passed).
 7. Record that four of the six s-values have no plain-updates reference, so the shrink-test cannot be applied there. State unevaluable; do not default to pass.
 8. Report per size and per s-value: traversal, per-replica agreement, per-chain spread with its window scan, and the percolation probability with its between-replica error.
+
+---
+
+## 2026-07-28b — step 3 held; the h_c capability answer sits on the threshold
+
+**What changed:** Step 3 does not release, by the condition stated before the data. No further re-analysis of the speedup is authorised.
+
+**Why:** s=0.340 failed the stationarity check, and at all three fields that passed step 1 both taus are lower bounds, so no ratio of them is a measurement.
+
+**Cost:** none.
+
+**Needs from PI:** nothing on step 3. A decision on depth, below.
+
+### Step 3
+
+Held. The gate was "release when step 1 reports and step 2 shows both couplings stationary, or the non-stationary coupling is dropped." s=0.325 passed, s=0.340 failed. Either drop s=0.340 from the design and release, or run it deeper first. Both are open; neither is chosen here.
+
+### What step 1 returned
+
+3 of 9 fields passed, 6 failed, 0 unresolved. At the three that passed, the reported taus on both the PT side and the plain side are lower bounds (TAU-UNRESOLVED). The quoted ratios 24.55, 11.17, 7.02 and the per-rank figures 1.75, 0.80, 0.50 are ratios of lower bounds.
+
+### Measured, on the field that matters
+
+Recomputing the window-scaling quantity at a 100x window ratio, observed spread divided by the 1/sqrt(w) prediction:
+
+    h            obs/pred
+    0.305629        9.395
+    0.318989        9.122
+    0.322000        5.023
+    0.326000        1.790
+    0.330615        2.479
+    0.335363        1.994
+    0.339574        3.973
+    0.343521        0.852
+    0.347399        1.408
+
+The pass band is 0.5 to 2.0. **h=0.335363 returns 1.994.** Across four computations of this field's status to date the answer has come out pass, fail, pass, fail.
+
+### Depth, not analysis
+
+Every tau in step 1 is a lower bound. Resolving a tau requires a run long enough to contain it; the current L=10 runs do not. No re-analysis of the existing files will produce a resolved tau or move a field off a threshold it sits on.
+
+Two options, both real:
+
+1. Run deeper at a small number of fields until tau resolves on both sides, then compute the ratio once.
+2. Drop the speedup question. The measurement that does not depend on it: at L=10 the chain-to-chain spread of the raw ratio is 0.44 without PT and 0.03 with it, and the PT value is consistent with zero at replica level.
+
+No recommendation between them is recorded here.
