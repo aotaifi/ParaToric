@@ -3028,3 +3028,49 @@ Your z-direct vs z-plaquette proposal was not a duality test — those two are c
 ### On the pilot
 
 NO-GO accepted, and holding the L=8/12/20/24 array was correct. Traversal (46 round trips, 16/16) and replica-level agreement (z=0.83-2.47) are clean. Before release: look at the two stationarity flags (s=0.325 direct, s=0.340 plaquette), and note in the design that the four new s-values have no no-PT baseline at all, so stage 1 is unevaluable there under any criterion. Say unevaluable; do not default to pass.
+
+---
+
+## 2026-07-28 — PT adopted cautiously; steps 1 and 2 gate step 3
+
+**What changed:** The 20c speedup rule no longer blocks PT; PT is adopted for the self-dual work, and the L=8/12/20/24 array is authorised but gated behind two free analyses.
+
+**Why:** The 20c rule was written when speed was the figure of merit; the measured benefit of PT here is that chains started differently converge to the same answer, which no speed ratio expresses.
+
+**Cost:** Steps 1 and 2 are free. Step 3 is 19-28 task-hours.
+
+**Needs from PI:** go.
+
+### Rule change, stated before the next data
+
+The 20c rule read: cost-normalized speedup at h_c near 1 means do not spend MCP-scale compute on a plain PT ladder. **That rule is withdrawn as a blocker.** It is replaced by:
+
+- PT is adopted where the plain-updates ensemble does not pass the shrink-test, regardless of speedup.
+- Where the plain ensemble does pass, PT must earn its cores: a cost-normalized factor below 1 means run plain chains at that point instead.
+- Neither branch authorises an L=120 ladder. That decision is separate and is not being taken now.
+
+Recording plainly that this is a post-hoc softening of a pre-committed rule. The ground is that the rule's premise (speed is what PT is for) was contradicted by measurement, not that the rule gave an unwelcome answer. If a future reader disagrees with that ground, the original rule and the numbers are both in the record.
+
+### Step 1 — free, do first
+
+For every field with both a PT run and a plain run (job `15232180` against `15149119`):
+
+1. Apply the shrink-test to the plain run at each field: compute the per-chain spread over a range of window lengths spanning at least two decades, and record whether it falls as 1/sqrt(w).
+2. Where the window range is under two decades, return SPREAD-UNRESOLVED. Do not return pass.
+3. Keep the fields that pass. Recompute tau for PT and plain at those fields with the same estimator, using the real-time fixed-rung construction on the PT side (one replica occupies each rung per step; do not concatenate visits).
+4. Report per field: PT tau, plain tau, ratio, and ratio divided by rank count. Report the fields that failed or were unresolved as such, with no ratio.
+
+Expect 6 of 9 fields to pass rather than the 3 currently quoted.
+
+### Step 2 — free
+
+Two couplings in the L=16 pilot did not settle: s=0.325 direct channel, s=0.340 plaquette channel. Report the observable mean versus depth at both, and state whether it is stationary over the last half of the run.
+
+### Step 3 — gated on 1 and 2, then go
+
+Release L = 8, 12, 20, 24 on the self-dual line, z-basis only, matching the L=16 pilot's settings. Five sizes total.
+
+5. Do not release until step 1 reports and step 2 shows both couplings stationary, or until the non-stationary couplings are dropped from the design.
+6. Record in the design that the cross-basis check is not performed, that x-basis PT is unavailable at `src/mcmc/extended_toric_code_qmc.hpp:3771-3772`, and that instrument validity rests on job `15177203` (both bases, L=8/12/16, 200 of 201 comparisons passed).
+7. Record that four of the six s-values have no plain-updates reference, so the shrink-test cannot be applied there. State unevaluable; do not default to pass.
+8. Report per size and per s-value: traversal, per-replica agreement, per-chain spread with its window scan, and the percolation probability with its between-replica error.
