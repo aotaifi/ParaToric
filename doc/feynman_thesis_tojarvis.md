@@ -3122,3 +3122,48 @@ Two options, both real:
 2. Drop the speedup question. The measurement that does not depend on it: at L=10 the chain-to-chain spread of the raw ratio is 0.44 without PT and 0.03 with it, and the PT value is consistent with zero at replica level.
 
 No recommendation between them is recorded here.
+
+---
+
+## 2026-07-29 — 4x depth: what it changed, and a normalization question
+
+**What changed:** Both PT and plain taus at h_c are several times larger than previously reported; and the /14 cost normalization applied so far answers a different question than the one the campaign asks.
+
+**Why:** The blocking curves keep climbing with block size, so every earlier tau was read before the curve had turned over; and PT delivers a series at all 14 fields at once, which a set of plain chains covering the same 14 fields also costs 14 cores to produce.
+
+**Cost:** none, existing files.
+
+**Needs from PI:** a decision on which normalization the campaign uses.
+
+### Blocking curves at h=0.335363, both sides, same statistic
+
+    n_blocks   block length   PT tau (sweeps)   plain tau (sweeps)
+      1024        ~0.03M            183               459
+       256        ~0.12M            392              1577
+        64        ~0.47M           1059              5357
+        16        ~1.9M            2081             13605
+         8        ~3.7M            2283             16501
+
+PT source: job at `paratoric_pt_l10_phase2b_deep4x_20260728`, 32M sweeps production, rung 5. Plain source: job `15149119`, 40M sweeps, one chain, last three quarters.
+
+Neither curve has plateaued. PT changes by a factor 1.10 over the last doubling, plain by 1.21.
+
+Previously reported at this field: PT 331 sweeps, plain 5592 sweeps. Both were read at 64 blocks.
+
+### Ratio at matched block size
+
+    block ~0.47M:  5.1
+    block ~1.9M:   6.5
+    block ~3.7M:   7.2
+
+### The normalization
+
+The PT run is 14 ranks x 32M sweeps and produces a series at each of 14 fields. Producing a series at those same 14 fields with plain chains is 14 chains x 32M sweeps. Same compute, same coverage.
+
+So for a scan across fields, the ratios above are already cost-normalized and no division by rank count applies. The /14 applied on 2026-07-25 and since answers a different question: the cost of a result at a single field, where PT spends 14 cores and a plain chain spends 1.
+
+Both normalizations are correct for their own question. The campaign's use is a scan across fields to locate crossings. Which one is quoted has not been decided.
+
+### M3 array at 4x depth
+
+Traversal 16/16 at all four sizes, where L=20 and L=24 previously returned 15/16 and 14/16. Spread window-scaling resolved 12 of 24 cells against 7 of 24 before; all newly resolved cells returned FAIL. s=0.340 stationarity was not re-tested at these sizes.
