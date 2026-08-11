@@ -722,6 +722,19 @@ class ExtendedToricCodeQMC {
                 return lat.get_diag_tuple_energy_z()/static_cast<double>(lat.get_plaquette_count());
         };
 
+        // Match the diagonal plaquette estimator to the full imaginary-time
+        // extent.  The off-diagonal branch is already a kink count divided by
+        // beta, so its established normalization is retained.
+        std::function<double(LatticeT&, double, double, double, double)>
+        plaquette_z_tau_avg_obs
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) {
+            if constexpr (Basis == 'x')
+                return lat.get_non_diag_tuple_energy_x()/static_cast<double>(lat.get_plaquette_count() * J);
+            else
+                return lat.total_integrated_plaquette_energy()
+                    / static_cast<double>(lat.get_beta() * lat.get_plaquette_count());
+        };
+
         std::function<double(LatticeT&, double, double, double, double)> 
         delta_obs = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             if constexpr (Basis == 'x') {
@@ -730,6 +743,21 @@ class ExtendedToricCodeQMC {
             } else {
                 return - lat.get_non_diag_tuple_energy_z()/static_cast<double>(lat.get_vertex_count() * mu) 
                 + lat.get_diag_tuple_energy_z()/static_cast<double>(lat.get_plaquette_count());
+            }
+        };
+
+        std::function<double(LatticeT&, double, double, double, double)>
+        delta_tau_avg_obs = [](LatticeT& lat, double h, double lmbda, double mu, double J) {
+            if constexpr (Basis == 'x') {
+                return - lat.total_integrated_star_energy()
+                    / static_cast<double>(lat.get_beta() * lat.get_vertex_count())
+                    + lat.get_non_diag_tuple_energy_x()
+                    / static_cast<double>(lat.get_plaquette_count() * J);
+            } else {
+                return - lat.get_non_diag_tuple_energy_z()
+                    / static_cast<double>(lat.get_vertex_count() * mu)
+                    + lat.total_integrated_plaquette_energy()
+                    / static_cast<double>(lat.get_beta() * lat.get_plaquette_count());
             }
         };
 
@@ -758,6 +786,7 @@ class ExtendedToricCodeQMC {
             {"anyon_density", "real", anyon_density_obs},
             {"cube_percolation_probability", "real", cube_percolation_probability},
             {"delta", "real", delta_obs},
+            {"delta_tau_avg", "real", delta_tau_avg_obs},
             {"energy", "real", energy_obs},
             {"energy_h", "real", energy_h_obs},
             {"energy_lmbda", "real", energy_lmbda_obs},
@@ -771,6 +800,7 @@ class ExtendedToricCodeQMC {
             {"plaquette_percolation_probability", "real", plaquette_percolation_probability_obs},
             {"plaquette_percolation_strength", "real", plaquette_percolation_strength_obs},
             {"plaquette_z", "real", plaquette_z_obs},
+            {"plaquette_z_tau_avg", "real", plaquette_z_tau_avg_obs},
             {"sigma_x", "real", sigma_x_obs},
             {"sigma_x_tau_avg", "real", sigma_x_tau_avg_obs},
             {"sigma_x_static_susceptibility", "susceptibility", sigma_x_static_susceptibility_obs},

@@ -131,6 +131,21 @@ BOOST_AUTO_TEST_CASE(get_thermalization_test_1) {
     );
 }
 
+BOOST_AUTO_TEST_CASE(tau_averaged_observables_are_registered_in_both_bases) {
+    ExtendedToricCodeQMC<'x'> mc_x;
+    ExtendedToricCodeQMC<'z'> mc_z;
+    const std::vector<std::string> observables{"plaquette_z_tau_avg", "delta_tau_avg"};
+    const auto types_x = mc_x.get_obs_type_vec(observables);
+    const auto types_z = mc_z.get_obs_type_vec(observables);
+
+    BOOST_REQUIRE_EQUAL(types_x.size(), 2U);
+    BOOST_REQUIRE_EQUAL(types_z.size(), 2U);
+    BOOST_CHECK_EQUAL(types_x[0], "real");
+    BOOST_CHECK_EQUAL(types_x[1], "real");
+    BOOST_CHECK_EQUAL(types_z[0], "real");
+    BOOST_CHECK_EQUAL(types_z[1], "real");
+}
+
 BOOST_AUTO_TEST_CASE(get_thermalization_test_2) {
     auto mc = ExtendedToricCodeQMC<'x'>();;
     LatSpec lat_spec = {

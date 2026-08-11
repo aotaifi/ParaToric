@@ -88,6 +88,21 @@ BOOST_AUTO_TEST_CASE(flat_square_periodic_core_energy_helpers) {
     BOOST_CHECK_EQUAL(star_edges.size(), 4);
 }
 
+BOOST_AUTO_TEST_CASE(flat_square_tau_averaged_plaquette_static_calibration) {
+    const LatSpec spec{'z', "square", 4, 6.0, "periodic", 1};
+    FlatSquareLattice lat(spec);
+
+    const double plaquette_z_tau_avg = lat.total_integrated_plaquette_energy()
+        / (lat.get_beta() * static_cast<double>(lat.get_plaquette_count()));
+    const double star_x_tau_avg = lat.total_integrated_star_energy()
+        / (lat.get_beta() * static_cast<double>(lat.get_vertex_count()));
+
+    // The static all-+1 toric-code configuration has B_p=A_s=+1.
+    BOOST_CHECK_CLOSE(plaquette_z_tau_avg, 1.0, 1e-12);
+    BOOST_CHECK_CLOSE(star_x_tau_avg, 1.0, 1e-12);
+    BOOST_CHECK_SMALL(plaquette_z_tau_avg - star_x_tau_avg, 1e-12);
+}
+
 BOOST_AUTO_TEST_CASE(flat_square_rotate_imag_time_preserves_period_integrals) {
     const LatSpec spec{'x', "square", 4, 10.0, "periodic", 1};
     auto rng = std::make_shared<rng::RNG>(1234);
