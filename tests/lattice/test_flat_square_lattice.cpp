@@ -89,18 +89,37 @@ BOOST_AUTO_TEST_CASE(flat_square_periodic_core_energy_helpers) {
 }
 
 BOOST_AUTO_TEST_CASE(flat_square_tau_averaged_plaquette_static_calibration) {
-    const LatSpec spec{'z', "square", 4, 6.0, "periodic", 1};
-    FlatSquareLattice lat(spec);
+    const LatSpec z_spec{'z', "square", 4, 6.0, "periodic", 1};
+    FlatSquareLattice z_lat(z_spec);
 
-    const double plaquette_z_tau_avg = lat.total_integrated_plaquette_energy()
-        / (lat.get_beta() * static_cast<double>(lat.get_plaquette_count()));
-    const double star_x_tau_avg = lat.total_integrated_star_energy()
-        / (lat.get_beta() * static_cast<double>(lat.get_vertex_count()));
+    const double plaquette_z_tau_avg = z_lat.total_integrated_plaquette_energy()
+        / (z_lat.get_beta() * static_cast<double>(z_lat.get_plaquette_count()));
+    const double star_x_tau_avg = z_lat.total_integrated_star_energy()
+        / (z_lat.get_beta() * static_cast<double>(z_lat.get_vertex_count()));
 
     // The static all-+1 toric-code configuration has B_p=A_s=+1.
     BOOST_CHECK_CLOSE(plaquette_z_tau_avg, 1.0, 1e-12);
     BOOST_CHECK_CLOSE(star_x_tau_avg, 1.0, 1e-12);
     BOOST_CHECK_SMALL(plaquette_z_tau_avg - star_x_tau_avg, 1e-12);
+
+    const LatSpec x_spec{'x', "square", 4, 6.0, "periodic", 1};
+    FlatSquareLattice x_lat(x_spec);
+    for (int plaquette = 0; plaquette < x_lat.get_plaquette_count(); ++plaquette) {
+        const auto plaquette_edges = x_lat.get_plaquette_edges(plaquette);
+        for (int event = 0; event < static_cast<int>(x_lat.get_beta()); ++event) {
+            x_lat.insert_tuple_flip(plaquette, plaquette_edges, static_cast<double>(event) + 0.5);
+        }
+    }
+
+    // In the x basis B_p is a kink estimator: beta plaquette flips per
+    // plaquette at J=1 give B_p=1, while the plaquette flips preserve A_s=1.
+    const double x_plaquette_z_tau_avg = x_lat.get_non_diag_tuple_energy_x()
+        / static_cast<double>(x_lat.get_plaquette_count());
+    const double x_star_x_tau_avg = x_lat.total_integrated_star_energy()
+        / (x_lat.get_beta() * static_cast<double>(x_lat.get_vertex_count()));
+    BOOST_CHECK_CLOSE(x_plaquette_z_tau_avg, 1.0, 1e-12);
+    BOOST_CHECK_CLOSE(x_star_x_tau_avg, 1.0, 1e-12);
+    BOOST_CHECK_SMALL(x_plaquette_z_tau_avg - x_star_x_tau_avg, 1e-12);
 }
 
 BOOST_AUTO_TEST_CASE(flat_square_rotate_imag_time_preserves_period_integrals) {
