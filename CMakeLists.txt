@@ -32,6 +32,7 @@ option(PARATORIC_ENABLE_NATIVE_OPT "Enable CPU-specific optimizations" OFF)
 option(PARATORIC_ENABLE_AVX2 "Enable AVX2 flag" OFF)
 option(PARATORIC_ENABLE_FAST_MATH "Enable fast-math flag" ON)
 option(PARATORIC_LINK_MPI "Try to link to MPI (required on some computing clusters)" OFF)
+option(PARATORIC_BUILD_M4_SMOKE "Build the M4/M7 multi-rank PT smoke driver (requires PARATORIC_LINK_MPI)" OFF)
 
 if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
@@ -273,6 +274,41 @@ if(PARATORIC_BUILD_BENCHMARKS)
       ${CMAKE_CURRENT_SOURCE_DIR}/include
       ${CMAKE_CURRENT_SOURCE_DIR}/src
   )
+endif()
+
+# ---- M4/M7 multi-rank PT smoke driver (opt-in, off by default) -----------
+# Local, no cluster: mpirun -np 2 ./pt_balance_check_smoke
+# Not part of the default build or of PARATORIC_BUILD_TESTS -- it needs real
+# MPI ranks (mpirun), which ctest does not provide.
+
+if(PARATORIC_BUILD_M4_SMOKE)
+  if(NOT PARATORIC_LINK_MPI)
+    message(WARNING "PARATORIC_BUILD_M4_SMOKE requires PARATORIC_LINK_MPI=ON; skipping.")
+  else()
+    add_executable(pt_balance_check_smoke m4_smoke/pt_balance_check_smoke.cpp)
+    target_link_libraries(pt_balance_check_smoke PRIVATE paratoric::core HDF5::HDF5)
+    target_include_directories(pt_balance_check_smoke
+      PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+
+    add_executable(m10_multirank_identity m4_smoke/m10_multirank_identity.cpp)
+    target_link_libraries(m10_multirank_identity PRIVATE paratoric::core HDF5::HDF5)
+    target_include_directories(m10_multirank_identity
+      PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+
+    add_executable(m7_rung_marginal_test m4_smoke/m7_rung_marginal_test.cpp)
+    target_link_libraries(m7_rung_marginal_test PRIVATE paratoric::core HDF5::HDF5)
+    target_include_directories(m7_rung_marginal_test
+      PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+  endif()
 endif()
 
 # ---- Python bindings (opt-in; subproject-friendly) -----------------------

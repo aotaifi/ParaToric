@@ -46,7 +46,11 @@ namespace paratoric {
 namespace checkpoint_detail {
 
 inline constexpr char SAMPLE_CHECKPOINT_MAGIC[8] = {'P', 'T', 'C', 'K', 'P', 'T', '1', '\0'};
-inline constexpr std::uint32_t SAMPLE_CHECKPOINT_VERSION = 2;
+// M9: version 3 adds the persisted PT ladder position and runtime couplings. Version
+// 2 files (written before this change; some are live on /scratch right now) MUST
+// still load -- see read_sample_checkpoint's version branch.
+inline constexpr std::uint32_t SAMPLE_CHECKPOINT_VERSION = 3;
+inline constexpr std::uint32_t SAMPLE_CHECKPOINT_MIN_SUPPORTED_VERSION = 2;
 
 template<typename T>
 void write_binary(std::ostream& out, const T& value) {
@@ -456,6 +460,128 @@ class ExtendedToricCodeQMC {
             std::vector<double>* log_weight_trace = nullptr
         );
 
+        /**
+         * @brief Test scaffolding only, not itself the swap-weight feature. Not called
+         * from any production path -- only from tests.
+         *
+         * Evolves two independent replicas under fully independent (h, mu, J, lmbda),
+         * at a shared beta, using the private metropolis_step loop (mirrors
+         * validate_parallel_tempering_swap_weight_debug, which is restricted to
+         * mu=J=1). At each swap checkpoint, returns:
+         *   .production_log_ratio: parallel_tempering_log_weight_ratio(...) itself.
+         *   .m1_derivation_log_ratio: the general four-coupling swap weight derived in
+         *     doc/m1_common_factor_swap_weight_derivation.md section 2, computed
+         *     directly from existing accessors (get_non_diag_single_energy_z,
+         *     get_non_diag_tuple_energy_z, cached_total_integrated_edge_energy,
+         *     cached_total_integrated_plaquette_energy / their recompute_* twins).
+         *
+         * IMPORTANT: after M3, .production_log_ratio and .m1_derivation_log_ratio are
+         * two evaluations of the SAME formula (the production code now implements the
+         * M1 derivation). Agreement between them is a CONSISTENCY check -- it confirms
+         * no term is missing from the production path -- not an independent physics
+         * validation of the derivation itself. It cannot catch a wrong sign, a wrong
+         * coefficient, or the wrong accessor in the right slot, because both sides
+         * would be wrong the same way. See the finite-difference and raw-container
+         * checks added in M3 for that (test_extended_toric_code_qmc.cpp,
+         * boost_pt_diagonal_terms_match_finite_difference_l8 and
+         * boost_pt_off_diagonal_terms_match_raw_kink_counts_l8), which are independent
+         * of this derivation.
+         */
+        struct GeneralizedSwapWeightCheck {
+            double production_log_ratio;
+            double m1_derivation_log_ratio;
+        };
+        GeneralizedSwapWeightCheck validate_parallel_tempering_swap_weight_generalized_debug(
+            const Config& config,
+            double local_mu, double partner_mu,
+            double local_J, double partner_J
+        );
+
+        /**
+         * @brief M3 non-circular checks (test scaffolding, not reachable from any
+         * production path). Evolves ONE lattice via metropolis_step at fixed
+         * (h, mu, J, lmbda), then computes diagnostics that do NOT go through
+         * parallel_tempering_log_weight_ratio or the M1 derivation:
+         *  - finite_diff_dlmbda / finite_diff_dJ: derivative of the existing
+         *    total_integrated_pot_energy(...) w.r.t. lmbda / J, by central finite
+         *    difference. Independent of the swap-weight formula; only depends on
+         *    the pre-existing Metropolis potential-energy function.
+         *  - E_edge / E_plaquette: cached_total_integrated_plaquette_energy() and
+         *    cached_total_integrated_edge_energy(), the same accessors the swap
+         *    weight's diagonal terms use.
+         *  - beta_times_single / beta_times_tuple: beta * get_non_diag_single_energy_z()
+         *    and beta * get_non_diag_tuple_energy_z() (the cached kink-count accessors
+         *    the swap weight's off-diagonal terms use).
+         *  - kL_plus_kR_single: kL+kR from get_kL_kR_single(), a pre-existing,
+         *    independently-implemented single-flip count (written for the
+         *    Fredenhagen-Marcu estimator, unrelated to this work) -- an outside
+         *    check on beta_times_single that does not go through
+         *    recompute_non_diag_single_energy_z().
+         *  - recompute_beta_times_tuple: beta * recompute_non_diag_tuple_energy_z().
+         *    No independently-implemented public counter exists for star flips in
+         *    this codebase (unlike single flips, which have get_kL_kR_single()), so
+         *    this is the closest available check for the mu/tuple slot -- it is a
+         *    cache-vs-recompute check, same family as beta_times_tuple, not a fully
+         *    independent count. Documented as a limitation, not overstated.
+         */
+        struct SingleReplicaDiagnostics {
+            double finite_diff_dlmbda;
+            double finite_diff_dJ;
+            double E_edge;
+            double E_plaquette;
+            double beta_times_single;
+            double beta_times_tuple;
+            double kL_plus_kR_single;
+            double recompute_beta_times_tuple;
+        };
+        SingleReplicaDiagnostics validate_single_replica_diagnostics_debug(
+            const Config& config, double h, double mu, double J, double lmbda, double eps
+        );
+
+        /**
+         * @brief M7'' exact-identity check (Feynman, replacing the marginal-distribution
+         * route). Test scaffolding only, not reachable from any production path.
+         *
+         * Runs TWO fully independent chains, one at rung i's couplings and one at
+         * rung j's, each with its own RNG stream. Swap acceptance is never applied --
+         * this never routes a configuration to the "wrong" rung, so every
+         * configuration is a genuine equilibrium sample of its own rung's
+         * distribution, whatever the swap weight computes. At each of N_samples
+         * checkpoints (after independent thermalization on each side), calls the
+         * PRODUCTION parallel_tempering_log_weight_ratio(...) -- the exact function
+         * this test exists to validate -- on the pair (lattice_i, lattice_j), and
+         * records log R = that log-ratio.
+         *
+         * Exact identity, for ANY correct swap-weight formula, at ANY size/couplings:
+         *   <R> = <exp(log R)> = 1
+         * (proof: R factors as [W_j(C_i)/W_i(C_i)] * [W_i(C_j)/W_j(C_j)], and C_i, C_j
+         * are independent draws from their own normalized equilibrium distributions,
+         * so each factor's expectation is a ratio of partition functions that cancels
+         * exactly against the other.) A wrong sign, coefficient, or missing term
+         * breaks this identity systematically, not something local relaxation can
+         * repair (there is no relaxation to repair -- nothing is ever accepted).
+         *
+         * NOTE, corrected after an earlier wrong claim (Feynman review): R is
+         * SYMMETRIC under exchanging i and j (R = W_j(C_i)W_i(C_j) / [W_i(C_i)W_j(C_j)]
+         * is unchanged by swapping the labels), so "the same argument with the roles
+         * reversed" reproduces <R>=1, NOT a second identity <1/R>=1. <1/R> expands to
+         * <W_i(C_i)/W_j(C_i)> * <W_j(C_j)/W_i(C_j)>, a ratio-of-squares-type average
+         * with no reason to equal 1. There is exactly one identity here. Do not report
+         * <1/R> as a check, and do not attribute any deviation of <1/R> from 1 to
+         * sampling/tail pathology -- it is simply not expected to be 1.
+         */
+        struct WeightRatioIdentityCheck {
+            double R_mean;
+            double R_sem;
+            double acceptance_mean;
+            double logR_mean;
+            double logR_stddev;
+            std::size_t n;
+        };
+        WeightRatioIdentityCheck validate_swap_weight_ratio_identity_debug(
+            const Config& config_i, const Config& config_j
+        );
+
         std::int64_t load_sample_checkpoint_lattice_debug(
             const std::filesystem::path& path,
             const Config& config,
@@ -463,6 +589,53 @@ class ExtendedToricCodeQMC {
         ) {
             const auto state = read_sample_checkpoint(path, config, lat);
             return state.production_metropolis_steps;
+        }
+
+        /**
+         * @brief M9 test scaffolding: round-trips the PT ladder state fields
+         * (pt_ladder_index, runtime_h/mu/J/lmbda) through write_sample_checkpoint /
+         * read_sample_checkpoint directly, without needing an actual MPI-enabled PT
+         * run (write_sample_checkpoint/read_sample_checkpoint are private, and PT
+         * itself requires an MPI build, neither of which the non-MPI Boost test
+         * binary can exercise). This tests the NEW serialization code (version-3
+         * fields, the version>=3 read guard) in isolation; it does not exercise real
+         * swap dynamics -- that needs a genuine multi-rank run, done separately in
+         * m4_smoke/m9_pt_checkpoint_restart.cpp.
+         */
+        struct PtCheckpointRoundTrip {
+            bool has_pt_state;
+            int pt_ladder_index;
+            double runtime_h, runtime_mu, runtime_J, runtime_lmbda;
+        };
+        PtCheckpointRoundTrip checkpoint_pt_state_round_trip_debug(
+            const Config& config,
+            const std::filesystem::path& path,
+            int pt_ladder_index, double runtime_h, double runtime_mu, double runtime_J, double runtime_lmbda
+        ) {
+            LatticeT lat(config.lat_spec, rng);
+            write_sample_checkpoint(
+                path, config, lat,
+                SampleCheckpointState{
+                    .completed_samples = 0,
+                    .production_metropolis_steps = 0,
+                    .integrated_pot_energy = 0.,
+                    .acc_ratio = 1.,
+                    .production_acceptance = AcceptanceDiagnostics{},
+                    .observable_vector = std::vector<std::vector<std::variant<std::complex<double>, double>>>(
+                        config.sim_spec.observables.size()),
+                    .pt_ladder_index = pt_ladder_index,
+                    .runtime_h = runtime_h,
+                    .runtime_mu = runtime_mu,
+                    .runtime_J = runtime_J,
+                    .runtime_lmbda = runtime_lmbda
+                }
+            );
+            LatticeT lat_reload(config.lat_spec, rng);
+            const auto state = read_sample_checkpoint(path, config, lat_reload);
+            return PtCheckpointRoundTrip{
+                state.has_pt_state, state.pt_ladder_index,
+                state.runtime_h, state.runtime_mu, state.runtime_J, state.runtime_lmbda
+            };
         }
 
         /**
@@ -847,6 +1020,19 @@ class ExtendedToricCodeQMC {
             double acc_ratio = 1.;
             AcceptanceDiagnostics production_acceptance{};
             std::vector<std::vector<std::variant<std::complex<double>, double>>> observable_vector{};
+            // M9 (Feynman): persisted PT ladder position and post-swap runtime
+            // couplings, checkpoint format version >= 3 only. has_pt_state is false
+            // after reading a version-2 file (written before this change existed) --
+            // the caller MUST then fall back to the pre-M9 behaviour (pt_ladder_index
+            // = pt_rank, runtime couplings = launch values), not assume these fields
+            // mean anything. On write, always populated (every write now produces a
+            // version-3 file); has_pt_state is unused on write.
+            bool has_pt_state = false;
+            int pt_ladder_index = 0;
+            double runtime_h = 0.;
+            double runtime_mu = 0.;
+            double runtime_J = 0.;
+            double runtime_lmbda = 0.;
         };
 
         int random_index(int bound) {
@@ -919,9 +1105,35 @@ class ExtendedToricCodeQMC {
             LatticeT& partner_lat,
             double local_h,
             double partner_h,
+            double local_mu,
+            double partner_mu,
             double local_lmbda,
             double partner_lmbda,
+            double local_J,
+            double partner_J,
             bool use_cached
+        );
+
+        /**
+         * @brief M8 (Feynman): the scalar core of parallel_tempering_log_weight_ratio,
+         * pulled out so the inline swap blocks -- which never materialize a partner
+         * Lattice object, only the scalars exchanged over MPI -- can call the SAME
+         * formula the shared function calls, not a hand-typed duplicate of it.
+         * parallel_tempering_log_weight_ratio itself is now a thin wrapper: it reads
+         * these eight scalars off local_lat/partner_lat and delegates here. Take
+         * `beta` explicitly since there is no Lattice object to call get_beta() on
+         * in the inline-block context.
+         */
+        static double parallel_tempering_log_weight_ratio_from_scalars(
+            double beta,
+            double local_h, double partner_h,
+            double local_mu, double partner_mu,
+            double local_lmbda, double partner_lmbda,
+            double local_J, double partner_J,
+            double local_single, double partner_single,
+            double local_tuple, double partner_tuple,
+            double local_edge, double partner_edge,
+            double local_plaquette, double partner_plaquette
         );
 
         /**
@@ -1532,6 +1744,12 @@ void ExtendedToricCodeQMC<Basis, LatticeT>::write_sample_checkpoint(
         checkpoint_detail::write_binary(out, state.acc_ratio);
         checkpoint_detail::write_diagnostics(out, state.production_acceptance);
         checkpoint_detail::write_observable_series(out, state.observable_vector);
+        // M9: PT ladder position and post-swap runtime couplings (version 3+).
+        checkpoint_detail::write_binary(out, state.pt_ladder_index);
+        checkpoint_detail::write_binary(out, state.runtime_h);
+        checkpoint_detail::write_binary(out, state.runtime_mu);
+        checkpoint_detail::write_binary(out, state.runtime_J);
+        checkpoint_detail::write_binary(out, state.runtime_lmbda);
         rng->write_state(out);
         out << '\n';
         lat.write_checkpoint_state(out);
@@ -1567,7 +1785,11 @@ ExtendedToricCodeQMC<Basis, LatticeT>::read_sample_checkpoint(
         }
         std::uint32_t version = 0;
         checkpoint_detail::read_binary(in, version);
-        if (version != checkpoint_detail::SAMPLE_CHECKPOINT_VERSION) {
+        // M9: accept version 2 (written before PT ladder state existed -- there are
+        // live files on /scratch right now) as well as the current version 3. A
+        // version bump that rejects old files is a failure of this milestone.
+        if (version < checkpoint_detail::SAMPLE_CHECKPOINT_MIN_SUPPORTED_VERSION
+            || version > checkpoint_detail::SAMPLE_CHECKPOINT_VERSION) {
             throw std::runtime_error("Unsupported checkpoint version.");
         }
 
@@ -1620,6 +1842,18 @@ ExtendedToricCodeQMC<Basis, LatticeT>::read_sample_checkpoint(
         checkpoint_detail::read_binary(in, state.acc_ratio);
         checkpoint_detail::read_diagnostics(in, state.production_acceptance);
         state.observable_vector = checkpoint_detail::read_observable_series(in);
+        // M9: PT ladder position and runtime couplings, version 3+ only. A version-2
+        // file has none of this; state.has_pt_state stays false and the caller falls
+        // back to pre-M9 behaviour (pt_ladder_index = pt_rank, runtime couplings =
+        // launch values) rather than reading garbage or assuming zeros mean anything.
+        if (version >= 3) {
+            checkpoint_detail::read_binary(in, state.pt_ladder_index);
+            checkpoint_detail::read_binary(in, state.runtime_h);
+            checkpoint_detail::read_binary(in, state.runtime_mu);
+            checkpoint_detail::read_binary(in, state.runtime_J);
+            checkpoint_detail::read_binary(in, state.runtime_lmbda);
+            state.has_pt_state = true;
+        }
         rng->read_state(in);
         in.get();
         lat.read_checkpoint_state(in);
@@ -1680,8 +1914,12 @@ double ExtendedToricCodeQMC<Basis, LatticeT>::parallel_tempering_log_weight_rati
     LatticeT& partner_lat,
     double local_h,
     double partner_h,
+    double local_mu,
+    double partner_mu,
     double local_lmbda,
     double partner_lmbda,
+    double local_J,
+    double partner_J,
     bool use_cached
 ) {
     if constexpr (!std::same_as<LatticeT, Lattice>) {
@@ -1702,22 +1940,70 @@ double ExtendedToricCodeQMC<Basis, LatticeT>::parallel_tempering_log_weight_rati
             const double partner_edge = use_cached
                 ? partner_lat.cached_total_integrated_edge_energy()
                 : partner_lat.recompute_total_integrated_edge_energy();
+            const double local_tuple = use_cached
+                ? local_lat.get_non_diag_tuple_energy_z()
+                : local_lat.recompute_non_diag_tuple_energy_z();
+            const double partner_tuple = use_cached
+                ? partner_lat.get_non_diag_tuple_energy_z()
+                : partner_lat.recompute_non_diag_tuple_energy_z();
+            const double local_plaquette = use_cached
+                ? local_lat.cached_total_integrated_plaquette_energy()
+                : local_lat.recompute_total_integrated_plaquette_energy();
+            const double partner_plaquette = use_cached
+                ? partner_lat.cached_total_integrated_plaquette_energy()
+                : partner_lat.recompute_total_integrated_plaquette_energy();
 
-            double log_ratio = 0.;
-            if (local_h != partner_h) {
-                if (local_h <= 0. || partner_h <= 0.) {
-                    throw std::invalid_argument("PT ladder values must be positive for kink-count exchange weights.");
-                }
-                log_ratio += local_lat.get_beta()
-                    * (local_single - partner_single)
-                    * std::log(partner_h / local_h);
-            }
-            if (local_lmbda != partner_lmbda) {
-                log_ratio += (partner_lmbda - local_lmbda) * (local_edge - partner_edge);
-            }
-            return log_ratio;
+            return parallel_tempering_log_weight_ratio_from_scalars(
+                local_lat.get_beta(),
+                local_h, partner_h, local_mu, partner_mu, local_lmbda, partner_lmbda, local_J, partner_J,
+                local_single, partner_single, local_tuple, partner_tuple,
+                local_edge, partner_edge, local_plaquette, partner_plaquette
+            );
         }
     }
+}
+
+template<char Basis, typename LatticeT>
+requires ValidBasis<Basis>
+double ExtendedToricCodeQMC<Basis, LatticeT>::parallel_tempering_log_weight_ratio_from_scalars(
+    double beta,
+    double local_h, double partner_h,
+    double local_mu, double partner_mu,
+    double local_lmbda, double partner_lmbda,
+    double local_J, double partner_J,
+    double local_single, double partner_single,
+    double local_tuple, double partner_tuple,
+    double local_edge, double partner_edge,
+    double local_plaquette, double partner_plaquette
+) {
+    double log_ratio = 0.;
+    if (local_h != partner_h) {
+        if (local_h <= 0. || partner_h <= 0.) {
+            throw std::invalid_argument("PT ladder values must be positive for kink-count exchange weights.");
+        }
+        log_ratio += beta
+            * (local_single - partner_single)
+            * std::log(partner_h / local_h);
+    }
+    if (local_lmbda != partner_lmbda) {
+        log_ratio += (partner_lmbda - local_lmbda) * (local_edge - partner_edge);
+    }
+    // Common-factor (beta,s) tempering: mu and J terms, structurally identical
+    // to the h and lmbda terms above (doc/m1_common_factor_swap_weight_derivation.md
+    // section 2). Guarded the same way, so with mu/J untempered (local==partner,
+    // the pre-existing default) this reproduces the two-term formula bit for bit.
+    if (local_mu != partner_mu) {
+        if (local_mu <= 0. || partner_mu <= 0.) {
+            throw std::invalid_argument("PT ladder values must be positive for kink-count exchange weights.");
+        }
+        log_ratio += beta
+            * (local_tuple - partner_tuple)
+            * std::log(partner_mu / local_mu);
+    }
+    if (local_J != partner_J) {
+        log_ratio += (partner_J - local_J) * (local_plaquette - partner_plaquette);
+    }
+    return log_ratio;
 }
 
 template<char Basis, typename LatticeT>
@@ -1771,9 +2057,11 @@ double ExtendedToricCodeQMC<Basis, LatticeT>::validate_parallel_tempering_swap_w
                 metropolis_step(partner_lat, partner_energy, acc_ratio, config.lat_spec.beta, partner_h, 1.0, 1.0, partner_lmbda);
                 if (step % swap_period == 0) {
                     const double cached = parallel_tempering_log_weight_ratio(
-                        local_lat, partner_lat, local_h, partner_h, local_lmbda, partner_lmbda, true);
+                        local_lat, partner_lat, local_h, partner_h, 1.0, 1.0,
+                        local_lmbda, partner_lmbda, 1.0, 1.0, true);
                     const double brute = parallel_tempering_log_weight_ratio(
-                        local_lat, partner_lat, local_h, partner_h, local_lmbda, partner_lmbda, false);
+                        local_lat, partner_lat, local_h, partner_h, 1.0, 1.0,
+                        local_lmbda, partner_lmbda, 1.0, 1.0, false);
                     if (log_weight_trace != nullptr) {
                         log_weight_trace->emplace_back(cached);
                     }
@@ -1785,9 +2073,236 @@ double ExtendedToricCodeQMC<Basis, LatticeT>::validate_parallel_tempering_swap_w
     }
 }
 
+// M2 test scaffolding (see the doc comment on the declaration). Does not modify
+// parallel_tempering_log_weight_ratio; it only calls it, unmodified, and compares
+// its result to an independently-computed expected value.
 template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
-std::tuple<double, double> 
+typename ExtendedToricCodeQMC<Basis, LatticeT>::GeneralizedSwapWeightCheck
+ExtendedToricCodeQMC<Basis, LatticeT>::validate_parallel_tempering_swap_weight_generalized_debug(
+    const Config& config,
+    double local_mu, double partner_mu,
+    double local_J, double partner_J
+) {
+    if constexpr (!std::same_as<LatticeT, Lattice>) {
+        throw std::invalid_argument("Generalized PT swap-weight check is implemented only for the Boost Lattice backend.");
+    } else {
+        if constexpr (Basis != 'z') {
+            throw std::invalid_argument("Generalized PT swap-weight check is implemented only for basis=z.");
+        } else {
+            if (config.pt_spec.ladder_s.size() < 2) {
+                throw std::invalid_argument("Generalized PT swap-weight check requires at least two ladder values.");
+            }
+            const auto& ladder_lmbda = config.pt_spec.ladder_lmbda.empty()
+                ? config.pt_spec.ladder_s : config.pt_spec.ladder_lmbda;
+            if (ladder_lmbda.size() < 2) {
+                throw std::invalid_argument("Generalized PT swap-weight check requires at least two lambda ladder values.");
+            }
+
+            auto rng_a = std::make_shared<RNG>();
+            auto rng_b = std::make_shared<RNG>();
+            rng_a->set_seed(config.sim_spec.seed == 0 ? 17 : config.sim_spec.seed);
+            rng_b->set_seed(config.sim_spec.seed == 0 ? 29 : config.sim_spec.seed + 1);
+            rng->set_seed(config.sim_spec.seed == 0 ? 43 : config.sim_spec.seed + 2);
+            LatticeT local_lat(config.lat_spec, rng_a);
+            LatticeT partner_lat(config.lat_spec, rng_b);
+
+            const double local_h = config.pt_spec.ladder_s[0];
+            const double partner_h = config.pt_spec.ladder_s[1];
+            const double local_lmbda = ladder_lmbda[0];
+            const double partner_lmbda = ladder_lmbda[1];
+
+            double local_energy = total_integrated_pot_energy(local_lat, local_h, local_mu, local_J, local_lmbda);
+            double partner_energy = total_integrated_pot_energy(partner_lat, partner_h, partner_mu, partner_J, partner_lmbda);
+            double acc_ratio = 1.;
+            const std::int64_t steps =
+                std::max(config.sim_spec.N_thermalization, std::int64_t{0})
+                + static_cast<std::int64_t>(std::max(config.sim_spec.N_samples, 1))
+                    * static_cast<std::int64_t>(std::max(config.sim_spec.N_between_samples, 1));
+            for (std::int64_t step = 1; step <= steps; ++step) {
+                metropolis_step(local_lat, local_energy, acc_ratio, config.lat_spec.beta, local_h, local_mu, local_J, local_lmbda);
+                metropolis_step(partner_lat, partner_energy, acc_ratio, config.lat_spec.beta, partner_h, partner_mu, partner_J, partner_lmbda);
+            }
+
+            // Production function, all four couplings (post-M3).
+            const double production = parallel_tempering_log_weight_ratio(
+                local_lat, partner_lat, local_h, partner_h, local_mu, partner_mu,
+                local_lmbda, partner_lmbda, local_J, partner_J, false);
+
+            // Expected: general four-coupling formula, doc/m1_common_factor_swap_weight_derivation.md
+            // section 2, evaluated from-scratch (recompute_*) on the exact final configurations.
+            const double local_single = local_lat.recompute_non_diag_single_energy_z();
+            const double partner_single = partner_lat.recompute_non_diag_single_energy_z();
+            const double local_tuple = local_lat.recompute_non_diag_tuple_energy_z();
+            const double partner_tuple = partner_lat.recompute_non_diag_tuple_energy_z();
+            const double local_edge = local_lat.recompute_total_integrated_edge_energy();
+            const double partner_edge = partner_lat.recompute_total_integrated_edge_energy();
+            const double local_plaquette = local_lat.recompute_total_integrated_plaquette_energy();
+            const double partner_plaquette = partner_lat.recompute_total_integrated_plaquette_energy();
+            const double beta = config.lat_spec.beta;
+
+            double expected = 0.;
+            if (local_h != partner_h) {
+                expected += beta * (local_single - partner_single) * std::log(partner_h / local_h);
+            }
+            if (local_mu != partner_mu) {
+                expected += beta * (local_tuple - partner_tuple) * std::log(partner_mu / local_mu);
+            }
+            if (local_lmbda != partner_lmbda) {
+                expected += (partner_lmbda - local_lmbda) * (local_edge - partner_edge);
+            }
+            if (local_J != partner_J) {
+                expected += (partner_J - local_J) * (local_plaquette - partner_plaquette);
+            }
+
+            return GeneralizedSwapWeightCheck{production, expected};
+        }
+    }
+}
+
+// M3 non-circular checks (see the doc comment on the declaration). Does not call
+// parallel_tempering_log_weight_ratio and does not reuse the M1 derivation's
+// expression.
+template<char Basis, typename LatticeT>
+requires ValidBasis<Basis>
+typename ExtendedToricCodeQMC<Basis, LatticeT>::SingleReplicaDiagnostics
+ExtendedToricCodeQMC<Basis, LatticeT>::validate_single_replica_diagnostics_debug(
+    const Config& config, double h, double mu, double J, double lmbda, double eps
+) {
+    if constexpr (!std::same_as<LatticeT, Lattice>) {
+        throw std::invalid_argument("Single-replica diagnostics are implemented only for the Boost Lattice backend.");
+    } else {
+        if constexpr (Basis != 'z') {
+            throw std::invalid_argument("Single-replica diagnostics are implemented only for basis=z.");
+        } else {
+            auto rng_a = std::make_shared<RNG>();
+            rng_a->set_seed(config.sim_spec.seed == 0 ? 17 : config.sim_spec.seed);
+            rng->set_seed(config.sim_spec.seed == 0 ? 43 : config.sim_spec.seed + 2);
+            LatticeT lat(config.lat_spec, rng_a);
+
+            double energy = total_integrated_pot_energy(lat, h, mu, J, lmbda);
+            double acc_ratio = 1.;
+            const std::int64_t steps =
+                std::max(config.sim_spec.N_thermalization, std::int64_t{0})
+                + static_cast<std::int64_t>(std::max(config.sim_spec.N_samples, 1))
+                    * static_cast<std::int64_t>(std::max(config.sim_spec.N_between_samples, 1));
+            for (std::int64_t step = 1; step <= steps; ++step) {
+                metropolis_step(lat, energy, acc_ratio, config.lat_spec.beta, h, mu, J, lmbda);
+            }
+
+            const double pot_lmbda_plus = total_integrated_pot_energy(lat, h, mu, J, lmbda + eps);
+            const double pot_lmbda_minus = total_integrated_pot_energy(lat, h, mu, J, lmbda - eps);
+            const double finite_diff_dlmbda = (pot_lmbda_plus - pot_lmbda_minus) / (2. * eps);
+
+            const double pot_J_plus = total_integrated_pot_energy(lat, h, mu, J + eps, lmbda);
+            const double pot_J_minus = total_integrated_pot_energy(lat, h, mu, J - eps, lmbda);
+            const double finite_diff_dJ = (pot_J_plus - pot_J_minus) / (2. * eps);
+
+            const double E_edge = lat.cached_total_integrated_edge_energy();
+            const double E_plaquette = lat.cached_total_integrated_plaquette_energy();
+            const double beta = config.lat_spec.beta;
+            const double beta_times_single = beta * lat.get_non_diag_single_energy_z();
+            const double beta_times_tuple = beta * lat.get_non_diag_tuple_energy_z();
+            const auto kLkR = lat.get_kL_kR_single();
+            const double kL_plus_kR_single = kLkR.real() + kLkR.imag();
+            const double recompute_beta_times_tuple = beta * lat.recompute_non_diag_tuple_energy_z();
+
+            return SingleReplicaDiagnostics{
+                finite_diff_dlmbda, finite_diff_dJ, E_edge, E_plaquette,
+                beta_times_single, beta_times_tuple, kL_plus_kR_single, recompute_beta_times_tuple
+            };
+        }
+    }
+}
+
+// M7'' exact-identity check (see the doc comment on the declaration). Does not
+// route any configuration to another rung -- swap acceptance is never applied.
+// Calls the PRODUCTION parallel_tempering_log_weight_ratio directly.
+template<char Basis, typename LatticeT>
+requires ValidBasis<Basis>
+typename ExtendedToricCodeQMC<Basis, LatticeT>::WeightRatioIdentityCheck
+ExtendedToricCodeQMC<Basis, LatticeT>::validate_swap_weight_ratio_identity_debug(
+    const Config& config_i, const Config& config_j
+) {
+    if constexpr (!std::same_as<LatticeT, Lattice>) {
+        throw std::invalid_argument("Weight-ratio identity check is implemented only for the Boost Lattice backend.");
+    } else {
+        if constexpr (Basis != 'z') {
+            throw std::invalid_argument("Weight-ratio identity check is implemented only for basis=z.");
+        } else {
+            auto rng_i = std::make_shared<RNG>();
+            rng_i->set_seed(config_i.sim_spec.seed == 0 ? 17 : static_cast<std::uint64_t>(config_i.sim_spec.seed));
+            auto rng_j = std::make_shared<RNG>();
+            rng_j->set_seed(config_j.sim_spec.seed == 0 ? 29 : static_cast<std::uint64_t>(config_j.sim_spec.seed));
+            LatticeT lat_i(config_i.lat_spec, rng_i);
+            LatticeT lat_j(config_j.lat_spec, rng_j);
+
+            const double h_i = config_i.param_spec.h, mu_i = config_i.param_spec.mu,
+                J_i = config_i.param_spec.J, lmbda_i = config_i.param_spec.lmbda;
+            const double h_j = config_j.param_spec.h, mu_j = config_j.param_spec.mu,
+                J_j = config_j.param_spec.J, lmbda_j = config_j.param_spec.lmbda;
+
+            double energy_i = total_integrated_pot_energy(lat_i, h_i, mu_i, J_i, lmbda_i);
+            double energy_j = total_integrated_pot_energy(lat_j, h_j, mu_j, J_j, lmbda_j);
+            double acc_i = 1., acc_j = 1.;
+
+            // Independent thermalization, no exchange of any kind between the two chains.
+            for (std::int64_t step = 0; step < config_i.sim_spec.N_thermalization; ++step) {
+                metropolis_step(lat_i, energy_i, acc_i, config_i.lat_spec.beta, h_i, mu_i, J_i, lmbda_i);
+            }
+            for (std::int64_t step = 0; step < config_j.sim_spec.N_thermalization; ++step) {
+                metropolis_step(lat_j, energy_j, acc_j, config_j.lat_spec.beta, h_j, mu_j, J_j, lmbda_j);
+            }
+
+            const std::int64_t N = std::max(static_cast<std::int64_t>(config_i.sim_spec.N_samples), std::int64_t{1});
+            const std::int64_t between = std::max(static_cast<std::int64_t>(config_i.sim_spec.N_between_samples), std::int64_t{1});
+
+            std::vector<double> logR;
+            logR.reserve(static_cast<size_t>(N));
+            for (std::int64_t s = 0; s < N; ++s) {
+                for (std::int64_t k = 0; k < between; ++k) {
+                    metropolis_step(lat_i, energy_i, acc_i, config_i.lat_spec.beta, h_i, mu_i, J_i, lmbda_i);
+                    metropolis_step(lat_j, energy_j, acc_j, config_j.lat_spec.beta, h_j, mu_j, J_j, lmbda_j);
+                }
+                // "local" = i, "partner" = j, the exact production function; use_cached
+                // matches how the real inline blocks call it during actual swap checks.
+                const double log_r = parallel_tempering_log_weight_ratio(
+                    lat_i, lat_j, h_i, h_j, mu_i, mu_j, lmbda_i, lmbda_j, J_i, J_j, true);
+                logR.push_back(log_r);
+            }
+
+            std::vector<double> R(logR.size());
+            double acceptance_mean = 0.;
+            for (std::size_t k = 0; k < logR.size(); ++k) {
+                R[k] = std::exp(logR[k]);
+                acceptance_mean += std::min(1.0, R[k]);
+            }
+            acceptance_mean /= static_cast<double>(R.size());
+
+            auto boot_rng = std::make_shared<RNG>();
+            boot_rng->set_seed(config_i.sim_spec.seed == 0 ? 999
+                : static_cast<std::uint64_t>(config_i.sim_spec.seed) + 999);
+            const auto [R_mean, R_sem, R_binder, R_binder_sem] =
+                paratoric::statistics::get_bootstrap_statistics(R, boot_rng);
+            (void)R_binder; (void)R_binder_sem;
+
+            double logR_mean = 0.;
+            for (double v : logR) logR_mean += v;
+            logR_mean /= static_cast<double>(logR.size());
+            double logR_var = 0.;
+            for (double v : logR) logR_var += (v - logR_mean) * (v - logR_mean);
+            logR_var /= static_cast<double>(logR.size() > 1 ? logR.size() - 1 : 1);
+
+            return WeightRatioIdentityCheck{
+                R_mean, R_sem, acceptance_mean, logR_mean, std::sqrt(logR_var), logR.size()
+            };
+        }
+    }
+}
+
+template<char Basis, typename LatticeT>
+requires ValidBasis<Basis>
+std::tuple<double, double>
 ExtendedToricCodeQMC<Basis, LatticeT>::integrated_pot_energy_diff_single_spin_flip_edge(
     LatticeT& lat, double h, double mu, double J, double lmbda, 
     const typename LatticeT::Edge& edg, double imag_time_spin_flip, double imag_time_next_spin_flip, 
@@ -3804,10 +4319,9 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
         if (config.sim_spec.custom_therm) {
             throw std::invalid_argument("Parallel tempering does not support custom_therm.");
         }
-        if (!config.out_spec.restart_from.empty() || !config.out_spec.checkpoint_path.empty()
-            || config.out_spec.checkpoint_every_samples > 0 || config.out_spec.checkpoint_every_seconds > 0) {
-            throw std::invalid_argument("Parallel tempering checkpoint/restart is not implemented yet.");
-        }
+        // M9: checkpoint/restart is now implemented for PT (pt_ladder_index and the
+        // four runtime couplings persist, checkpoint format version 3). The blanket
+        // throw that used to sit here is gone.
         if (config.param_spec.mu != 1.0 || config.param_spec.J != 1.0) {
             throw std::invalid_argument("Parallel tempering ladder requires mu=J=1.");
         }
@@ -3815,6 +4329,12 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
             || (!config.pt_spec.ladder_lmbda.empty()
                 && config.pt_spec.ladder_lmbda.size() != static_cast<size_t>(pt_world_size))) {
             throw std::invalid_argument("PT h and optional lambda ladder sizes must equal the MPI world size.");
+        }
+        if ((!config.pt_spec.ladder_mu.empty()
+                && config.pt_spec.ladder_mu.size() != static_cast<size_t>(pt_world_size))
+            || (!config.pt_spec.ladder_J.empty()
+                && config.pt_spec.ladder_J.size() != static_cast<size_t>(pt_world_size))) {
+            throw std::invalid_argument("PT optional mu/J ladder sizes must equal the MPI world size.");
         }
     }
     const std::int64_t pt_swap_period_moves =
@@ -3852,8 +4372,14 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
         ? (config.pt_spec.ladder_lmbda.empty()
             ? runtime_h : config.pt_spec.ladder_lmbda[static_cast<size_t>(pt_ladder_index)])
         : config.param_spec.lmbda;
-    double runtime_mu = config.param_spec.mu;
-    double runtime_J = config.param_spec.J;
+    // Common-factor tempering: falls back to config.param_spec.mu/.J (unchanged) when
+    // ladder_mu/ladder_J are empty, so untempered runs are bit-for-bit unaffected.
+    double runtime_mu = (pt_enabled && !config.pt_spec.ladder_mu.empty())
+        ? config.pt_spec.ladder_mu[static_cast<size_t>(pt_ladder_index)]
+        : config.param_spec.mu;
+    double runtime_J = (pt_enabled && !config.pt_spec.ladder_J.empty())
+        ? config.pt_spec.ladder_J[static_cast<size_t>(pt_ladder_index)]
+        : config.param_spec.J;
     ParallelTemperingDiagnostics pt_diagnostics{
         .enabled = pt_enabled,
 #ifdef PARATORIC_HAS_MPI
@@ -3866,11 +4392,21 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
         .initial_ladder_index = pt_ladder_index,
         .final_ladder_index = pt_ladder_index,
         .initial_s = runtime_h,
-        .final_s = runtime_h
+        .final_s = runtime_h,
+        .initial_mu = runtime_mu,
+        .final_mu = runtime_mu,
+        .initial_J = runtime_J,
+        .final_J = runtime_J,
+        .initial_lmbda = runtime_lmbda,
+        .final_lmbda = runtime_lmbda
     };
     if (pt_enabled) {
         pt_diagnostics.swap_attempted_by_link.assign(static_cast<size_t>(pt_world_size - 1), 0);
         pt_diagnostics.swap_accepted_by_link.assign(static_cast<size_t>(pt_world_size - 1), 0);
+        // M10: same length as the two counters above, one bin per ladder link.
+        pt_diagnostics.R_count_by_link.assign(static_cast<size_t>(pt_world_size - 1), 0);
+        pt_diagnostics.R_sum_by_link.assign(static_cast<size_t>(pt_world_size - 1), 0.);
+        pt_diagnostics.R_sumsq_by_link.assign(static_cast<size_t>(pt_world_size - 1), 0.);
     }
     
     double integrated_pot_energy = total_integrated_pot_energy(
@@ -3892,6 +4428,24 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
         if (observable_vector.size() != config.sim_spec.observables.size()) {
             throw std::runtime_error("Checkpoint observable count does not match this run.");
         }
+        // M9: restore the ladder position and post-swap runtime couplings a PT run
+        // left off at. A version-2 checkpoint has none of this (has_pt_state stays
+        // false); pt_ladder_index/runtime_h/mu/J/lmbda then keep the values already
+        // computed above (pt_ladder_index = pt_rank, runtime couplings = launch
+        // values) -- exactly today's pre-M9 behaviour, deliberately unchanged for old
+        // files.
+        if (checkpoint_state.has_pt_state) {
+            pt_ladder_index = checkpoint_state.pt_ladder_index;
+            runtime_h = checkpoint_state.runtime_h;
+            runtime_mu = checkpoint_state.runtime_mu;
+            runtime_J = checkpoint_state.runtime_J;
+            runtime_lmbda = checkpoint_state.runtime_lmbda;
+        }
+        pt_diagnostics.initial_ladder_index = pt_ladder_index;
+        pt_diagnostics.initial_s = runtime_h;
+        pt_diagnostics.initial_mu = runtime_mu;
+        pt_diagnostics.initial_J = runtime_J;
+        pt_diagnostics.initial_lmbda = runtime_lmbda;
     } else {
         if (config.sim_spec.custom_therm) {
             // Pre-Thermalization 
@@ -3965,10 +4519,18 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                         ++pt_diagnostics.swap_attempted;
                         double partner_h = 0.;
                         double partner_lmbda = 0.;
+                        double partner_mu = 0.;
+                        double partner_J = 0.;
                         int partner_index = -1;
                         const double local_h = runtime_h;
                         const double local_lmbda = runtime_lmbda;
+                        const double local_mu = runtime_mu;
+                        const double local_J = runtime_J;
                         const int local_index = pt_ladder_index;
+                        // M10 power test for the routing guard: send a ladder index that is not
+                        // the one this rank holds, so the partner's guard has something to catch.
+                        const int sent_index = config.pt_spec.break_routing_for_test
+                            ? local_index + 1 : local_index;
                         mpi_detail::fail_on_mpi_error(
                             MPI_Sendrecv(&local_h, 1, MPI_DOUBLE, partner, 7101,
                                          &partner_h, 1, MPI_DOUBLE, partner, 7101,
@@ -3982,7 +4544,19 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                             "MPI_Sendrecv(local_lmbda)"
                         );
                         mpi_detail::fail_on_mpi_error(
-                            MPI_Sendrecv(&local_index, 1, MPI_INT, partner, 7102,
+                            MPI_Sendrecv(&local_mu, 1, MPI_DOUBLE, partner, 7109,
+                                         &partner_mu, 1, MPI_DOUBLE, partner, 7109,
+                                         MPI_COMM_WORLD, MPI_STATUS_IGNORE),
+                            "MPI_Sendrecv(local_mu)"
+                        );
+                        mpi_detail::fail_on_mpi_error(
+                            MPI_Sendrecv(&local_J, 1, MPI_DOUBLE, partner, 7110,
+                                         &partner_J, 1, MPI_DOUBLE, partner, 7110,
+                                         MPI_COMM_WORLD, MPI_STATUS_IGNORE),
+                            "MPI_Sendrecv(local_J)"
+                        );
+                        mpi_detail::fail_on_mpi_error(
+                            MPI_Sendrecv(&sent_index, 1, MPI_INT, partner, 7102,
                                          &partner_index, 1, MPI_INT, partner, 7102,
                                          MPI_COMM_WORLD, MPI_STATUS_IGNORE),
                             "MPI_Sendrecv(local_index)"
@@ -3991,10 +4565,35 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                         if (link_index >= 0 && link_index < pt_world_size - 1) {
                             ++pt_diagnostics.swap_attempted_by_link[static_cast<size_t>(link_index)];
                         }
+                        // M10 routing guard (Feynman). Always on: four integer comparisons per
+                        // attempt. The Allgather above told this rank which ladder index EVERY
+                        // rank currently holds. If the payload that arrives from `partner` does
+                        // not carry that rank's ladder index, the data came from somewhere other
+                        // than the intended partner, and every number in the weight below belongs
+                        // to the wrong rung. The M4 reverse-move balance check cannot see this,
+                        // because it re-reads the same received values in both directions. A
+                        // two-rung ladder cannot exercise it at all: with one link there is only
+                        // one possible partner, so any routing is trivially correct. This is the
+                        // check that has content once the ladder is wider than two rungs.
+                        if (partner_index != ladder_index_by_rank[static_cast<size_t>(partner)]
+                            || (local_index - partner_index != 1 && partner_index - local_index != 1)) {
+                            throw std::runtime_error(
+                                "PT swap routing check failed: rank " + std::to_string(pt_rank)
+                                + " (ladder index " + std::to_string(local_index)
+                                + ") received ladder index " + std::to_string(partner_index)
+                                + " from rank " + std::to_string(partner)
+                                + ", but the Allgather reported ladder index "
+                                + std::to_string(ladder_index_by_rank[static_cast<size_t>(partner)])
+                                + " for that rank.");
+                        }
                         const double local_single = lat.get_non_diag_single_energy_z();
                         const double local_edge = lat.cached_total_integrated_edge_energy();
+                        const double local_tuple = lat.get_non_diag_tuple_energy_z();
+                        const double local_plaquette = lat.cached_total_integrated_plaquette_energy();
                         double partner_single = 0.;
                         double partner_edge = 0.;
+                        double partner_tuple = 0.;
+                        double partner_plaquette = 0.;
                         mpi_detail::fail_on_mpi_error(
                             MPI_Sendrecv(&local_single, 1, MPI_DOUBLE, partner, 7103,
                                          &partner_single, 1, MPI_DOUBLE, partner, 7103,
@@ -4007,13 +4606,130 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                                          MPI_COMM_WORLD, MPI_STATUS_IGNORE),
                             "MPI_Sendrecv(local_edge)"
                         );
-                        const double log_r = config.lat_spec.beta
+                        mpi_detail::fail_on_mpi_error(
+                            MPI_Sendrecv(&local_tuple, 1, MPI_DOUBLE, partner, 7111,
+                                         &partner_tuple, 1, MPI_DOUBLE, partner, 7111,
+                                         MPI_COMM_WORLD, MPI_STATUS_IGNORE),
+                            "MPI_Sendrecv(local_tuple)"
+                        );
+                        mpi_detail::fail_on_mpi_error(
+                            MPI_Sendrecv(&local_plaquette, 1, MPI_DOUBLE, partner, 7112,
+                                         &partner_plaquette, 1, MPI_DOUBLE, partner, 7112,
+                                         MPI_COMM_WORLD, MPI_STATUS_IGNORE),
+                            "MPI_Sendrecv(local_plaquette)"
+                        );
+                        // M6 follow-up (Feynman): the shared function guards h and mu
+                        // positivity before taking their log (kink-count exchange
+                        // weights); neither inline block had that guard. A hot rung
+                        // with a small or zero coupling sends this log to -inf or NaN
+                        // silently -- nothing throws, the swap just never accepts, or
+                        // accepts on a NaN comparison. Matches the shared function's
+                        // guard exactly; lmbda and J take no log, so they don't need
+                        // it (mirrors the shared function, which doesn't guard them
+                        // either).
+                        if (local_h <= 0. || partner_h <= 0.) {
+                            throw std::invalid_argument("PT ladder values must be positive for kink-count exchange weights.");
+                        }
+                        // M10 power test (Feynman). Exchanges the roles of the RECEIVED
+                        // partner_edge and partner_plaquette values. Those two are the exact pair
+                        // the BLIND SPOT comment below names: both are configuration-attached
+                        // aggregates that arrive over MPI, and the balance check re-reads both in
+                        // the same roles in both directions, so it stays at zero under this
+                        // break. Off by default; a check that does not FAIL with this flag on has
+                        // no power (memory feedback_measure_check_power).
+                        if (config.pt_spec.break_transport_for_test) {
+                            std::swap(partner_edge, partner_plaquette);
+                        }
+                        double log_r = config.lat_spec.beta
                             * (local_single - partner_single) * std::log(partner_h / local_h)
                             + (partner_lmbda - local_lmbda) * (local_edge - partner_edge);
+                        // Common-factor tempering terms; zero contribution (and no new
+                        // floating-point operations) when mu/J are untempered, matching
+                        // the h/lmbda guard pattern above (M1 derivation section 2).
+                        if (local_mu != partner_mu) {
+                            if (local_mu <= 0. || partner_mu <= 0.) {
+                                throw std::invalid_argument("PT ladder values must be positive for kink-count exchange weights.");
+                            }
+                            log_r += config.lat_spec.beta
+                                * (local_tuple - partner_tuple) * std::log(partner_mu / local_mu);
+                        }
+                        if (local_J != partner_J) {
+                            log_r += (partner_J - local_J) * (local_plaquette - partner_plaquette);
+                        }
+                        // M4 reverse-move balance check (debug-mode, guarded by
+                        // validate_swap_weight so it costs nothing when disabled):
+                        // an INDEPENDENTLY re-typed expression, not a call to the
+                        // forward formula with arguments swapped. Configuration-
+                        // attached quantities (local_single/partner_single/
+                        // local_tuple/partner_tuple/local_edge/partner_edge/
+                        // local_plaquette/partner_plaquette) are UNCHANGED, because a
+                        // swap moves coupling assignment, not configuration; only the
+                        // coupling roles (h/mu/lmbda/J) are swapped. If every term is
+                        // correct, log_r_reverse == -log_r exactly, by the same
+                        // algebra as doc/m1_common_factor_swap_weight_derivation.md.
+                        //
+                        // BLIND SPOT (Feynman, M5 review): forward and reverse both
+                        // read the SAME already-exchanged local_*/partner_* values.
+                        // If a quantity were mis-transported -- a wrong MPI tag
+                        // pairing sending local_tuple where local_plaquette is
+                        // expected, say -- both directions would use the same wrong
+                        // number and balance_err would still read zero. This check
+                        // validates the ALGEBRA, not the TRANSPORT. The two-rung
+                        // marginal test at M7 is what covers transport.
+                        if (config.pt_spec.validate_swap_weight) {
+                            double log_r_reverse = config.lat_spec.beta
+                                * (local_single - partner_single) * std::log(local_h / partner_h)
+                                + (local_lmbda - partner_lmbda) * (local_edge - partner_edge);
+                            if (local_mu != partner_mu) {
+                                log_r_reverse += config.lat_spec.beta
+                                    * (local_tuple - partner_tuple) * std::log(local_mu / partner_mu);
+                            }
+                            if (local_J != partner_J) {
+                                log_r_reverse += (local_J - partner_J) * (local_plaquette - partner_plaquette);
+                            }
+                            pt_diagnostics.max_swap_balance_err = std::max(
+                                pt_diagnostics.max_swap_balance_err, std::abs(log_r + log_r_reverse));
+                            // M8 (Feynman): cross-check the inline log_r (what production
+                            // actually executes) against parallel_tempering_log_weight_ratio_from_scalars
+                            // -- the SAME scalar core the shared function (what the debug
+                            // validators and M7'' exercise) delegates to -- on the SAME
+                            // live, MPI-exchanged local_*/partner_* values. There is no
+                            // partner_lat object here (only the scalars came over MPI), so
+                            // this calls the scalar core directly rather than the
+                            // Lattice-object wrapper. Closes the gap M3 found: these were
+                            // two separately hand-maintained copies of the same formula.
+                            const double shared_log_r = parallel_tempering_log_weight_ratio_from_scalars(
+                                config.lat_spec.beta, local_h, partner_h, local_mu, partner_mu,
+                                local_lmbda, partner_lmbda, local_J, partner_J,
+                                local_single, partner_single, local_tuple, partner_tuple,
+                                local_edge, partner_edge, local_plaquette, partner_plaquette);
+                            pt_diagnostics.max_shared_function_deviation = std::max(
+                                pt_diagnostics.max_shared_function_deviation, std::abs(log_r - shared_log_r));
+                        }
+                        // M10 (Feynman): accumulate the exact identity <R> = 1 for this link, with
+                        // R = exp(log_r) assembled from the live MPI-exchanged partner data. This is
+                        // the two-rung identity of M7'' carried into a real ladder of any width, so
+                        // it tests the partner choice, the transport and the algebra together
+                        // (memory reference_pt_swap_weight_identity). It is only an identity while
+                        // each replica stays on its own rung, so it is meaningful with
+                        // never_accept_swaps set. Both ranks of a pair compute the SAME log_r, so
+                        // only the lower rank records and each attempt is counted once.
+                        if (config.pt_spec.validate_swap_weight && pt_rank < partner
+                            && link_index >= 0 && link_index < pt_world_size - 1) {
+                            const double R_value = std::exp(log_r);
+                            const size_t R_bin = static_cast<size_t>(link_index);
+                            ++pt_diagnostics.R_count_by_link[R_bin];
+                            pt_diagnostics.R_sum_by_link[R_bin] += R_value;
+                            pt_diagnostics.R_sumsq_by_link[R_bin] += R_value * R_value;
+                        }
                         int accepted = 0;
                         if (pt_rank < partner) {
                             const double u = std::max(uniform_dist(*rng), std::numeric_limits<double>::min());
                             accepted = (log_r >= 0. || std::log(u) < log_r) ? 1 : 0;
+                            // M10: identity mode still ATTEMPTS every swap and still draws u, so the
+                            // RNG stream is unchanged. It only never ACCEPTS, which keeps every
+                            // replica on its own rung.
+                            if (config.pt_spec.never_accept_swaps) { accepted = 0; }
                             mpi_detail::fail_on_mpi_error(
                                 MPI_Send(&accepted, 1, MPI_INT, partner, 7106, MPI_COMM_WORLD),
                                 "MPI_Send(accepted)"
@@ -4032,6 +4748,8 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                             }
                             runtime_h = partner_h;
                             runtime_lmbda = partner_lmbda;
+                            runtime_mu = partner_mu;
+                            runtime_J = partner_J;
                             pt_ladder_index = partner_index;
                             integrated_pot_energy = total_integrated_pot_energy(
                                 lat, runtime_h, runtime_mu, runtime_J, runtime_lmbda);
@@ -4086,10 +4804,18 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                     ++pt_diagnostics.swap_attempted;
                     double partner_h = 0.;
                     double partner_lmbda = 0.;
+                    double partner_mu = 0.;
+                    double partner_J = 0.;
                     int partner_index = -1;
                     const double local_h = runtime_h;
                     const double local_lmbda = runtime_lmbda;
+                    const double local_mu = runtime_mu;
+                    const double local_J = runtime_J;
                     const int local_index = pt_ladder_index;
+                    // M10 power test for the routing guard: send a ladder index that is not
+                    // the one this rank holds, so the partner's guard has something to catch.
+                    const int sent_index = config.pt_spec.break_routing_for_test
+                        ? local_index + 1 : local_index;
                     mpi_detail::fail_on_mpi_error(
                         MPI_Sendrecv(&local_h, 1, MPI_DOUBLE, partner, 7201,
                                      &partner_h, 1, MPI_DOUBLE, partner, 7201,
@@ -4103,7 +4829,19 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                         "MPI_Sendrecv(local_lmbda)"
                     );
                     mpi_detail::fail_on_mpi_error(
-                        MPI_Sendrecv(&local_index, 1, MPI_INT, partner, 7202,
+                        MPI_Sendrecv(&local_mu, 1, MPI_DOUBLE, partner, 7209,
+                                     &partner_mu, 1, MPI_DOUBLE, partner, 7209,
+                                     MPI_COMM_WORLD, MPI_STATUS_IGNORE),
+                        "MPI_Sendrecv(local_mu)"
+                    );
+                    mpi_detail::fail_on_mpi_error(
+                        MPI_Sendrecv(&local_J, 1, MPI_DOUBLE, partner, 7210,
+                                     &partner_J, 1, MPI_DOUBLE, partner, 7210,
+                                     MPI_COMM_WORLD, MPI_STATUS_IGNORE),
+                        "MPI_Sendrecv(local_J)"
+                    );
+                    mpi_detail::fail_on_mpi_error(
+                        MPI_Sendrecv(&sent_index, 1, MPI_INT, partner, 7202,
                                      &partner_index, 1, MPI_INT, partner, 7202,
                                      MPI_COMM_WORLD, MPI_STATUS_IGNORE),
                         "MPI_Sendrecv(local_index)"
@@ -4112,10 +4850,35 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                     if (link_index >= 0 && link_index < pt_world_size - 1) {
                         ++pt_diagnostics.swap_attempted_by_link[static_cast<size_t>(link_index)];
                     }
+                    // M10 routing guard (Feynman). Always on: four integer comparisons per
+                    // attempt. The Allgather above told this rank which ladder index EVERY
+                    // rank currently holds. If the payload that arrives from `partner` does
+                    // not carry that rank's ladder index, the data came from somewhere other
+                    // than the intended partner, and every number in the weight below belongs
+                    // to the wrong rung. The M4 reverse-move balance check cannot see this,
+                    // because it re-reads the same received values in both directions. A
+                    // two-rung ladder cannot exercise it at all: with one link there is only
+                    // one possible partner, so any routing is trivially correct. This is the
+                    // check that has content once the ladder is wider than two rungs.
+                    if (partner_index != ladder_index_by_rank[static_cast<size_t>(partner)]
+                        || (local_index - partner_index != 1 && partner_index - local_index != 1)) {
+                        throw std::runtime_error(
+                            "PT swap routing check failed: rank " + std::to_string(pt_rank)
+                            + " (ladder index " + std::to_string(local_index)
+                            + ") received ladder index " + std::to_string(partner_index)
+                            + " from rank " + std::to_string(partner)
+                            + ", but the Allgather reported ladder index "
+                            + std::to_string(ladder_index_by_rank[static_cast<size_t>(partner)])
+                            + " for that rank.");
+                    }
                     const double local_single = lat.get_non_diag_single_energy_z();
                     const double local_edge = lat.cached_total_integrated_edge_energy();
+                    const double local_tuple = lat.get_non_diag_tuple_energy_z();
+                    const double local_plaquette = lat.cached_total_integrated_plaquette_energy();
                     double partner_single = 0.;
                     double partner_edge = 0.;
+                    double partner_tuple = 0.;
+                    double partner_plaquette = 0.;
                     mpi_detail::fail_on_mpi_error(
                         MPI_Sendrecv(&local_single, 1, MPI_DOUBLE, partner, 7203,
                                      &partner_single, 1, MPI_DOUBLE, partner, 7203,
@@ -4128,14 +4891,55 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                                      MPI_COMM_WORLD, MPI_STATUS_IGNORE),
                         "MPI_Sendrecv(local_edge)"
                     );
-                    const double log_r = config.lat_spec.beta
+                    mpi_detail::fail_on_mpi_error(
+                        MPI_Sendrecv(&local_tuple, 1, MPI_DOUBLE, partner, 7211,
+                                     &partner_tuple, 1, MPI_DOUBLE, partner, 7211,
+                                     MPI_COMM_WORLD, MPI_STATUS_IGNORE),
+                        "MPI_Sendrecv(local_tuple)"
+                    );
+                    mpi_detail::fail_on_mpi_error(
+                        MPI_Sendrecv(&local_plaquette, 1, MPI_DOUBLE, partner, 7212,
+                                     &partner_plaquette, 1, MPI_DOUBLE, partner, 7212,
+                                     MPI_COMM_WORLD, MPI_STATUS_IGNORE),
+                        "MPI_Sendrecv(local_plaquette)"
+                    );
+                    // M6 follow-up: same positivity guard as the thermalization-loop
+                    // copy of this block (see its comment for why).
+                    if (local_h <= 0. || partner_h <= 0.) {
+                        throw std::invalid_argument("PT ladder values must be positive for kink-count exchange weights.");
+                    }
+                    // M10 power test (Feynman). Exchanges the roles of the RECEIVED
+                    // partner_edge and partner_plaquette values. Those two are the exact pair
+                    // the BLIND SPOT comment below names: both are configuration-attached
+                    // aggregates that arrive over MPI, and the balance check re-reads both in
+                    // the same roles in both directions, so it stays at zero under this
+                    // break. Off by default; a check that does not FAIL with this flag on has
+                    // no power (memory feedback_measure_check_power).
+                    if (config.pt_spec.break_transport_for_test) {
+                        std::swap(partner_edge, partner_plaquette);
+                    }
+                    double log_r = config.lat_spec.beta
                         * (local_single - partner_single) * std::log(partner_h / local_h)
                         + (partner_lmbda - local_lmbda) * (local_edge - partner_edge);
+                    if (local_mu != partner_mu) {
+                        if (local_mu <= 0. || partner_mu <= 0.) {
+                            throw std::invalid_argument("PT ladder values must be positive for kink-count exchange weights.");
+                        }
+                        log_r += config.lat_spec.beta
+                            * (local_tuple - partner_tuple) * std::log(partner_mu / local_mu);
+                    }
+                    if (local_J != partner_J) {
+                        log_r += (partner_J - local_J) * (local_plaquette - partner_plaquette);
+                    }
                     if (config.pt_spec.validate_swap_weight) {
                         const double brute_local_single = lat.recompute_non_diag_single_energy_z();
                         const double brute_local_edge = lat.recompute_total_integrated_edge_energy();
+                        const double brute_local_tuple = lat.recompute_non_diag_tuple_energy_z();
+                        const double brute_local_plaquette = lat.recompute_total_integrated_plaquette_energy();
                         double brute_partner_single = 0.;
                         double brute_partner_edge = 0.;
+                        double brute_partner_tuple = 0.;
+                        double brute_partner_plaquette = 0.;
                         mpi_detail::fail_on_mpi_error(
                             MPI_Sendrecv(&brute_local_single, 1, MPI_DOUBLE, partner, 7205,
                                          &brute_partner_single, 1, MPI_DOUBLE, partner, 7205,
@@ -4148,17 +4952,82 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                                          MPI_COMM_WORLD, MPI_STATUS_IGNORE),
                             "MPI_Sendrecv(brute_local_edge)"
                         );
-                        const double brute_log_r = config.lat_spec.beta
+                        mpi_detail::fail_on_mpi_error(
+                            MPI_Sendrecv(&brute_local_tuple, 1, MPI_DOUBLE, partner, 7213,
+                                         &brute_partner_tuple, 1, MPI_DOUBLE, partner, 7213,
+                                         MPI_COMM_WORLD, MPI_STATUS_IGNORE),
+                            "MPI_Sendrecv(brute_local_tuple)"
+                        );
+                        mpi_detail::fail_on_mpi_error(
+                            MPI_Sendrecv(&brute_local_plaquette, 1, MPI_DOUBLE, partner, 7214,
+                                         &brute_partner_plaquette, 1, MPI_DOUBLE, partner, 7214,
+                                         MPI_COMM_WORLD, MPI_STATUS_IGNORE),
+                            "MPI_Sendrecv(brute_local_plaquette)"
+                        );
+                        double brute_log_r = config.lat_spec.beta
                             * (brute_local_single - brute_partner_single) * std::log(partner_h / local_h)
                             + (partner_lmbda - local_lmbda) * (brute_local_edge - brute_partner_edge);
+                        if (local_mu != partner_mu) {
+                            brute_log_r += config.lat_spec.beta
+                                * (brute_local_tuple - brute_partner_tuple) * std::log(partner_mu / local_mu);
+                        }
+                        if (local_J != partner_J) {
+                            brute_log_r += (partner_J - local_J) * (brute_local_plaquette - brute_partner_plaquette);
+                        }
                         pt_diagnostics.max_swap_log_weight_deviation = std::max(
                             pt_diagnostics.max_swap_log_weight_deviation,
                             std::abs(log_r - brute_log_r));
+                        // M4 reverse-move balance check, independently re-typed (see
+                        // the comment on the thermalization-loop copy of this block
+                        // for the derivation). BLIND SPOT: validates the algebra, not
+                        // the MPI transport -- see that comment for why.
+                        double log_r_reverse = config.lat_spec.beta
+                            * (local_single - partner_single) * std::log(local_h / partner_h)
+                            + (local_lmbda - partner_lmbda) * (local_edge - partner_edge);
+                        if (local_mu != partner_mu) {
+                            log_r_reverse += config.lat_spec.beta
+                                * (local_tuple - partner_tuple) * std::log(local_mu / partner_mu);
+                        }
+                        if (local_J != partner_J) {
+                            log_r_reverse += (local_J - partner_J) * (local_plaquette - partner_plaquette);
+                        }
+                        pt_diagnostics.max_swap_balance_err = std::max(
+                            pt_diagnostics.max_swap_balance_err, std::abs(log_r + log_r_reverse));
+                        // M8: cross-check against the scalar core (see the
+                        // thermalization-loop copy of this block for why there is no
+                        // partner_lat here).
+                        const double shared_log_r = parallel_tempering_log_weight_ratio_from_scalars(
+                            config.lat_spec.beta, local_h, partner_h, local_mu, partner_mu,
+                            local_lmbda, partner_lmbda, local_J, partner_J,
+                            local_single, partner_single, local_tuple, partner_tuple,
+                            local_edge, partner_edge, local_plaquette, partner_plaquette);
+                        pt_diagnostics.max_shared_function_deviation = std::max(
+                            pt_diagnostics.max_shared_function_deviation, std::abs(log_r - shared_log_r));
+                    }
+                    // M10 (Feynman): accumulate the exact identity <R> = 1 for this link, with
+                    // R = exp(log_r) assembled from the live MPI-exchanged partner data. This is
+                    // the two-rung identity of M7'' carried into a real ladder of any width, so
+                    // it tests the partner choice, the transport and the algebra together
+                    // (memory reference_pt_swap_weight_identity). It is only an identity while
+                    // each replica stays on its own rung, so it is meaningful with
+                    // never_accept_swaps set. Both ranks of a pair compute the SAME log_r, so
+                    // only the lower rank records and each attempt is counted once.
+                    if (config.pt_spec.validate_swap_weight && pt_rank < partner
+                        && link_index >= 0 && link_index < pt_world_size - 1) {
+                        const double R_value = std::exp(log_r);
+                        const size_t R_bin = static_cast<size_t>(link_index);
+                        ++pt_diagnostics.R_count_by_link[R_bin];
+                        pt_diagnostics.R_sum_by_link[R_bin] += R_value;
+                        pt_diagnostics.R_sumsq_by_link[R_bin] += R_value * R_value;
                     }
                     int accepted = 0;
                     if (pt_rank < partner) {
                         const double u = std::max(uniform_dist(*rng), std::numeric_limits<double>::min());
                         accepted = (log_r >= 0. || std::log(u) < log_r) ? 1 : 0;
+                        // M10: identity mode still ATTEMPTS every swap and still draws u, so the
+                        // RNG stream is unchanged. It only never ACCEPTS, which keeps every
+                        // replica on its own rung.
+                        if (config.pt_spec.never_accept_swaps) { accepted = 0; }
                         mpi_detail::fail_on_mpi_error(
                             MPI_Send(&accepted, 1, MPI_INT, partner, 7208, MPI_COMM_WORLD),
                             "MPI_Send(accepted)"
@@ -4177,6 +5046,8 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                         }
                         runtime_h = partner_h;
                         runtime_lmbda = partner_lmbda;
+                        runtime_mu = partner_mu;
+                        runtime_J = partner_J;
                         pt_ladder_index = partner_index;
                         integrated_pot_energy = total_integrated_pot_energy(
                             lat, runtime_h, runtime_mu, runtime_J, runtime_lmbda);
@@ -4221,7 +5092,13 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                     .integrated_pot_energy = integrated_pot_energy,
                     .acc_ratio = acc_ratio,
                     .production_acceptance = production_acceptance,
-                    .observable_vector = observable_vector
+                    .observable_vector = observable_vector,
+                    // M9: persist wherever swaps have carried this replica.
+                    .pt_ladder_index = pt_ladder_index,
+                    .runtime_h = runtime_h,
+                    .runtime_mu = runtime_mu,
+                    .runtime_J = runtime_J,
+                    .runtime_lmbda = runtime_lmbda
                 }
             );
         }
@@ -4362,6 +5239,9 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
 
     pt_diagnostics.final_ladder_index = pt_ladder_index;
     pt_diagnostics.final_s = runtime_h;
+    pt_diagnostics.final_mu = runtime_mu;
+    pt_diagnostics.final_J = runtime_J;
+    pt_diagnostics.final_lmbda = runtime_lmbda;
 
     return Result{
         .series=std::move(observable_vector), 

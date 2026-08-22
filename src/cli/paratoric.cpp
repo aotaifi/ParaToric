@@ -62,6 +62,13 @@ int main(int argc, char **argv) {
         int pt_ladder_count;
         double pt_ladder_lmbda_start;
         double pt_ladder_lmbda_end;
+        // Common-factor (beta,s) tempering (M5,
+        // doc/coupled_tempering_implementation_plan.md). Default OFF: with neither
+        // flag given, ladder_mu/ladder_J stay empty and behaviour is unchanged.
+        double pt_ladder_mu_start;
+        double pt_ladder_mu_end;
+        double pt_ladder_J_start;
+        double pt_ladder_J_end;
         double pt_swap_period_sweeps;
         int pt_swap_period = 0;
         bool pt_validate_swap_weight;
@@ -102,6 +109,10 @@ int main(int argc, char **argv) {
         ("pt_ladder_count", po::value(&pt_ladder_count)->default_value(0), "Number of points in evenly spaced PT h and optional lambda ladders.")
         ("pt_ladder_lmbda_start", po::value(&pt_ladder_lmbda_start)->default_value(std::numeric_limits<double>::quiet_NaN()), "Start of an evenly spaced PT lambda ladder.")
         ("pt_ladder_lmbda_end", po::value(&pt_ladder_lmbda_end)->default_value(std::numeric_limits<double>::quiet_NaN()), "End of an evenly spaced PT lambda ladder.")
+        ("pt_ladder_mu_start", po::value(&pt_ladder_mu_start)->default_value(std::numeric_limits<double>::quiet_NaN()), "Start of an evenly spaced PT mu ladder (common-factor tempering). Default off.")
+        ("pt_ladder_mu_end", po::value(&pt_ladder_mu_end)->default_value(std::numeric_limits<double>::quiet_NaN()), "End of an evenly spaced PT mu ladder (common-factor tempering). Default off.")
+        ("pt_ladder_J_start", po::value(&pt_ladder_J_start)->default_value(std::numeric_limits<double>::quiet_NaN()), "Start of an evenly spaced PT J ladder (common-factor tempering). Default off.")
+        ("pt_ladder_J_end", po::value(&pt_ladder_J_end)->default_value(std::numeric_limits<double>::quiet_NaN()), "End of an evenly spaced PT J ladder (common-factor tempering). Default off.")
         ("pt_swap_period_sweeps", po::value(&pt_swap_period_sweeps)->default_value(2.0), "PT neighbor-swap attempt period in sweeps; one sweep is 2*L^2 Metropolis updates.")
         ("pt_swap_period", po::value(&pt_swap_period), "Legacy PT neighbor-swap attempt period in raw Metropolis updates. Do not combine with pt_swap_period_sweeps.")
         ("pt_validate_swap_weight", po::value(&pt_validate_swap_weight)->default_value(false), "Recompute PT swap weights at every swap attempt and record max deviation.")
@@ -227,6 +238,75 @@ int main(int argc, char **argv) {
                 throw std::invalid_argument("pt_ladder_lmbda and pt_ladder must have the same number of values.");
             }
         }
+
+        // Common-factor (beta,s) tempering: mu and J ladders, same pattern as the
+        // lambda ladder above. Default OFF -- neither flag given leaves both vectors
+        // empty, and ParallelTemperingSpec falls back to param_spec.mu/.J unchanged
+        // (M3's bit-for-bit guardrail).
+        const bool has_pt_ladder_mu_start = std::isfinite(pt_ladder_mu_start);
+        const bool has_pt_ladder_mu_end = std::isfinite(pt_ladder_mu_end);
+        if (has_pt_ladder_mu_start != has_pt_ladder_mu_end) {
+            throw std::invalid_argument("pt_ladder_mu_start and pt_ladder_mu_end must be supplied together.");
+        }
+        std::vector<double> pt_ladder_mu;
+        if (has_pt_ladder_mu_start) {
+            if (pt_ladder_count <= 0) {
+                throw std::invalid_argument("pt_ladder_count must be positive with pt_ladder_mu_start and pt_ladder_mu_end.");
+            }
+            pt_ladder_mu.reserve(static_cast<size_t>(pt_ladder_count));
+            if (pt_ladder_count == 1) {
+                pt_ladder_mu.push_back(pt_ladder_mu_start);
+            } else {
+                for (int i = 0; i < pt_ladder_count; ++i) {
+                    const double t = static_cast<double>(i) / static_cast<double>(pt_ladder_count - 1);
+                    pt_ladder_mu.push_back(pt_ladder_mu_start + t * (pt_ladder_mu_end - pt_ladder_mu_start));
+                }
+            }
+            if (std::any_of(pt_ladder_mu.begin(), pt_ladder_mu.end(), [](double m) {
+                    return !std::isfinite(m) || m <= 0.0;
+                })) {
+                throw std::invalid_argument("pt_ladder_mu values must be finite and positive.");
+            }
+            if (pt_ladder.empty()) {
+                throw std::invalid_argument("pt_ladder h values are required with a pt_ladder_mu range.");
+            }
+            if (pt_ladder_mu.size() != pt_ladder.size()) {
+                throw std::invalid_argument("pt_ladder_mu and pt_ladder must have the same number of values.");
+            }
+        }
+
+        const bool has_pt_ladder_J_start = std::isfinite(pt_ladder_J_start);
+        const bool has_pt_ladder_J_end = std::isfinite(pt_ladder_J_end);
+        if (has_pt_ladder_J_start != has_pt_ladder_J_end) {
+            throw std::invalid_argument("pt_ladder_J_start and pt_ladder_J_end must be supplied together.");
+        }
+        std::vector<double> pt_ladder_J;
+        if (has_pt_ladder_J_start) {
+            if (pt_ladder_count <= 0) {
+                throw std::invalid_argument("pt_ladder_count must be positive with pt_ladder_J_start and pt_ladder_J_end.");
+            }
+            pt_ladder_J.reserve(static_cast<size_t>(pt_ladder_count));
+            if (pt_ladder_count == 1) {
+                pt_ladder_J.push_back(pt_ladder_J_start);
+            } else {
+                for (int i = 0; i < pt_ladder_count; ++i) {
+                    const double t = static_cast<double>(i) / static_cast<double>(pt_ladder_count - 1);
+                    pt_ladder_J.push_back(pt_ladder_J_start + t * (pt_ladder_J_end - pt_ladder_J_start));
+                }
+            }
+            if (std::any_of(pt_ladder_J.begin(), pt_ladder_J.end(), [](double j) {
+                    return !std::isfinite(j) || j <= 0.0;
+                })) {
+                throw std::invalid_argument("pt_ladder_J values must be finite and positive.");
+            }
+            if (pt_ladder.empty()) {
+                throw std::invalid_argument("pt_ladder h values are required with a pt_ladder_J range.");
+            }
+            if (pt_ladder_J.size() != pt_ladder.size()) {
+                throw std::invalid_argument("pt_ladder_J and pt_ladder must have the same number of values.");
+            }
+        }
+
         const bool explicit_pt_swap_period_sweeps = vm.count("pt_swap_period_sweeps") > 0
             && !vm["pt_swap_period_sweeps"].defaulted();
         if (vm.count("pt_swap_period") > 0 && explicit_pt_swap_period_sweeps) {
@@ -242,6 +322,8 @@ int main(int argc, char **argv) {
             .enabled = !pt_ladder.empty(),
             .ladder_s = pt_ladder,
             .ladder_lmbda = pt_ladder_lmbda,
+            .ladder_mu = pt_ladder_mu,
+            .ladder_J = pt_ladder_J,
             .swap_period_sweeps = pt_swap_period_sweeps,
             .swap_period = pt_swap_period,
             .validate_swap_weight = pt_validate_swap_weight

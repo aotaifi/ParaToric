@@ -116,9 +116,34 @@ struct ParallelTemperingSpec {
     bool enabled = false;
     std::vector<double> ladder_s{}; // h ladder; retained for backwards compatibility.
     std::vector<double> ladder_lmbda{}; // Empty means use ladder_s (self-dual ladder).
+    // Common-factor (beta,s) tempering (doc/coupled_tempering_implementation_plan.md).
+    // Empty means mu/J are untempered (config.param_spec.mu/.J for every rung), which
+    // reproduces pre-existing behaviour bit for bit -- this is the M3 guardrail.
+    std::vector<double> ladder_mu{};
+    std::vector<double> ladder_J{};
     double swap_period_sweeps = 2.0;
     int swap_period = 0; // Legacy raw Metropolis-move period; 0 means use sweeps.
     bool validate_swap_weight = false;
+    // M10 (Feynman): multi-rank identity mode. Every swap is still ATTEMPTED and every
+    // weight is still assembled from genuinely MPI-transported partner data, but the
+    // swap is never ACCEPTED. Each replica therefore stays on its own rung and
+    // equilibrates there, which is the condition under which the exact identity
+    // <R> = 1 holds (memory reference_pt_swap_weight_identity). That makes the identity
+    // testable at EVERY link of a ladder of any width, not only on a single pair.
+    // Off by default; production never sets it.
+    bool never_accept_swaps = false;
+    // M10 power test. Exchanges the roles of the RECEIVED partner_edge and
+    // partner_plaquette values. That is exactly the mis-transport the M4 reverse-move
+    // balance check is blind to, because that check re-reads the same received values
+    // in both directions (see the BLIND SPOT comment in the swap block). A multi-rank
+    // identity check that does not FAIL under this flag has no power and must not be
+    // trusted. Off by default; production never sets it.
+    bool break_transport_for_test = false;
+    // M10 power test for the routing guard. Sends a ladder index one higher than the
+    // one this rank actually holds, so the value that arrives at the partner no longer
+    // matches what the Allgather reported for this rank. The routing guard must throw.
+    // Off by default; production never sets it.
+    bool break_routing_for_test = false;
 };
 
 /**
@@ -157,13 +182,44 @@ struct ParallelTemperingDiagnostics {
     int rank = 0;
     int initial_ladder_index = 0;
     int final_ladder_index = 0;
-    double initial_s = 0.;
-    double final_s = 0.;
+    double initial_s = 0.; // runtime_h
+    double final_s = 0.;   // runtime_h
+    // M9: the other three runtime couplings, mirroring initial_s/final_s above.
+    // Needed to verify checkpoint restart restores ALL FOUR runtime couplings, not
+    // just h -- initial_s/final_s alone could not distinguish that from a bug that
+    // restored the ladder index and h but left mu/J/lmbda at their launch values.
+    double initial_mu = 0.;
+    double final_mu = 0.;
+    double initial_J = 0.;
+    double final_J = 0.;
+    double initial_lmbda = 0.;
+    double final_lmbda = 0.;
     std::uint64_t swap_attempted = 0;
     std::uint64_t swap_accepted = 0;
     double max_swap_log_weight_deviation = 0.;
+    // M4 reverse-move balance check: |logR_forward + logR_reverse|, max over all
+    // attempted swaps in both the thermalization and production loops. Populated
+    // only when pt_spec.validate_swap_weight is set. See
+    // doc/coupled_tempering_implementation_plan.md M4 and
+    // code_ruby_duy_pinning_lab/worm.update.cpp:832-853 for the pattern.
+    double max_swap_balance_err = 0.;
+    // M8 (Feynman): |inline log_r - parallel_tempering_log_weight_ratio(...)| for the
+    // SAME inputs, max over all attempted swaps in both loops. The shared function is
+    // not what production executes (the two inline blocks are hand-maintained
+    // separate copies, M3/M4); this closes that gap by cross-checking the copy that
+    // runs against the copy the debug validators and M7'' exercise, on the same live
+    // MPI-exchanged data. Populated only when pt_spec.validate_swap_weight is set.
+    double max_shared_function_deviation = 0.;
     std::vector<std::uint64_t> swap_attempted_by_link{};
     std::vector<std::uint64_t> swap_accepted_by_link{};
+    // M10 (Feynman): per-link accumulators for the exact identity <R> = 1, with
+    // R = exp(log_r) built from the live MPI-exchanged partner data. Populated only
+    // when validate_swap_weight is set. Kept PER LINK rather than pooled, so the
+    // per-link table can be printed and a single bad link cannot hide inside a
+    // healthy average.
+    std::vector<std::uint64_t> R_count_by_link{};
+    std::vector<double> R_sum_by_link{};
+    std::vector<double> R_sumsq_by_link{};
     std::vector<int> ladder_index_by_sample{};
 };
 

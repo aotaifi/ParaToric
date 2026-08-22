@@ -1265,6 +1265,56 @@ BOOST_AUTO_TEST_CASE(boost_sample_checkpoint_restart_is_bit_faithful) {
     std::filesystem::remove(checkpoint_path);
 }
 
+// M9 (Feynman): extends the checkpoint restart coverage above to the new PT ladder
+// state fields (pt_ladder_index, runtime_h/mu/J/lmbda), added in checkpoint format
+// version 3. Cannot go through get_sample() with pt_spec.enabled=true here -- PT
+// requires an MPI-enabled build, and this test binary is non-MPI -- so this exercises
+// the write/read serialization directly via checkpoint_pt_state_round_trip_debug.
+// Real multi-rank swap dynamics are covered separately, under mpirun, in
+// m4_smoke/m9_pt_checkpoint_restart.cpp. Real pre-M9-vs-post-M9 file compatibility
+// (requirement 7) is proven empirically in m4_smoke/m9_backward_compat_check.cpp
+// against a checkpoint written by an actual pre-M9 binary -- not asserted here from
+// reading the code.
+BOOST_AUTO_TEST_CASE(boost_sample_checkpoint_pt_state_round_trips) {
+    paratoric::LatSpec lat_spec = {
+        'z', "square", 4, 3., "periodic", 1, "boost"
+    };
+    paratoric::ParamSpec param_spec = {.mu = 0.9, .h = 0.7, .J = 1.1, .lmbda = 0.6};
+    paratoric::SimSpec sim_spec = {
+        .N_samples = 1, .N_thermalization = 1, .N_between_samples = 1,
+        .N_resamples = 1, .seed = 13579, .observables = {"energy"}
+    };
+    paratoric::Config config{
+        sim_spec, param_spec, lat_spec, paratoric::OutSpec{}, paratoric::ParallelTemperingSpec{}
+    };
+
+    const auto checkpoint_path =
+        std::filesystem::temp_directory_path() / "paratoric_pt_checkpoint_state_test.bin";
+    std::filesystem::remove(checkpoint_path);
+
+    // Values distinct from any launch default (mu=0.9 etc above), so a fallback to
+    // launch values would be visibly wrong, not accidentally right.
+    const int written_ladder_index = 2;
+    const double written_h = 0.3141592;
+    const double written_mu = 1.654321;
+    const double written_J = 0.271828;
+    const double written_lmbda = 0.987654;
+
+    auto mc = paratoric::ExtendedToricCodeQMC<'z'>();
+    const auto result = mc.checkpoint_pt_state_round_trip_debug(
+        config, checkpoint_path, written_ladder_index, written_h, written_mu, written_J, written_lmbda
+    );
+
+    BOOST_CHECK(result.has_pt_state);
+    BOOST_CHECK_EQUAL(result.pt_ladder_index, written_ladder_index);
+    BOOST_CHECK_EQUAL(result.runtime_h, written_h);
+    BOOST_CHECK_EQUAL(result.runtime_mu, written_mu);
+    BOOST_CHECK_EQUAL(result.runtime_J, written_J);
+    BOOST_CHECK_EQUAL(result.runtime_lmbda, written_lmbda);
+
+    std::filesystem::remove(checkpoint_path);
+}
+
 BOOST_AUTO_TEST_CASE(boost_pt_swap_weight_matches_bruteforce_l8) {
     paratoric::LatSpec lat_spec = {
         .basis = 'z',
@@ -1496,6 +1546,184 @@ BOOST_AUTO_TEST_CASE(boost_pt_explicit_self_dual_ladders_match_empty_lmbda_fallb
     for (size_t i = 0; i < fallback_trace.size(); ++i) {
         BOOST_CHECK_EQUAL(fallback_trace[i], explicit_trace[i]);
     }
+}
+
+// M2/M3 CONSISTENCY checks, not physics validation. Feynman's correction (relayed
+// 2026-08-18): these compare the production formula against the SAME M1 derivation
+// that M3 implements, so after M3 they compare a formula against itself. They prove a
+// term is not MISSING; they cannot catch a wrong sign, wrong coefficient, or the
+// wrong accessor in the right slot, because both sides would be wrong identically.
+// Before M3 they must FAIL (a term is genuinely missing from the unmodified weight).
+// After M3 they pass, which shows no term is missing -- nothing more. Independent
+// physics validation is in boost_pt_diagonal_terms_match_finite_difference_l8 and
+// boost_pt_off_diagonal_terms_match_raw_kink_counts_l8 below, which do not depend on
+// the M1 derivation at all.
+
+BOOST_AUTO_TEST_CASE(boost_pt_mu_only_swap_weight_matches_m1_consistency_l8) {
+    paratoric::LatSpec lat_spec = {
+        .basis = 'z', .lattice_type = "square", .system_size = 8, .beta = 8.0,
+        .boundaries = "periodic", .default_spin = 1, .lattice_backend = "boost"
+    };
+    paratoric::ParamSpec param_spec = {.mu = 1.0, .h = 0.20, .J = 1.0, .lmbda = 0.25};
+    paratoric::SimSpec sim_spec = {
+        .N_samples = 1, .N_thermalization = 4000, .N_between_samples = 1,
+        .N_resamples = 8, .seed = 24601, .observables = {"energy"}
+    };
+    paratoric::ParallelTemperingSpec pt_spec = {
+        .enabled = true,
+        .ladder_s = {0.20, 0.20},
+        .ladder_lmbda = {0.25, 0.25},
+        .swap_period = 4,
+        .validate_swap_weight = true
+    };
+
+    const auto result = paratoric::ExtendedToricCodeQMC<'z'>()
+        .validate_parallel_tempering_swap_weight_generalized_debug(
+            paratoric::Config{sim_spec, param_spec, lat_spec, paratoric::OutSpec{}, pt_spec},
+            /*local_mu=*/1.0, /*partner_mu=*/1.3, /*local_J=*/1.0, /*partner_J=*/1.0);
+    BOOST_TEST_MESSAGE("mu-only case: production=" << result.production_log_ratio
+        << " m1_derivation=" << result.m1_derivation_log_ratio);
+    // Tolerance, not exact equality: production and the M1 scaffold sum the same
+    // terms in different orders (the scaffold is a straight-line sum; production
+    // interleaves h/lmbda with the new mu/J branches), so a ~1e-15 relative
+    // floating-point difference is expected even when both sides are correct.
+    BOOST_TEST(result.production_log_ratio == result.m1_derivation_log_ratio,
+        boost::test_tools::tolerance(1e-12));
+}
+
+BOOST_AUTO_TEST_CASE(boost_pt_J_only_swap_weight_matches_m1_consistency_l8) {
+    paratoric::LatSpec lat_spec = {
+        .basis = 'z', .lattice_type = "square", .system_size = 8, .beta = 8.0,
+        .boundaries = "periodic", .default_spin = 1, .lattice_backend = "boost"
+    };
+    paratoric::ParamSpec param_spec = {.mu = 1.0, .h = 0.20, .J = 1.0, .lmbda = 0.25};
+    paratoric::SimSpec sim_spec = {
+        .N_samples = 1, .N_thermalization = 4000, .N_between_samples = 1,
+        .N_resamples = 8, .seed = 112358, .observables = {"energy"}
+    };
+    paratoric::ParallelTemperingSpec pt_spec = {
+        .enabled = true,
+        .ladder_s = {0.20, 0.20},
+        .ladder_lmbda = {0.25, 0.25},
+        .swap_period = 4,
+        .validate_swap_weight = true
+    };
+
+    const auto result = paratoric::ExtendedToricCodeQMC<'z'>()
+        .validate_parallel_tempering_swap_weight_generalized_debug(
+            paratoric::Config{sim_spec, param_spec, lat_spec, paratoric::OutSpec{}, pt_spec},
+            /*local_mu=*/1.0, /*partner_mu=*/1.0, /*local_J=*/1.0, /*partner_J=*/1.3);
+    BOOST_TEST_MESSAGE("J-only case: production=" << result.production_log_ratio
+        << " m1_derivation=" << result.m1_derivation_log_ratio);
+    // Tolerance, not exact equality: production and the M1 scaffold sum the same
+    // terms in different orders (the scaffold is a straight-line sum; production
+    // interleaves h/lmbda with the new mu/J branches), so a ~1e-15 relative
+    // floating-point difference is expected even when both sides are correct.
+    BOOST_TEST(result.production_log_ratio == result.m1_derivation_log_ratio,
+        boost::test_tools::tolerance(1e-12));
+}
+
+BOOST_AUTO_TEST_CASE(boost_pt_common_factor_swap_weight_matches_m1_consistency_l8) {
+    paratoric::LatSpec lat_spec = {
+        .basis = 'z', .lattice_type = "square", .system_size = 8, .beta = 8.0,
+        .boundaries = "periodic", .default_spin = 1, .lattice_backend = "boost"
+    };
+    // c_local = 1.0, c_partner = 1.3 applied to (h0=0.20, mu0=1.0, J0=1.0, lmbda0=0.25).
+    paratoric::ParamSpec param_spec = {.mu = 1.0, .h = 0.20, .J = 1.0, .lmbda = 0.25};
+    paratoric::SimSpec sim_spec = {
+        .N_samples = 1, .N_thermalization = 4000, .N_between_samples = 1,
+        .N_resamples = 8, .seed = 271828, .observables = {"energy"}
+    };
+    paratoric::ParallelTemperingSpec pt_spec = {
+        .enabled = true,
+        .ladder_s = {0.20, 0.26},
+        .ladder_lmbda = {0.25, 0.325},
+        .swap_period = 4,
+        .validate_swap_weight = true
+    };
+
+    const auto result = paratoric::ExtendedToricCodeQMC<'z'>()
+        .validate_parallel_tempering_swap_weight_generalized_debug(
+            paratoric::Config{sim_spec, param_spec, lat_spec, paratoric::OutSpec{}, pt_spec},
+            /*local_mu=*/1.0, /*partner_mu=*/1.3, /*local_J=*/1.0, /*partner_J=*/1.3);
+    BOOST_TEST_MESSAGE("common-factor case: production=" << result.production_log_ratio
+        << " m1_derivation=" << result.m1_derivation_log_ratio);
+    // Tolerance, not exact equality: production and the M1 scaffold sum the same
+    // terms in different orders (the scaffold is a straight-line sum; production
+    // interleaves h/lmbda with the new mu/J branches), so a ~1e-15 relative
+    // floating-point difference is expected even when both sides are correct.
+    BOOST_TEST(result.production_log_ratio == result.m1_derivation_log_ratio,
+        boost::test_tools::tolerance(1e-12));
+}
+
+// M3 non-circular check 1/2: diagonal terms (lmbda/edge, J/plaquette) validated
+// against total_integrated_pot_energy(...) by central finite difference on a FIXED
+// configuration. This is the pre-existing Metropolis potential-energy function, not
+// the swap-weight formula or the M1 derivation. total_integrated_pot_energy is affine
+// in lmbda and J holding the lattice fixed (lat.total_integrated_edge_energy() and
+// lat.total_integrated_plaquette_energy() do not depend on the passed-in couplings),
+// so this finite difference is algebraically exact, not merely eps-accurate; a wrong
+// sign or a wrong coefficient in the swap weight's diagonal terms would show up as an
+// exact, not approximate, mismatch here.
+BOOST_AUTO_TEST_CASE(boost_pt_diagonal_terms_match_finite_difference_l8) {
+    paratoric::LatSpec lat_spec = {
+        .basis = 'z', .lattice_type = "square", .system_size = 8, .beta = 8.0,
+        .boundaries = "periodic", .default_spin = 1, .lattice_backend = "boost"
+    };
+    paratoric::ParamSpec param_spec = {.mu = 1.0, .h = 0.20, .J = 1.0, .lmbda = 0.25};
+    paratoric::SimSpec sim_spec = {
+        .N_samples = 1, .N_thermalization = 4000, .N_between_samples = 1,
+        .N_resamples = 8, .seed = 33221, .observables = {"energy"}
+    };
+
+    const auto diag = paratoric::ExtendedToricCodeQMC<'z'>()
+        .validate_single_replica_diagnostics_debug(
+            paratoric::Config{sim_spec, param_spec, lat_spec, paratoric::OutSpec{}, paratoric::ParallelTemperingSpec{}},
+            /*h=*/0.20, /*mu=*/1.0, /*J=*/1.0, /*lmbda=*/0.25, /*eps=*/1e-6);
+    BOOST_TEST_MESSAGE("finite_diff_dlmbda=" << diag.finite_diff_dlmbda << " -E_edge=" << -diag.E_edge);
+    BOOST_TEST_MESSAGE("finite_diff_dJ=" << diag.finite_diff_dJ << " -E_plaquette=" << -diag.E_plaquette);
+    // total_integrated_pot_energy = -lat.total_integrated_edge_energy()*lmbda
+    //     - lat.total_integrated_plaquette_energy()*J (extended_toric_code_qmc.hpp,
+    //     total_integrated_pot_energy, z-basis branch), so d/dlmbda = -E_edge and
+    // d/dJ = -E_plaquette. E_edge/E_plaquette here are the swap weight's own
+    // accessors (cached_total_integrated_edge_energy / _plaquette_energy).
+    BOOST_TEST(diag.finite_diff_dlmbda == -diag.E_edge, boost::test_tools::tolerance(1e-6));
+    BOOST_TEST(diag.finite_diff_dJ == -diag.E_plaquette, boost::test_tools::tolerance(1e-6));
+}
+
+// M3 non-circular check 2/2: off-diagonal (kink-count) terms validated against raw
+// counts, not through the swap-weight formula.
+//  - h/single slot: beta*get_non_diag_single_energy_z() (cached) vs kL+kR from
+//    get_kL_kR_single() -- a pre-existing, independently-implemented public accessor
+//    (written for the Fredenhagen-Marcu estimator; unrelated to this work) that walks
+//    the same single_spin_flips containers by a different code path.
+//  - mu/tuple (star) slot: beta*get_non_diag_tuple_energy_z() (cached) vs
+//    beta*recompute_non_diag_tuple_energy_z() (from-scratch). LIMITATION, stated
+//    plainly: no independently-implemented public counter exists for star flips in
+//    this codebase (unlike single flips), so this is a cache-vs-recompute check, the
+//    same family as the old "bruteforce" test, not a fully independent count. It is
+//    the closest available check for this slot.
+BOOST_AUTO_TEST_CASE(boost_pt_off_diagonal_terms_match_raw_kink_counts_l8) {
+    paratoric::LatSpec lat_spec = {
+        .basis = 'z', .lattice_type = "square", .system_size = 8, .beta = 8.0,
+        .boundaries = "periodic", .default_spin = 1, .lattice_backend = "boost"
+    };
+    paratoric::ParamSpec param_spec = {.mu = 1.0, .h = 0.20, .J = 1.0, .lmbda = 0.25};
+    paratoric::SimSpec sim_spec = {
+        .N_samples = 1, .N_thermalization = 4000, .N_between_samples = 1,
+        .N_resamples = 8, .seed = 55443, .observables = {"energy"}
+    };
+
+    const auto diag = paratoric::ExtendedToricCodeQMC<'z'>()
+        .validate_single_replica_diagnostics_debug(
+            paratoric::Config{sim_spec, param_spec, lat_spec, paratoric::OutSpec{}, paratoric::ParallelTemperingSpec{}},
+            /*h=*/0.20, /*mu=*/1.0, /*J=*/1.0, /*lmbda=*/0.25, /*eps=*/1e-6);
+    BOOST_TEST_MESSAGE("beta_times_single=" << diag.beta_times_single
+        << " kL_plus_kR_single=" << diag.kL_plus_kR_single);
+    BOOST_TEST_MESSAGE("beta_times_tuple=" << diag.beta_times_tuple
+        << " recompute_beta_times_tuple=" << diag.recompute_beta_times_tuple);
+    BOOST_TEST(diag.beta_times_single == diag.kL_plus_kR_single, boost::test_tools::tolerance(1e-9));
+    BOOST_TEST(diag.beta_times_tuple == diag.recompute_beta_times_tuple, boost::test_tools::tolerance(1e-9));
 }
 
 } // namespace paratoric
