@@ -1533,4 +1533,75 @@ BOOST_AUTO_TEST_CASE(percolation_observable_calibration_known_static_configs) {
     report_percolation_readout("dense_random_seed_20260712", dense_random_readout);
 }
 
+// Regression test for the init_potential_energy() aggregate-cache defect
+// (channel entry 2026-08-19i). init_potential_energy() is a full rebuild. It
+// must leave every aggregate cache equal to the recomputed total. The defect
+// zeroed the aggregates and then fed them through DELTA setters that subtract
+// per-element values which were never zeroed, so an aggregate ended up holding
+// sum(new) - sum(old) instead of sum(new).
+//
+// Production reaches this function at edge_count * 100000 moves. No existing
+// test came near that, so the defect stayed invisible. This test calls the
+// function directly and needs no long run.
+
+BOOST_AUTO_TEST_CASE(init_potential_energy_rebuilds_aggregate_caches_z_basis) {
+    LatSpec spec = {
+        'z', // basis
+        "square", // lattice type
+        6, // system size
+        6., // beta
+        "periodic", // boundaries
+        1 // default spin
+    };
+    auto lat = Lattice(spec);
+
+    lat.flip_spin(lat.edge_in_between(0, 1));
+    lat.flip_spin(lat.edge_in_between(2, 3));
+    lat.flip_spin(lat.edge_in_between(7, 8));
+
+    const double true_edge = lat.recompute_total_integrated_edge_energy();
+    const double true_plaquette = lat.recompute_total_integrated_plaquette_energy();
+    BOOST_TEST_MESSAGE("z basis true_edge=" << true_edge
+        << " true_plaquette=" << true_plaquette);
+
+    lat.init_potential_energy();
+
+    BOOST_TEST_MESSAGE("z basis cached_edge=" << lat.cached_total_integrated_edge_energy()
+        << " cached_plaquette=" << lat.cached_total_integrated_plaquette_energy());
+    BOOST_CHECK_SMALL(
+        lat.cached_total_integrated_edge_energy() - true_edge, 1e-9);
+    BOOST_CHECK_SMALL(
+        lat.cached_total_integrated_plaquette_energy() - true_plaquette, 1e-9);
+}
+
+BOOST_AUTO_TEST_CASE(init_potential_energy_rebuilds_aggregate_caches_x_basis) {
+    LatSpec spec = {
+        'x', // basis
+        "square", // lattice type
+        6, // system size
+        6., // beta
+        "periodic", // boundaries
+        1 // default spin
+    };
+    auto lat = Lattice(spec);
+
+    lat.flip_spin(lat.edge_in_between(0, 1));
+    lat.flip_spin(lat.edge_in_between(2, 3));
+    lat.flip_spin(lat.edge_in_between(7, 8));
+
+    const double true_edge = lat.recompute_total_integrated_edge_energy();
+    const double true_star = lat.recompute_total_integrated_star_energy();
+    BOOST_TEST_MESSAGE("x basis true_edge=" << true_edge
+        << " true_star=" << true_star);
+
+    lat.init_potential_energy();
+
+    BOOST_TEST_MESSAGE("x basis cached_edge=" << lat.cached_total_integrated_edge_energy()
+        << " cached_star=" << lat.cached_total_integrated_star_energy());
+    BOOST_CHECK_SMALL(
+        lat.cached_total_integrated_edge_energy() - true_edge, 1e-9);
+    BOOST_CHECK_SMALL(
+        lat.cached_total_integrated_star_energy() - true_star, 1e-9);
+}
+
 } // namespace paratoric

@@ -3049,22 +3049,45 @@ double Lattice::total_integrated_edge_energy_weighted() {
 }
 
 void Lattice::init_potential_energy() {
-    total_integrated_edge_energy_cache_ = 0.;
+    // Fix (entry 2026-08-19i): set_potential_edge_energy/set_potential_plaquette_energy/
+    // set_potential_star_energy are DELTA setters -- they assume, on entry, that the
+    // aggregate cache already equals the sum of the per-element stored values, and
+    // they update both by the same delta to preserve that invariant. This function
+    // is a full rebuild from scratch, and calling those setters right after zeroing
+    // only the AGGREGATE (not the per-element values, which still hold their
+    // pre-rebuild contents) broke that invariant: the aggregate ended up holding
+    // new_total-minus-old_total instead of new_total. Fixed here by writing the
+    // per-element storage directly and accumulating the sum independently, so the
+    // aggregate is assigned the true total in one shot. The setters themselves are
+    // unchanged and remain correct for every other caller.
+    double total_integrated_edge_energy = 0.;
+    for (const auto& edg : egde_cache_) {
+        const double potential_energy = integrated_edge_energy(edg, 0, BETA);
+        g[edg].integrated_edge_energy = potential_energy;
+        total_integrated_edge_energy += potential_energy;
+    }
+    total_integrated_edge_energy_cache_ = total_integrated_edge_energy;
+
     total_integrated_star_energy_cache_ = 0.;
     total_integrated_plaquette_energy_cache_ = 0.;
-    for (const auto& edg : egde_cache_) {
-        set_potential_edge_energy(edg, integrated_edge_energy(edg, 0, BETA));
-    }
     if (BASIS == 'x') {
+        double total_integrated_star_energy = 0.;
         for (size_t star_center = 0; star_center < (size_t)get_vertex_count(); ++star_center) {
             const auto& sedges = get_star_edges(star_center);
-            set_potential_star_energy(star_center, integrated_tuple_energy_single_flips(sedges, 0, BETA));
+            const double potential_energy = integrated_tuple_energy_single_flips(sedges, 0, BETA);
+            g[star_center].integrated_star_energy = potential_energy;
+            total_integrated_star_energy += potential_energy;
         }
+        total_integrated_star_energy_cache_ = total_integrated_star_energy;
     } else {
+        double total_integrated_plaquette_energy = 0.;
         for (size_t plaquette_index = 0; plaquette_index < plaquette_vector.size(); ++plaquette_index) {
             const auto& pedges = get_plaquette_edges(plaquette_index);
-            set_potential_plaquette_energy(plaquette_index, integrated_tuple_energy_single_flips(pedges, 0, BETA));
+            const double potential_energy = integrated_tuple_energy_single_flips(pedges, 0, BETA);
+            integrated_plaquette_energy_vector[plaquette_index] = potential_energy;
+            total_integrated_plaquette_energy += potential_energy;
         }
+        total_integrated_plaquette_energy_cache_ = total_integrated_plaquette_energy;
     }
 }
 
