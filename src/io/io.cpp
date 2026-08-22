@@ -304,6 +304,14 @@ void IO::etc_sample(
         ds_swap_accepted.write(&(pt.swap_accepted), H5::PredType::NATIVE_UINT64);
         auto ds_max_dev = pt_grp.createDataSet("max_swap_log_weight_deviation", H5::PredType::NATIVE_DOUBLE, scalar_space);
         ds_max_dev.write(&(pt.max_swap_log_weight_deviation), H5::PredType::NATIVE_DOUBLE);
+        // M10 (Feynman): these three were computed but never written, so a pilot could
+        // not report them. max_swap_balance_err is the M4 reverse-move check and
+        // max_shared_function_deviation is the M8 inline-versus-core cross-check; both
+        // are required by channel entry 2026-08-22b item 7.
+        auto ds_balance_err = pt_grp.createDataSet("max_swap_balance_err", H5::PredType::NATIVE_DOUBLE, scalar_space);
+        ds_balance_err.write(&(pt.max_swap_balance_err), H5::PredType::NATIVE_DOUBLE);
+        auto ds_shared_dev = pt_grp.createDataSet("max_shared_function_deviation", H5::PredType::NATIVE_DOUBLE, scalar_space);
+        ds_shared_dev.write(&(pt.max_shared_function_deviation), H5::PredType::NATIVE_DOUBLE);
         if (!pt.swap_attempted_by_link.empty()) {
             hsize_t dims[1] = { pt.swap_attempted_by_link.size() };
             H5::DataSpace dataspace{ 1, dims };
@@ -311,6 +319,21 @@ void IO::etc_sample(
                 .write(pt.swap_attempted_by_link.data(), H5::PredType::NATIVE_UINT64);
             pt_grp.createDataSet("swap_accepted_by_link", H5::PredType::NATIVE_UINT64, dataspace)
                 .write(pt.swap_accepted_by_link.data(), H5::PredType::NATIVE_UINT64);
+        }
+        // M10 (Feynman): the per-link accumulators for the exact identity <R> = 1,
+        // R = exp(log_r), built from live MPI-exchanged partner data. Written PER LINK
+        // and never pooled, so a single bad link cannot hide inside a healthy average
+        // (channel 2026-08-22b item 5). Each attempt is recorded by the lower-ranked
+        // member of the pair only, so summing these across ranks double-counts nothing.
+        if (!pt.R_count_by_link.empty()) {
+            hsize_t dims[1] = { pt.R_count_by_link.size() };
+            H5::DataSpace dataspace{ 1, dims };
+            pt_grp.createDataSet("R_count_by_link", H5::PredType::NATIVE_UINT64, dataspace)
+                .write(pt.R_count_by_link.data(), H5::PredType::NATIVE_UINT64);
+            pt_grp.createDataSet("R_sum_by_link", H5::PredType::NATIVE_DOUBLE, dataspace)
+                .write(pt.R_sum_by_link.data(), H5::PredType::NATIVE_DOUBLE);
+            pt_grp.createDataSet("R_sumsq_by_link", H5::PredType::NATIVE_DOUBLE, dataspace)
+                .write(pt.R_sumsq_by_link.data(), H5::PredType::NATIVE_DOUBLE);
         }
         if (!pt.ladder_index_by_sample.empty()) {
             hsize_t dims[1] = { pt.ladder_index_by_sample.size() };

@@ -65,6 +65,8 @@ int main(int argc, char **argv) {
         // Common-factor (beta,s) tempering (M5,
         // doc/coupled_tempering_implementation_plan.md). Default OFF: with neither
         // flag given, ladder_mu/ladder_J stay empty and behaviour is unchanged.
+        std::vector<double> pt_ladder_mu_values;
+        std::vector<double> pt_ladder_J_values;
         double pt_ladder_mu_start;
         double pt_ladder_mu_end;
         double pt_ladder_J_start;
@@ -109,6 +111,8 @@ int main(int argc, char **argv) {
         ("pt_ladder_count", po::value(&pt_ladder_count)->default_value(0), "Number of points in evenly spaced PT h and optional lambda ladders.")
         ("pt_ladder_lmbda_start", po::value(&pt_ladder_lmbda_start)->default_value(std::numeric_limits<double>::quiet_NaN()), "Start of an evenly spaced PT lambda ladder.")
         ("pt_ladder_lmbda_end", po::value(&pt_ladder_lmbda_end)->default_value(std::numeric_limits<double>::quiet_NaN()), "End of an evenly spaced PT lambda ladder.")
+        ("pt_ladder_mu", po::value(&pt_ladder_mu_values)->multitoken(), "Explicit PT mu ladder values, one per rung. Use instead of the evenly spaced pt_ladder_mu_start/end pair when the rungs are NOT evenly spaced -- a geometric (constant-ratio) ladder is the measured optimum, and even spacing puts a bottleneck at the cold end.")
+        ("pt_ladder_J", po::value(&pt_ladder_J_values)->multitoken(), "Explicit PT J ladder values, one per rung. See pt_ladder_mu.")
         ("pt_ladder_mu_start", po::value(&pt_ladder_mu_start)->default_value(std::numeric_limits<double>::quiet_NaN()), "Start of an evenly spaced PT mu ladder (common-factor tempering). Default off.")
         ("pt_ladder_mu_end", po::value(&pt_ladder_mu_end)->default_value(std::numeric_limits<double>::quiet_NaN()), "End of an evenly spaced PT mu ladder (common-factor tempering). Default off.")
         ("pt_ladder_J_start", po::value(&pt_ladder_J_start)->default_value(std::numeric_limits<double>::quiet_NaN()), "Start of an evenly spaced PT J ladder (common-factor tempering). Default off.")
@@ -249,7 +253,23 @@ int main(int argc, char **argv) {
             throw std::invalid_argument("pt_ladder_mu_start and pt_ladder_mu_end must be supplied together.");
         }
         std::vector<double> pt_ladder_mu;
-        if (has_pt_ladder_mu_start) {
+        if (!pt_ladder_mu_values.empty()) {
+            if (has_pt_ladder_mu_start) {
+                throw std::invalid_argument("pt_ladder_mu cannot be combined with pt_ladder_mu_start/pt_ladder_mu_end.");
+            }
+            pt_ladder_mu = pt_ladder_mu_values;
+            if (std::any_of(pt_ladder_mu.begin(), pt_ladder_mu.end(), [](double m) {
+                    return !std::isfinite(m) || m <= 0.0;
+                })) {
+                throw std::invalid_argument("pt_ladder_mu values must be finite and positive.");
+            }
+            if (pt_ladder.empty()) {
+                throw std::invalid_argument("pt_ladder h values are required with pt_ladder_mu.");
+            }
+            if (pt_ladder_mu.size() != pt_ladder.size()) {
+                throw std::invalid_argument("pt_ladder_mu and pt_ladder must have the same number of values.");
+            }
+        } else if (has_pt_ladder_mu_start) {
             if (pt_ladder_count <= 0) {
                 throw std::invalid_argument("pt_ladder_count must be positive with pt_ladder_mu_start and pt_ladder_mu_end.");
             }
@@ -281,7 +301,23 @@ int main(int argc, char **argv) {
             throw std::invalid_argument("pt_ladder_J_start and pt_ladder_J_end must be supplied together.");
         }
         std::vector<double> pt_ladder_J;
-        if (has_pt_ladder_J_start) {
+        if (!pt_ladder_J_values.empty()) {
+            if (has_pt_ladder_J_start) {
+                throw std::invalid_argument("pt_ladder_J cannot be combined with pt_ladder_J_start/pt_ladder_J_end.");
+            }
+            pt_ladder_J = pt_ladder_J_values;
+            if (std::any_of(pt_ladder_J.begin(), pt_ladder_J.end(), [](double j) {
+                    return !std::isfinite(j) || j <= 0.0;
+                })) {
+                throw std::invalid_argument("pt_ladder_J values must be finite and positive.");
+            }
+            if (pt_ladder.empty()) {
+                throw std::invalid_argument("pt_ladder h values are required with pt_ladder_J.");
+            }
+            if (pt_ladder_J.size() != pt_ladder.size()) {
+                throw std::invalid_argument("pt_ladder_J and pt_ladder must have the same number of values.");
+            }
+        } else if (has_pt_ladder_J_start) {
             if (pt_ladder_count <= 0) {
                 throw std::invalid_argument("pt_ladder_count must be positive with pt_ladder_J_start and pt_ladder_J_end.");
             }
