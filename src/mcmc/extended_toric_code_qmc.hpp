@@ -5076,6 +5076,53 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
         }
         pt_diagnostics.ladder_index_by_sample.emplace_back(pt_ladder_index);
 
+        // TELEMETRY (Feynman, 2026-08-22). A tempering run writes its HDF5 only at the
+        // end and has no checkpoint, so a job that overruns its wall limit is a total
+        // loss: jobs 15939774 and 15939776 cost 704 core-hours and produced no file.
+        // This line lets a run be judged, and stopped, while it is still going. It is
+        // printed by the rank that currently holds the COLDEST rung, which is the only
+        // rung we measure, and it carries the two numbers that decide a run: the total
+        // round-trip count and whether the cold-rung observable changes sign.
+        if (!pt_diagnostics.ladder_index_by_sample.empty()) {
+            const size_t n_taken = pt_diagnostics.ladder_index_by_sample.size();
+            const size_t period = 20000;
+            const int cold_index = static_cast<int>(pt_world_size) - 1;
+            if (pt_world_size > 1 && pt_ladder_index == cold_index && n_taken % period == 0) {
+                size_t traverses = 0;
+                int last_end = -1;
+                for (int v : pt_diagnostics.ladder_index_by_sample) {
+                    if (v == 0 || v == cold_index) {
+                        if (last_end != -1 && v != last_end) ++traverses;
+                        last_end = v;
+                    }
+                }
+                double cold_mean = 0.0;
+                size_t n_cold = 0, sign_changes = 0;
+                int prev_sign = 0;
+                if (!observable_vector.empty()) {
+                    for (size_t i = 0; i < observable_vector[0].size(); ++i) {
+                        if (pt_diagnostics.ladder_index_by_sample[i] != cold_index) continue;
+                        const auto& var = observable_vector[0][i];
+                        const double v = std::holds_alternative<double>(var)
+                            ? std::get<double>(var)
+                            : std::get<std::complex<double>>(var).real();
+                        cold_mean += v; ++n_cold;
+                        const int sg = (v > 0) - (v < 0);
+                        if (prev_sign != 0 && sg != 0 && sg != prev_sign) ++sign_changes;
+                        if (sg != 0) prev_sign = sg;
+                    }
+                }
+                std::cout << "PROGRESS samples=" << n_taken
+                          << " swap_attempts=" << pt_diagnostics.swap_attempted
+                          << " traverses=" << traverses
+                          << " round_trips=" << (traverses / 2)
+                          << " cold_n=" << n_cold
+                          << " cold_mean=" << (n_cold ? cold_mean / static_cast<double>(n_cold) : 0.0)
+                          << " cold_sign_changes=" << sign_changes
+                          << std::endl;
+            }
+        }
+
         if (config.out_spec.save_snapshots) {
             lat.update_spin_string();
         }
