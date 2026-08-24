@@ -5085,7 +5085,7 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
         // round-trip count and whether the cold-rung observable changes sign.
         if (!pt_diagnostics.ladder_index_by_sample.empty()) {
             const size_t n_taken = pt_diagnostics.ladder_index_by_sample.size();
-            const size_t period = 20000;
+            const size_t period = 5000;   // 20000 was too coarse: the L=32 probe (12000 samples) printed nothing at all
             const int cold_index = static_cast<int>(pt_world_size) - 1;
             if (pt_world_size > 1 && pt_ladder_index == cold_index && n_taken % period == 0) {
                 size_t traverses = 0;
