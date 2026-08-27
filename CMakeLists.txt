@@ -293,6 +293,14 @@ if(PARATORIC_BUILD_M4_SMOKE)
         ${CMAKE_CURRENT_SOURCE_DIR}/src
     )
 
+    # M9 (Feynman, 2026-08-25): this driver was written but NEVER registered, so it
+    # was never built or run. A 3000 core-hour ladder run must not rely on a restart
+    # path that has never executed.
+    add_executable(m9_pt_checkpoint_restart m4_smoke/m9_pt_checkpoint_restart.cpp)
+    target_link_libraries(m9_pt_checkpoint_restart PRIVATE paratoric::core HDF5::HDF5)
+    target_include_directories(m9_pt_checkpoint_restart
+      PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
     add_executable(m10_multirank_identity m4_smoke/m10_multirank_identity.cpp)
     target_link_libraries(m10_multirank_identity PRIVATE paratoric::core HDF5::HDF5)
     target_include_directories(m10_multirank_identity
