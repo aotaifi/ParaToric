@@ -144,6 +144,10 @@ struct ParallelTemperingSpec {
     // matches what the Allgather reported for this rank. The routing guard must throw.
     // Off by default; production never sets it.
     bool break_routing_for_test = false;
+    // M11 test-only power check: perturb the persisted global checkpoint marker
+    // on rank zero so collective restart validation must reject the file set.
+    // Off by default; production never sets it.
+    bool break_checkpoint_marker_for_test = false;
 };
 
 /**

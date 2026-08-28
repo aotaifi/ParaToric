@@ -1,10 +1,7 @@
-// M9 requirement 7 (Feynman): empirical proof that a checkpoint written by the
-// PRE-M9 code (version 2, no PT ladder state) still loads correctly with the POST-M9
-// code. The checkpoint file this reads, /var/tmp/a.otaifi/m9_checkpoint_test/
-// pre_m9_checkpoint.bin, was produced by literally running the pre-M9 binary (built
-// from a separate git worktree at 8758b9f, the base commit before any of this
-// session's changes) via its CLI -- not hand-constructed, not asserted from reading
-// the code. Same parameters as boost_sample_checkpoint_restart_is_bit_faithful.
+// M11 compatibility check: a legacy version-2 checkpoint (no PT ladder state)
+// still loads correctly with the current code. The fixture path is intentionally
+// external to the repository so it can be supplied by a pre-M9 binary or a
+// byte-for-byte legacy fixture. Same parameters as the plain restart test.
 //
 // No MPI needed (non-PT). Build/run standalone, see other drivers for the link line.
 
@@ -24,7 +21,7 @@ double get_double(const std::variant<std::complex<double>, double>& v) {
 
 int main() {
     const std::filesystem::path pre_m9_checkpoint =
-        "/var/tmp/a.otaifi/m9_checkpoint_test/pre_m9_checkpoint.bin";
+        "/tmp/a.otaifi/m9_checkpoint_test/pre_m9_checkpoint.bin";
     if (!std::filesystem::exists(pre_m9_checkpoint)) {
         std::printf("FAIL: pre-M9 checkpoint file not found at %s\n", pre_m9_checkpoint.c_str());
         return 1;

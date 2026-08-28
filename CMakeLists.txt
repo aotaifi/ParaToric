@@ -301,6 +301,11 @@ if(PARATORIC_BUILD_M4_SMOKE)
     target_include_directories(m9_pt_checkpoint_restart
       PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+    add_executable(m9_backward_compat_check m4_smoke/m9_backward_compat_check.cpp)
+    target_link_libraries(m9_backward_compat_check PRIVATE paratoric::core HDF5::HDF5)
+    target_include_directories(m9_backward_compat_check
+      PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
     add_executable(m10_multirank_identity m4_smoke/m10_multirank_identity.cpp)
     target_link_libraries(m10_multirank_identity PRIVATE paratoric::core HDF5::HDF5)
     target_include_directories(m10_multirank_identity

@@ -46,10 +46,9 @@ namespace paratoric {
 namespace checkpoint_detail {
 
 inline constexpr char SAMPLE_CHECKPOINT_MAGIC[8] = {'P', 'T', 'C', 'K', 'P', 'T', '1', '\0'};
-// M9: version 3 adds the persisted PT ladder position and runtime couplings. Version
-// 2 files (written before this change; some are live on /scratch right now) MUST
-// still load -- see read_sample_checkpoint's version branch.
-inline constexpr std::uint32_t SAMPLE_CHECKPOINT_VERSION = 3;
+// M11: version 4 adds a collective completed-sample marker and cumulative PT
+// diagnostics. Version 2/3 files remain readable through the legacy branches.
+inline constexpr std::uint32_t SAMPLE_CHECKPOINT_VERSION = 4;
 inline constexpr std::uint32_t SAMPLE_CHECKPOINT_MIN_SUPPORTED_VERSION = 2;
 
 template<typename T>
@@ -216,6 +215,124 @@ inline std::vector<std::vector<std::variant<std::complex<double>, double>>> read
         }
     }
     return series;
+}
+
+inline void write_u64_vector(std::ostream& out, const std::vector<std::uint64_t>& values) {
+    const auto size = static_cast<std::uint64_t>(values.size());
+    write_binary(out, size);
+    if (!values.empty()) {
+        out.write(reinterpret_cast<const char*>(values.data()),
+                  static_cast<std::streamsize>(values.size() * sizeof(std::uint64_t)));
+    }
+}
+
+inline std::vector<std::uint64_t> read_u64_vector(std::istream& in) {
+    std::uint64_t size = 0;
+    read_binary(in, size);
+    std::vector<std::uint64_t> values(static_cast<std::size_t>(size));
+    if (!values.empty()) {
+        in.read(reinterpret_cast<char*>(values.data()),
+                static_cast<std::streamsize>(values.size() * sizeof(std::uint64_t)));
+    }
+    return values;
+}
+
+inline void write_double_vector(std::ostream& out, const std::vector<double>& values) {
+    const auto size = static_cast<std::uint64_t>(values.size());
+    write_binary(out, size);
+    if (!values.empty()) {
+        out.write(reinterpret_cast<const char*>(values.data()),
+                  static_cast<std::streamsize>(values.size() * sizeof(double)));
+    }
+}
+
+inline std::vector<double> read_double_vector(std::istream& in) {
+    std::uint64_t size = 0;
+    read_binary(in, size);
+    std::vector<double> values(static_cast<std::size_t>(size));
+    if (!values.empty()) {
+        in.read(reinterpret_cast<char*>(values.data()),
+                static_cast<std::streamsize>(values.size() * sizeof(double)));
+    }
+    return values;
+}
+
+inline void write_int_vector(std::ostream& out, const std::vector<int>& values) {
+    const auto size = static_cast<std::uint64_t>(values.size());
+    write_binary(out, size);
+    if (!values.empty()) {
+        out.write(reinterpret_cast<const char*>(values.data()),
+                  static_cast<std::streamsize>(values.size() * sizeof(int)));
+    }
+}
+
+inline std::vector<int> read_int_vector(std::istream& in) {
+    std::uint64_t size = 0;
+    read_binary(in, size);
+    std::vector<int> values(static_cast<std::size_t>(size));
+    if (!values.empty()) {
+        in.read(reinterpret_cast<char*>(values.data()),
+                static_cast<std::streamsize>(values.size() * sizeof(int)));
+    }
+    return values;
+}
+
+inline void write_pt_diagnostics(std::ostream& out, const ParallelTemperingDiagnostics& diagnostics) {
+    write_binary(out, diagnostics.enabled);
+    write_binary(out, diagnostics.mpi_compiled);
+    write_binary(out, diagnostics.world_size);
+    write_binary(out, diagnostics.rank);
+    write_binary(out, diagnostics.initial_ladder_index);
+    write_binary(out, diagnostics.final_ladder_index);
+    write_binary(out, diagnostics.initial_s);
+    write_binary(out, diagnostics.final_s);
+    write_binary(out, diagnostics.initial_mu);
+    write_binary(out, diagnostics.final_mu);
+    write_binary(out, diagnostics.initial_J);
+    write_binary(out, diagnostics.final_J);
+    write_binary(out, diagnostics.initial_lmbda);
+    write_binary(out, diagnostics.final_lmbda);
+    write_binary(out, diagnostics.swap_attempted);
+    write_binary(out, diagnostics.swap_accepted);
+    write_binary(out, diagnostics.max_swap_log_weight_deviation);
+    write_binary(out, diagnostics.max_swap_balance_err);
+    write_binary(out, diagnostics.max_shared_function_deviation);
+    write_u64_vector(out, diagnostics.swap_attempted_by_link);
+    write_u64_vector(out, diagnostics.swap_accepted_by_link);
+    write_u64_vector(out, diagnostics.R_count_by_link);
+    write_double_vector(out, diagnostics.R_sum_by_link);
+    write_double_vector(out, diagnostics.R_sumsq_by_link);
+    write_int_vector(out, diagnostics.ladder_index_by_sample);
+}
+
+inline ParallelTemperingDiagnostics read_pt_diagnostics(std::istream& in) {
+    ParallelTemperingDiagnostics diagnostics;
+    read_binary(in, diagnostics.enabled);
+    read_binary(in, diagnostics.mpi_compiled);
+    read_binary(in, diagnostics.world_size);
+    read_binary(in, diagnostics.rank);
+    read_binary(in, diagnostics.initial_ladder_index);
+    read_binary(in, diagnostics.final_ladder_index);
+    read_binary(in, diagnostics.initial_s);
+    read_binary(in, diagnostics.final_s);
+    read_binary(in, diagnostics.initial_mu);
+    read_binary(in, diagnostics.final_mu);
+    read_binary(in, diagnostics.initial_J);
+    read_binary(in, diagnostics.final_J);
+    read_binary(in, diagnostics.initial_lmbda);
+    read_binary(in, diagnostics.final_lmbda);
+    read_binary(in, diagnostics.swap_attempted);
+    read_binary(in, diagnostics.swap_accepted);
+    read_binary(in, diagnostics.max_swap_log_weight_deviation);
+    read_binary(in, diagnostics.max_swap_balance_err);
+    read_binary(in, diagnostics.max_shared_function_deviation);
+    diagnostics.swap_attempted_by_link = read_u64_vector(in);
+    diagnostics.swap_accepted_by_link = read_u64_vector(in);
+    diagnostics.R_count_by_link = read_u64_vector(in);
+    diagnostics.R_sum_by_link = read_double_vector(in);
+    diagnostics.R_sumsq_by_link = read_double_vector(in);
+    diagnostics.ladder_index_by_sample = read_int_vector(in);
+    return diagnostics;
 }
 
 } // namespace checkpoint_detail
@@ -597,8 +714,8 @@ class ExtendedToricCodeQMC {
          * read_sample_checkpoint directly, without needing an actual MPI-enabled PT
          * run (write_sample_checkpoint/read_sample_checkpoint are private, and PT
          * itself requires an MPI build, neither of which the non-MPI Boost test
-         * binary can exercise). This tests the NEW serialization code (version-3
-         * fields, the version>=3 read guard) in isolation; it does not exercise real
+         * binary can exercise). This tests the NEW serialization code (version-4
+         * fields and the version>=3 legacy read guard) in isolation; it does not exercise real
          * swap dynamics -- that needs a genuine multi-rank run, done separately in
          * m4_smoke/m9_pt_checkpoint_restart.cpp.
          */
@@ -1026,13 +1143,18 @@ class ExtendedToricCodeQMC {
             // the caller MUST then fall back to the pre-M9 behaviour (pt_ladder_index
             // = pt_rank, runtime couplings = launch values), not assume these fields
             // mean anything. On write, always populated (every write now produces a
-            // version-3 file); has_pt_state is unused on write.
+            // version-4 file); has_pt_state is unused on write.
             bool has_pt_state = false;
             int pt_ladder_index = 0;
             double runtime_h = 0.;
             double runtime_mu = 0.;
             double runtime_J = 0.;
             double runtime_lmbda = 0.;
+            // M11: completed sample count, duplicated explicitly in v4 so all
+            // rank-local files can be checked as one global snapshot on resume.
+            std::int64_t global_checkpoint_marker = 0;
+            bool has_pt_diagnostics = false;
+            ParallelTemperingDiagnostics pt_diagnostics{};
         };
 
         int random_index(int bound) {
@@ -1744,20 +1866,28 @@ void ExtendedToricCodeQMC<Basis, LatticeT>::write_sample_checkpoint(
         checkpoint_detail::write_binary(out, state.acc_ratio);
         checkpoint_detail::write_diagnostics(out, state.production_acceptance);
         checkpoint_detail::write_observable_series(out, state.observable_vector);
+        // M11: completed sample count is the global snapshot marker.
+        checkpoint_detail::write_binary(out, state.global_checkpoint_marker);
         // M9: PT ladder position and post-swap runtime couplings (version 3+).
         checkpoint_detail::write_binary(out, state.pt_ladder_index);
         checkpoint_detail::write_binary(out, state.runtime_h);
         checkpoint_detail::write_binary(out, state.runtime_mu);
         checkpoint_detail::write_binary(out, state.runtime_J);
         checkpoint_detail::write_binary(out, state.runtime_lmbda);
+        // M11: preserve cumulative PT diagnostics and the ladder trace prefix.
+        checkpoint_detail::write_pt_diagnostics(out, state.pt_diagnostics);
         rng->write_state(out);
         out << '\n';
         lat.write_checkpoint_state(out);
 
+        out.flush();
         if (!out) {
             throw std::runtime_error(std::format("Failed while writing checkpoint file \"{}\".", tmp_path));
         }
         out.close();
+        if (out.fail()) {
+            throw std::runtime_error(std::format("Failed while closing checkpoint file \"{}\".", tmp_path));
+        }
         std::filesystem::rename(tmp_path, path);
     }
 }
@@ -1785,9 +1915,7 @@ ExtendedToricCodeQMC<Basis, LatticeT>::read_sample_checkpoint(
         }
         std::uint32_t version = 0;
         checkpoint_detail::read_binary(in, version);
-        // M9: accept version 2 (written before PT ladder state existed -- there are
-        // live files on /scratch right now) as well as the current version 3. A
-        // version bump that rejects old files is a failure of this milestone.
+        // M11: accept legacy version 2/3 files as well as current version 4.
         if (version < checkpoint_detail::SAMPLE_CHECKPOINT_MIN_SUPPORTED_VERSION
             || version > checkpoint_detail::SAMPLE_CHECKPOINT_VERSION) {
             throw std::runtime_error("Unsupported checkpoint version.");
@@ -1842,6 +1970,13 @@ ExtendedToricCodeQMC<Basis, LatticeT>::read_sample_checkpoint(
         checkpoint_detail::read_binary(in, state.acc_ratio);
         checkpoint_detail::read_diagnostics(in, state.production_acceptance);
         state.observable_vector = checkpoint_detail::read_observable_series(in);
+        if (version >= 4) {
+            checkpoint_detail::read_binary(in, state.global_checkpoint_marker);
+        } else {
+            // Legacy files have no explicit marker; completed_samples is the
+            // implicit marker used by the collective legacy-load check.
+            state.global_checkpoint_marker = state.completed_samples;
+        }
         // M9: PT ladder position and runtime couplings, version 3+ only. A version-2
         // file has none of this; state.has_pt_state stays false and the caller falls
         // back to pre-M9 behaviour (pt_ladder_index = pt_rank, runtime couplings =
@@ -1853,6 +1988,10 @@ ExtendedToricCodeQMC<Basis, LatticeT>::read_sample_checkpoint(
             checkpoint_detail::read_binary(in, state.runtime_J);
             checkpoint_detail::read_binary(in, state.runtime_lmbda);
             state.has_pt_state = true;
+        }
+        if (version >= 4) {
+            state.pt_diagnostics = checkpoint_detail::read_pt_diagnostics(in);
+            state.has_pt_diagnostics = true;
         }
         rng->read_state(in);
         in.get();
@@ -4320,7 +4459,7 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
             throw std::invalid_argument("Parallel tempering does not support custom_therm.");
         }
         // M9: checkpoint/restart is now implemented for PT (pt_ladder_index and the
-        // four runtime couplings persist, checkpoint format version 3). The blanket
+        // four runtime couplings persist, checkpoint format version 4). The blanket
         // throw that used to sit here is gone.
         if (config.param_spec.mu != 1.0 || config.param_spec.J != 1.0) {
             throw std::invalid_argument("Parallel tempering ladder requires mu=J=1.");
@@ -4419,6 +4558,49 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
 
     if (!config.out_spec.restart_from.empty()) {
         auto checkpoint_state = read_sample_checkpoint(config.out_spec.restart_from, config, lat);
+        if (pt_enabled) {
+#ifdef PARATORIC_HAS_MPI
+            // A PT checkpoint is a set of rank-local files, so validate the set
+            // before restoring any state or entering the production loop. Version
+            // 2/3 files use completed_samples as an implicit legacy marker; v4
+            // stores the same value explicitly.
+            std::vector<std::int64_t> checkpoint_markers(static_cast<size_t>(pt_world_size));
+            std::vector<std::int64_t> checkpoint_samples(static_cast<size_t>(pt_world_size));
+            mpi_detail::fail_on_mpi_error(
+                MPI_Allgather(&checkpoint_state.global_checkpoint_marker, 1, MPI_INT64_T,
+                              checkpoint_markers.data(), 1, MPI_INT64_T, MPI_COMM_WORLD),
+                "MPI_Allgather(checkpoint marker)"
+            );
+            mpi_detail::fail_on_mpi_error(
+                MPI_Allgather(&checkpoint_state.completed_samples, 1, MPI_INT64_T,
+                              checkpoint_samples.data(), 1, MPI_INT64_T, MPI_COMM_WORLD),
+                "MPI_Allgather(checkpoint completed samples)"
+            );
+            for (int rank = 0; rank < pt_world_size; ++rank) {
+                if (checkpoint_markers[static_cast<size_t>(rank)] != checkpoint_markers.front()
+                    || checkpoint_samples[static_cast<size_t>(rank)] != checkpoint_samples.front()
+                    || checkpoint_markers[static_cast<size_t>(rank)]
+                        != checkpoint_samples[static_cast<size_t>(rank)]) {
+                    throw std::runtime_error(
+                        "PT checkpoint global marker mismatch across rank files; refusing restart."
+                    );
+                }
+            }
+
+            const int restored_ladder_index = checkpoint_state.has_pt_state
+                ? checkpoint_state.pt_ladder_index : pt_rank;
+            std::vector<int> restored_ladder_indices(static_cast<size_t>(pt_world_size));
+            mpi_detail::fail_on_mpi_error(
+                MPI_Allgather(&restored_ladder_index, 1, MPI_INT,
+                              restored_ladder_indices.data(), 1, MPI_INT, MPI_COMM_WORLD),
+                "MPI_Allgather(checkpoint ladder index)"
+            );
+            // This is intentionally at LOAD time, before any production sampling.
+            (void)parallel_tempering_rank_of_ladder_index(restored_ladder_indices);
+#else
+            throw std::invalid_argument("Parallel tempering restart requires an MPI-enabled build.");
+#endif
+        }
         completed_samples = checkpoint_state.completed_samples;
         total_metropolis_step_count = checkpoint_state.production_metropolis_steps;
         integrated_pot_energy = checkpoint_state.integrated_pot_energy;
@@ -4440,6 +4622,24 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
             runtime_mu = checkpoint_state.runtime_mu;
             runtime_J = checkpoint_state.runtime_J;
             runtime_lmbda = checkpoint_state.runtime_lmbda;
+        }
+        if (checkpoint_state.has_pt_diagnostics) {
+            const auto expected_links = static_cast<size_t>(std::max(pt_world_size - 1, 0));
+            const auto& loaded = checkpoint_state.pt_diagnostics;
+            if (pt_enabled && (
+                    loaded.swap_attempted_by_link.size() != expected_links
+                    || loaded.swap_accepted_by_link.size() != expected_links
+                    || loaded.R_count_by_link.size() != expected_links
+                    || loaded.R_sum_by_link.size() != expected_links
+                    || loaded.R_sumsq_by_link.size() != expected_links
+                    || loaded.ladder_index_by_sample.size() != static_cast<size_t>(completed_samples))) {
+                throw std::runtime_error("PT checkpoint diagnostic shapes do not match the MPI world or sample count.");
+            }
+            pt_diagnostics = checkpoint_state.pt_diagnostics;
+            pt_diagnostics.enabled = pt_enabled;
+            pt_diagnostics.mpi_compiled = true;
+            pt_diagnostics.world_size = pt_world_size;
+            pt_diagnostics.rank = pt_rank;
         }
         pt_diagnostics.initial_ladder_index = pt_ladder_index;
         pt_diagnostics.initial_s = runtime_h;
@@ -4776,6 +4976,11 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
         static_cast<std::int64_t>(lat.get_edge_count()) * 100000;
     start_acceptance_diagnostics(production_acceptance, config.out_spec.restart_from.empty());
     auto last_checkpoint_time = std::chrono::steady_clock::now();
+    bool checkpoint_pending = false;
+#ifdef PARATORIC_HAS_MPI
+    const bool checkpointing_enabled = config.out_spec.checkpoint_every_samples > 0
+        || config.out_spec.checkpoint_every_seconds > 0;
+#endif
     pt_diagnostics.ladder_index_by_sample.reserve(sample_count);
 
     for (std::int64_t i = completed_samples; i < config.sim_spec.N_samples; ++i) {
@@ -5128,7 +5333,38 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
         }
 
         completed_samples = i + 1;
-        if (checkpoint_due(config, completed_samples, std::chrono::steady_clock::now(), last_checkpoint_time)) {
+        const auto checkpoint_now = std::chrono::steady_clock::now();
+        bool checkpoint_requested = checkpoint_due(
+            config, completed_samples, checkpoint_now, last_checkpoint_time);
+#ifdef PARATORIC_HAS_MPI
+        if (pt_enabled && checkpointing_enabled) {
+            const int local_request = checkpoint_requested ? 1 : 0;
+            int global_request = 0;
+            mpi_detail::fail_on_mpi_error(
+                MPI_Allreduce(&local_request, &global_request, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD),
+                "MPI_Allreduce(checkpoint request)"
+            );
+            checkpoint_requested = global_request != 0;
+        }
+#endif
+        if (checkpoint_requested) {
+            // Keep the timer synchronized after the collective decision; otherwise
+            // only the first rank whose wall clock fired would reset its timer.
+            last_checkpoint_time = checkpoint_now;
+            checkpoint_pending = true;
+        }
+        const bool at_swap_boundary = !pt_enabled
+            || (total_metropolis_step_count % pt_swap_period_moves == 0);
+        if (checkpoint_pending && (at_swap_boundary || completed_samples == config.sim_spec.N_samples)) {
+#ifdef PARATORIC_HAS_MPI
+            if (pt_enabled) {
+                // All ranks have reached the same completed-sample/swap boundary
+                // before any rank starts serializing its rank-local state.
+                mpi_detail::fail_on_mpi_error(
+                    MPI_Barrier(MPI_COMM_WORLD), "MPI_Barrier(checkpoint)"
+                );
+            }
+#endif
             write_sample_checkpoint(
                 config.out_spec.checkpoint_path,
                 config,
@@ -5145,9 +5381,14 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                     .runtime_h = runtime_h,
                     .runtime_mu = runtime_mu,
                     .runtime_J = runtime_J,
-                    .runtime_lmbda = runtime_lmbda
+                    .runtime_lmbda = runtime_lmbda,
+                    .global_checkpoint_marker = completed_samples
+                        + (pt_enabled && config.pt_spec.break_checkpoint_marker_for_test && pt_rank == 0 ? 1 : 0),
+                    .has_pt_diagnostics = pt_enabled,
+                    .pt_diagnostics = pt_diagnostics
                 }
             );
+            checkpoint_pending = false;
         }
     }
     stop_acceptance_diagnostics();

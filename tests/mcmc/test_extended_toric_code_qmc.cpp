@@ -1266,8 +1266,8 @@ BOOST_AUTO_TEST_CASE(boost_sample_checkpoint_restart_is_bit_faithful) {
 }
 
 // M9 (Feynman): extends the checkpoint restart coverage above to the new PT ladder
-// state fields (pt_ladder_index, runtime_h/mu/J/lmbda), added in checkpoint format
-// version 3. Cannot go through get_sample() with pt_spec.enabled=true here -- PT
+// state fields and version-4 marker/diagnostic state. Cannot go through get_sample()
+// with pt_spec.enabled=true here -- PT
 // requires an MPI-enabled build, and this test binary is non-MPI -- so this exercises
 // the write/read serialization directly via checkpoint_pt_state_round_trip_debug.
 // Real multi-rank swap dynamics are covered separately, under mpirun, in
