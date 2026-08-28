@@ -709,6 +709,114 @@ class ExtendedToricCodeQMC {
         }
 
         /**
+         * @brief Read-only checkpoint extraction for standalone smoke tools.
+         *
+         * The checkpoint header is read once to reconstruct the exact Config
+         * required by read_sample_checkpoint(). The actual checkpoint payload is
+         * then read by that existing loader, including diagnostics, the
+         * variable-length observable series, RNG state, and lattice state. This
+         * helper never opens the checkpoint for writing.
+         */
+        struct CheckpointDumpData {
+            std::uint32_t format_version = 0;
+            std::vector<std::string> observables{};
+            std::int64_t completed_samples = 0;
+            bool has_pt_state = false;
+            int pt_ladder_index = 0;
+            double runtime_h = 0.;
+            double runtime_mu = 0.;
+            double runtime_J = 0.;
+            double runtime_lmbda = 0.;
+            std::vector<std::vector<std::variant<std::complex<double>, double>>> series{};
+        };
+
+        CheckpointDumpData read_checkpoint_for_dump(const std::filesystem::path& path) {
+            if constexpr (!std::same_as<LatticeT, Lattice>) {
+                throw std::invalid_argument("Checkpoint dumping is supported only for the Boost Lattice backend.");
+            } else {
+                std::ifstream header_in(path, std::ios::binary);
+                if (!header_in) {
+                    throw std::runtime_error(std::format("Could not open checkpoint file \"{}\".", path.string()));
+                }
+
+                char magic[sizeof(checkpoint_detail::SAMPLE_CHECKPOINT_MAGIC)]{};
+                header_in.read(magic, sizeof(magic));
+                if (!std::equal(std::begin(magic), std::end(magic),
+                                std::begin(checkpoint_detail::SAMPLE_CHECKPOINT_MAGIC))) {
+                    throw std::runtime_error("Checkpoint magic does not match ParaToric sample checkpoint format.");
+                }
+                std::uint32_t version = 0;
+                checkpoint_detail::read_binary(header_in, version);
+                if (version < checkpoint_detail::SAMPLE_CHECKPOINT_MIN_SUPPORTED_VERSION
+                    || version > checkpoint_detail::SAMPLE_CHECKPOINT_VERSION) {
+                    throw std::runtime_error("Unsupported checkpoint version.");
+                }
+
+                char basis = '\0';
+                int system_size = 0;
+                double beta = 0.;
+                int default_spin = 0;
+                double mu = 0.;
+                double h = 0.;
+                double J = 0.;
+                double lmbda = 0.;
+                int n_between_samples = 0;
+                bool custom_therm = false;
+                checkpoint_detail::read_binary(header_in, basis);
+                const auto lattice_type = checkpoint_detail::read_string(header_in);
+                checkpoint_detail::read_binary(header_in, system_size);
+                checkpoint_detail::read_binary(header_in, beta);
+                const auto boundaries = checkpoint_detail::read_string(header_in);
+                checkpoint_detail::read_binary(header_in, default_spin);
+                const auto lattice_backend = checkpoint_detail::read_string(header_in);
+                checkpoint_detail::read_binary(header_in, mu);
+                checkpoint_detail::read_binary(header_in, h);
+                checkpoint_detail::read_binary(header_in, J);
+                checkpoint_detail::read_binary(header_in, lmbda);
+                checkpoint_detail::read_binary(header_in, n_between_samples);
+                checkpoint_detail::read_binary(header_in, custom_therm);
+                const auto observables = checkpoint_detail::read_string_vector(header_in);
+
+                if (basis != Basis) {
+                    throw std::runtime_error("Checkpoint basis does not match this dumper.");
+                }
+
+                Config config;
+                config.lat_spec = LatSpec{
+                    .basis = basis,
+                    .lattice_type = lattice_type,
+                    .system_size = system_size,
+                    .beta = beta,
+                    .boundaries = boundaries,
+                    .default_spin = default_spin,
+                    .lattice_backend = lattice_backend
+                };
+                config.param_spec = ParamSpec{.mu = mu, .h = h, .J = J, .lmbda = lmbda};
+                // N_samples is absent from the checkpoint header. The existing
+                // loader only uses it as an upper-bound consistency check.
+                config.sim_spec.N_samples = std::numeric_limits<int>::max();
+                config.sim_spec.N_between_samples = n_between_samples;
+                config.sim_spec.custom_therm = custom_therm;
+                config.sim_spec.observables = observables;
+
+                LatticeT lat(config.lat_spec, rng);
+                auto state = read_sample_checkpoint(path, config, lat);
+                return CheckpointDumpData{
+                    .format_version = version,
+                    .observables = observables,
+                    .completed_samples = state.completed_samples,
+                    .has_pt_state = state.has_pt_state,
+                    .pt_ladder_index = state.pt_ladder_index,
+                    .runtime_h = state.runtime_h,
+                    .runtime_mu = state.runtime_mu,
+                    .runtime_J = state.runtime_J,
+                    .runtime_lmbda = state.runtime_lmbda,
+                    .series = std::move(state.observable_vector)
+                };
+            }
+        }
+
+        /**
          * @brief M9 test scaffolding: round-trips the PT ladder state fields
          * (pt_ladder_index, runtime_h/mu/J/lmbda) through write_sample_checkpoint /
          * read_sample_checkpoint directly, without needing an actual MPI-enabled PT
