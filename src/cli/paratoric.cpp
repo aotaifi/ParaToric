@@ -206,9 +206,15 @@ int main(int argc, char **argv) {
             if (!std::is_sorted(pt_ladder.begin(), pt_ladder.end())) {
                 throw std::invalid_argument("pt_ladder values must be sorted in ascending order.");
             }
-            if (std::adjacent_find(pt_ladder.begin(), pt_ladder.end()) != pt_ladder.end()) {
-                throw std::invalid_argument("pt_ladder values must be strictly increasing.");
-            }
+            // RELAXED 2026-09-03 from strictly increasing to NON-DECREASING, so that a
+            // CONSTANT h ladder is legal. That is what a (mu - J) ladder at fixed s needs:
+            // every rung carries the same h, and the tilt lives entirely in mu and J, which
+            // have no sortedness constraint of their own. Descending h still throws, via the
+            // is_sorted check above.
+            // Safe because NOTHING downstream assumes the ladder is strictly increasing:
+            // swap partners are chosen by LADDER INDEX (parallel_tempering_partner_rank),
+            // not by coupling value, and the only is_sorted/lower_bound/binary_search calls
+            // in the engine act on imaginary-time flip lists in flat_square_lattice.hpp.
         }
         const bool has_pt_ladder_lmbda_start = std::isfinite(pt_ladder_lmbda_start);
         const bool has_pt_ladder_lmbda_end = std::isfinite(pt_ladder_lmbda_end);
