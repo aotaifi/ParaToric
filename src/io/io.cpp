@@ -312,6 +312,44 @@ void IO::etc_sample(
         ds_balance_err.write(&(pt.max_swap_balance_err), H5::PredType::NATIVE_DOUBLE);
         auto ds_shared_dev = pt_grp.createDataSet("max_shared_function_deviation", H5::PredType::NATIVE_DOUBLE, scalar_space);
         ds_shared_dev.write(&(pt.max_shared_function_deviation), H5::PredType::NATIVE_DOUBLE);
+
+        // Per-rung ladder provenance (h, lmbda, mu, J), indexed by LADDER INDEX, not by
+        // rank. Purely additive: no existing dataset is changed and no computed value
+        // moves. Written so an intermediate rung's couplings can be read from the file
+        // instead of reconstructed from the submit script on disk.
+        // Each array MIRRORS the runtime resolution at extended_toric_code_qmc.hpp:4617-4629,
+        // so entry k is exactly what rung k ran at. The three defaults DIFFER:
+        //   lmbda: an empty ladder means the h ladder (the self-dual default)
+        //   mu, J: an empty ladder means UNTEMPERED, i.e. the scalar param_spec value
+        // The ladder is global, so every rank writes identical bytes.
+        if (pt.enabled && !config.pt_spec.ladder_s.empty()) {
+            const std::size_t n_rungs = config.pt_spec.ladder_s.size();
+            std::vector<double> ladder_h(config.pt_spec.ladder_s);
+            std::vector<double> ladder_lmbda(n_rungs);
+            std::vector<double> ladder_mu(n_rungs);
+            std::vector<double> ladder_J(n_rungs);
+            for (std::size_t k = 0; k < n_rungs; ++k) {
+                ladder_lmbda[k] = config.pt_spec.ladder_lmbda.empty()
+                    ? config.pt_spec.ladder_s[k]
+                    : config.pt_spec.ladder_lmbda[k];
+                ladder_mu[k] = config.pt_spec.ladder_mu.empty()
+                    ? config.param_spec.mu
+                    : config.pt_spec.ladder_mu[k];
+                ladder_J[k] = config.pt_spec.ladder_J.empty()
+                    ? config.param_spec.J
+                    : config.pt_spec.ladder_J[k];
+            }
+            hsize_t ladder_dims[1] = { static_cast<hsize_t>(n_rungs) };
+            H5::DataSpace ladder_space{ 1, ladder_dims };
+            pt_grp.createDataSet("ladder_h", H5::PredType::NATIVE_DOUBLE, ladder_space)
+                .write(ladder_h.data(), H5::PredType::NATIVE_DOUBLE);
+            pt_grp.createDataSet("ladder_lmbda", H5::PredType::NATIVE_DOUBLE, ladder_space)
+                .write(ladder_lmbda.data(), H5::PredType::NATIVE_DOUBLE);
+            pt_grp.createDataSet("ladder_mu", H5::PredType::NATIVE_DOUBLE, ladder_space)
+                .write(ladder_mu.data(), H5::PredType::NATIVE_DOUBLE);
+            pt_grp.createDataSet("ladder_J", H5::PredType::NATIVE_DOUBLE, ladder_space)
+                .write(ladder_J.data(), H5::PredType::NATIVE_DOUBLE);
+        }
         if (!pt.swap_attempted_by_link.empty()) {
             hsize_t dims[1] = { pt.swap_attempted_by_link.size() };
             H5::DataSpace dataspace{ 1, dims };
