@@ -1210,11 +1210,11 @@ class ExtendedToricCodeQMC {
             {"cube_percolation_probability", "real", cube_percolation_probability},
             {"delta", "real", delta_obs},
             {"delta_tau_avg", "real", delta_tau_avg_obs},
-            {"energy", "real", energy_obs, 0},
-            {"energy_h", "real", energy_h_obs, 0},
-            {"energy_lmbda", "real", energy_lmbda_obs, 0},
-            {"energy_J", "real", energy_J_obs, 0},
-            {"energy_mu", "real", energy_mu_obs, 0},
+            {"energy", "real", energy_obs, 1},
+            {"energy_h", "real", energy_h_obs, 1},
+            {"energy_lmbda", "real", energy_lmbda_obs, 1},
+            {"energy_J", "real", energy_J_obs, 1},
+            {"energy_mu", "real", energy_mu_obs, 1},
             {"fredenhagen_marcu", "fredenhagen_marcu", fredenhagen_marcu_obs},
             {"largest_cluster", "real", largest_cluster_obs},
             {"largest_plaquette_cluster", "real", largest_plaquette_cluster_obs},
@@ -1226,6 +1226,16 @@ class ExtendedToricCodeQMC {
             {"plaquette_z_tau_avg", "real", plaquette_z_tau_avg_obs},
             {"sigma_x", "real", sigma_x_obs},
             {"sigma_x_tau_avg", "real", sigma_x_tau_avg_obs},
+            // c_power is 0 for the four susceptibilities, and that is deliberate.
+            // They are not per-sample quantities: the series recorded here is a raw kink
+            // COUNT, and the susceptibility is built downstream by
+            // bootstrap_offdiag_susceptibility, whose static estimator is
+            //     (Var(k) - <k>) / (beta * Nsites^2 * h^2).
+            // The bare -<k> term makes that inhomogeneous in k, so NO per-sample
+            // multiplier reproduces a clean power of c: measured 2026-09-03, a c=2 rung
+            // moved sigma_z by exactly 4.000 but sigma_x by 4.813. Their c-dependence is
+            // already carried by the h^2 in that denominator. Normalising them would have
+            // to happen AFTER the estimator, which this change does not do.
             {"sigma_x_static_susceptibility", "susceptibility", sigma_x_static_susceptibility_obs, 0},
             // TODO fix
             {"sigma_x_dynamical_susceptibility", "susceptibility", sigma_x_dynamical_susceptibility_obs, 0},
