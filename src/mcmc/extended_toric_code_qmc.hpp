@@ -4950,7 +4950,9 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                         }
                         double log_r = config.lat_spec.beta
                             * (local_single - partner_single) * std::log(partner_h / local_h)
-                            + (partner_lmbda - local_lmbda) * (local_edge - partner_edge);
+                            + (config.pt_spec.break_lmbda_term_for_test
+                                ? 0.
+                                : (partner_lmbda - local_lmbda) * (local_edge - partner_edge));
                         // Common-factor tempering terms; zero contribution (and no new
                         // floating-point operations) when mu/J are untempered, matching
                         // the h/lmbda guard pattern above (M1 derivation section 2).
@@ -5233,7 +5235,9 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                     }
                     double log_r = config.lat_spec.beta
                         * (local_single - partner_single) * std::log(partner_h / local_h)
-                        + (partner_lmbda - local_lmbda) * (local_edge - partner_edge);
+                        + (config.pt_spec.break_lmbda_term_for_test
+                            ? 0.
+                            : (partner_lmbda - local_lmbda) * (local_edge - partner_edge));
                     if (local_mu != partner_mu) {
                         if (local_mu <= 0. || partner_mu <= 0.) {
                             throw std::invalid_argument("PT ladder values must be positive for kink-count exchange weights.");

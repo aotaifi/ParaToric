@@ -319,6 +319,14 @@ if(PARATORIC_BUILD_M4_SMOKE)
         ${CMAKE_CURRENT_SOURCE_DIR}/src
     )
 
+    add_executable(m12_s_ladder_identity m4_smoke/m12_s_ladder_identity.cpp)
+    target_link_libraries(m12_s_ladder_identity PRIVATE paratoric::core HDF5::HDF5)
+    target_include_directories(m12_s_ladder_identity
+      PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+
     add_executable(m7_rung_marginal_test m4_smoke/m7_rung_marginal_test.cpp)
     target_link_libraries(m7_rung_marginal_test PRIVATE paratoric::core HDF5::HDF5)
     target_include_directories(m7_rung_marginal_test

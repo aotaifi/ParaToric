@@ -144,6 +144,12 @@ struct ParallelTemperingSpec {
     // matches what the Allgather reported for this rank. The routing guard must throw.
     // Off by default; production never sets it.
     bool break_routing_for_test = false;
+    // P3 power test for the s-direction ladder (Feynman, channel entry 2026-08-28g
+    // item 9). Drops the lmbda contribution from the swap weight and KEEPS the h
+    // contribution. That is ONE term of the two that a fixed-beta s ladder uses, so a
+    // check that still passes with this flag on has no power over the s direction
+    // (memory feedback_measure_check_power). Off by default; production never sets it.
+    bool break_lmbda_term_for_test = false;
     // M11 test-only power check: perturb the persisted global checkpoint marker
     // on rank zero so collective restart validation must reject the file set.
     // Off by default; production never sets it.
