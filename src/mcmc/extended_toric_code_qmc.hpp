@@ -1237,7 +1237,10 @@ class ExtendedToricCodeQMC {
             // already carried by the h^2 in that denominator. Normalising them would have
             // to happen AFTER the estimator, which this change does not do.
             {"sigma_x_static_susceptibility", "susceptibility", sigma_x_static_susceptibility_obs, 0},
-            // TODO fix
+            // The dynamical pair is worse than the static one: that estimator is a
+            // COVARIANCE, quadratic in the series, so a c=2 rung moved it by c^4 rather
+            // than c^2. A correct fix normalises inside bootstrap_offdiag_susceptibility
+            // where beta and h are already in hand, not here. Deliberate, not pending.
             {"sigma_x_dynamical_susceptibility", "susceptibility", sigma_x_dynamical_susceptibility_obs, 0},
             {"sigma_z", "real", sigma_z_obs},
             {"sigma_z_static_susceptibility", "susceptibility", sigma_z_static_susceptibility_obs, 0},
