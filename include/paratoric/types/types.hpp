@@ -121,6 +121,12 @@ struct ParallelTemperingSpec {
     // reproduces pre-existing behaviour bit for bit -- this is the M3 guardrail.
     std::vector<double> ladder_mu{};
     std::vector<double> ladder_J{};
+    // Common factor c per rung, DECLARED not inferred. Empty means all ones, in which
+    // case every observable is returned bit-for-bit unchanged. When supplied, an
+    // observable with c_power p is divided by c_k^p so rung k reports in c=1 UNITS.
+    // This does NOT make the rungs physically identical: they remain at different
+    // effective temperature. It removes the dimensional scaling only.
+    std::vector<double> ladder_scale{};
     double swap_period_sweeps = 2.0;
     int swap_period = 0; // Legacy raw Metropolis-move period; 0 means use sweeps.
     bool validate_swap_weight = false;

@@ -14,6 +14,7 @@
 #include <boost/container/small_vector.hpp>
 
 #include <algorithm> 
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <concepts>
@@ -42,6 +43,24 @@
 #define UNUSED(expr) do { (void)(expr); } while (0)
 
 namespace paratoric {
+
+// Convert an observable reading on a common-factor rung into c = 1 UNITS by dividing
+// out c^p, where p is the observable's measured c exponent (Obs::c_power).
+// This does NOT make rungs physically identical -- they remain at different effective
+// temperature -- it removes the DIMENSIONAL scaling only. "All rungs now agree" is the
+// misreading to avoid. With c == 1 or p == 0 the value is returned bit-for-bit
+// unchanged, which is why a run that declares no scale is unaffected.
+inline std::variant<std::complex<double>, double>
+pt_apply_c_units(std::variant<std::complex<double>, double> value, double c, int p) {
+    if (p == 0 || c == 1.) {
+        return value;
+    }
+    const double factor = std::pow(c, static_cast<double>(p));
+    if (const double* d = std::get_if<double>(&value)) {
+        return *d / factor;
+    }
+    return std::get<std::complex<double>>(value) / factor;
+}
 
 namespace checkpoint_detail {
 
@@ -1176,6 +1195,12 @@ class ExtendedToricCodeQMC {
                 std::function<
                     std::variant< std::complex<double>, double>(LatticeT&, double, double, double, double)
                 > obs_func;
+                // Power of the common factor c this observable carries, MEASURED (not
+                // assumed) by a three-point harness at c = 0.5, 1, 2: each exponent was
+                // recovered independently from both c=2 and c=0.5 and the two agreed, so
+                // a sign or factor error would have shown as disagreement between them.
+                // 0 means invariant, the default, which covers 18 of the 27 observables.
+                int c_power = 0;
         };
 
         // This vector contains the names of the observables (input as vector of strings: observables) and connects them to the appropriate function.  
@@ -1185,11 +1210,11 @@ class ExtendedToricCodeQMC {
             {"cube_percolation_probability", "real", cube_percolation_probability},
             {"delta", "real", delta_obs},
             {"delta_tau_avg", "real", delta_tau_avg_obs},
-            {"energy", "real", energy_obs},
-            {"energy_h", "real", energy_h_obs},
-            {"energy_lmbda", "real", energy_lmbda_obs},
-            {"energy_J", "real", energy_J_obs},
-            {"energy_mu", "real", energy_mu_obs},
+            {"energy", "real", energy_obs, 0},
+            {"energy_h", "real", energy_h_obs, 0},
+            {"energy_lmbda", "real", energy_lmbda_obs, 0},
+            {"energy_J", "real", energy_J_obs, 0},
+            {"energy_mu", "real", energy_mu_obs, 0},
             {"fredenhagen_marcu", "fredenhagen_marcu", fredenhagen_marcu_obs},
             {"largest_cluster", "real", largest_cluster_obs},
             {"largest_plaquette_cluster", "real", largest_plaquette_cluster_obs},
@@ -1201,13 +1226,13 @@ class ExtendedToricCodeQMC {
             {"plaquette_z_tau_avg", "real", plaquette_z_tau_avg_obs},
             {"sigma_x", "real", sigma_x_obs},
             {"sigma_x_tau_avg", "real", sigma_x_tau_avg_obs},
-            {"sigma_x_static_susceptibility", "susceptibility", sigma_x_static_susceptibility_obs},
+            {"sigma_x_static_susceptibility", "susceptibility", sigma_x_static_susceptibility_obs, 0},
             // TODO fix
-            {"sigma_x_dynamical_susceptibility", "susceptibility", sigma_x_dynamical_susceptibility_obs},
+            {"sigma_x_dynamical_susceptibility", "susceptibility", sigma_x_dynamical_susceptibility_obs, 0},
             {"sigma_z", "real", sigma_z_obs},
-            {"sigma_z_static_susceptibility", "susceptibility", sigma_z_static_susceptibility_obs},
+            {"sigma_z_static_susceptibility", "susceptibility", sigma_z_static_susceptibility_obs, 0},
             // TODO fix
-            {"sigma_z_dynamical_susceptibility", "susceptibility", sigma_z_dynamical_susceptibility_obs},
+            {"sigma_z_dynamical_susceptibility", "susceptibility", sigma_z_dynamical_susceptibility_obs, 0},
             {"staggered_imaginary_times", "real", staggered_imaginary_times_obs},
             {"star_x", "real", star_x_obs},
             {"string_number", "real", string_number_obs}
@@ -4583,11 +4608,74 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
                 && config.pt_spec.ladder_J.size() != static_cast<size_t>(pt_world_size))) {
             throw std::invalid_argument("PT optional mu/J ladder sizes must equal the MPI world size.");
         }
+        // A DECLARED common factor must actually BE the ladder's common factor. c is
+        // never inferred, so a wrong declaration would silently rescale every affected
+        // observable. Verify instead: coupling_k / c_k must be the same for all k, for
+        // each of the four couplings, and throw loudly if it is not. A tilt ladder
+        // declares c=1 everywhere and passes trivially; that is what makes it safe.
+        if (!config.pt_spec.ladder_scale.empty()) {
+            if (config.pt_spec.ladder_scale.size() != static_cast<size_t>(pt_world_size)) {
+                throw std::invalid_argument("PT ladder_scale size must equal the MPI world size.");
+            }
+            const size_t n_sc = config.pt_spec.ladder_scale.size();
+            for (size_t k = 0; k < n_sc; ++k) {
+                if (!(config.pt_spec.ladder_scale[k] > 0.)) {
+                    throw std::invalid_argument("PT ladder_scale entries must be positive.");
+                }
+            }
+            // An all-ones declaration asserts nothing and corrects nothing, so there is
+            // nothing to verify. This is what lets a TILT ladder (h != lmbda, couplings
+            // genuinely varying rung by rung) declare c=1 truthfully and pass. Requiring
+            // coupling_k/c_k to be constant would otherwise REJECT the tilt ladder, which
+            // is the opposite of the intended safety property.
+            const bool scale_is_trivial = std::all_of(
+                config.pt_spec.ladder_scale.begin(), config.pt_spec.ladder_scale.end(),
+                [](double c) { return c == 1.; });
+            if (!scale_is_trivial) {
+                const auto base_at = [&](const std::vector<double>& lad, double fallback, size_t k) {
+                    return (lad.empty() ? fallback : lad[k]) / config.pt_spec.ladder_scale[k];
+                };
+                const std::array<std::pair<const char*, const std::vector<double>*>, 4> arrs{{
+                    {"h", &config.pt_spec.ladder_s},
+                    {"lmbda", config.pt_spec.ladder_lmbda.empty() ? &config.pt_spec.ladder_s
+                                                                  : &config.pt_spec.ladder_lmbda},
+                    {"mu", &config.pt_spec.ladder_mu},
+                    {"J", &config.pt_spec.ladder_J}
+                }};
+                const std::array<double, 4> fallbacks{
+                    config.param_spec.h, config.param_spec.lmbda,
+                    config.param_spec.mu, config.param_spec.J
+                };
+                for (size_t a_i = 0; a_i < arrs.size(); ++a_i) {
+                    const double ref = base_at(*arrs[a_i].second, fallbacks[a_i], 0);
+                    for (size_t k = 1; k < n_sc; ++k) {
+                        const double here = base_at(*arrs[a_i].second, fallbacks[a_i], k);
+                        const double mag = std::max(std::abs(ref), std::abs(here));
+                        if (std::abs(here - ref) > 1e-9 * std::max(mag, 1e-12)) {
+                            throw std::invalid_argument(
+                                std::string("PT ladder_scale does not match the ladder: coupling \"")
+                                + arrs[a_i].first + "\" divided by the declared scale gives "
+                                + std::to_string(ref) + " at rung 0 but " + std::to_string(here)
+                                + " at rung " + std::to_string(k)
+                                + ". A declared common factor must be the ladder's actual common factor.");
+                        }
+                    }
+                }
+            }
+        }
     }
     const std::int64_t pt_swap_period_moves =
         pt_enabled ? parallel_tempering_swap_period_moves(config.pt_spec, config.lat_spec) : 1;
 
     auto obs_func_vec = get_obs_func_vec(config.sim_spec.observables);
+    // Per-observable c exponent, aligned with obs_func_vec by construction.
+    std::vector<int> obs_cpow_vec;
+    obs_cpow_vec.reserve(config.sim_spec.observables.size());
+    for (const auto& want : config.sim_spec.observables) {
+        for (const auto& o : obs_vec) {
+            if (o.obs_name == want) { obs_cpow_vec.push_back(o.c_power); break; }
+        }
+    }
     auto obs_type_vec = get_obs_type_vec(config.sim_spec.observables);
     
     // Vector to store observable results for all snapshots
@@ -5388,7 +5476,11 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
         lat.rotate_imag_time();
         for (size_t k = 0; k < config.sim_spec.observables.size(); k++) {
             observable_vector[k].emplace_back(
-                obs_func_vec[k](lat, runtime_h, runtime_lmbda, runtime_mu, runtime_J)
+                pt_apply_c_units(
+                    obs_func_vec[k](lat, runtime_h, runtime_lmbda, runtime_mu, runtime_J),
+                    config.pt_spec.ladder_scale.empty()
+                        ? 1. : config.pt_spec.ladder_scale[static_cast<size_t>(pt_ladder_index)],
+                    obs_cpow_vec.empty() ? 0 : obs_cpow_vec[k])
             );
         }
         pt_diagnostics.ladder_index_by_sample.emplace_back(pt_ladder_index);

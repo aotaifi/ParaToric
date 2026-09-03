@@ -65,6 +65,7 @@ int main(int argc, char **argv) {
         // Common-factor (beta,s) tempering (M5,
         // doc/coupled_tempering_implementation_plan.md). Default OFF: with neither
         // flag given, ladder_mu/ladder_J stay empty and behaviour is unchanged.
+        std::vector<double> pt_ladder_scale_values;
         std::vector<double> pt_ladder_mu_values;
         std::vector<double> pt_ladder_J_values;
         double pt_ladder_mu_start;
@@ -113,6 +114,7 @@ int main(int argc, char **argv) {
         ("pt_ladder_lmbda_end", po::value(&pt_ladder_lmbda_end)->default_value(std::numeric_limits<double>::quiet_NaN()), "End of an evenly spaced PT lambda ladder.")
         ("pt_ladder_mu", po::value(&pt_ladder_mu_values)->multitoken(), "Explicit PT mu ladder values, one per rung. Use instead of the evenly spaced pt_ladder_mu_start/end pair when the rungs are NOT evenly spaced -- a geometric (constant-ratio) ladder is the measured optimum, and even spacing puts a bottleneck at the cold end.")
         ("pt_ladder_J", po::value(&pt_ladder_J_values)->multitoken(), "Explicit PT J ladder values, one per rung. See pt_ladder_mu.")
+        ("pt_ladder_scale", po::value(&pt_ladder_scale_values)->multitoken(), "Common factor c per rung, DECLARED not inferred. Optional; default all ones, in which case every observable is returned unchanged. When given, an observable is divided by c^p with p its measured c exponent, so each rung reports in c=1 UNITS. It does NOT make the rungs physically identical, they stay at different effective temperature. A mismatch against the actual ladder throws.")
         ("pt_ladder_mu_start", po::value(&pt_ladder_mu_start)->default_value(std::numeric_limits<double>::quiet_NaN()), "Start of an evenly spaced PT mu ladder (common-factor tempering). Default off.")
         ("pt_ladder_mu_end", po::value(&pt_ladder_mu_end)->default_value(std::numeric_limits<double>::quiet_NaN()), "End of an evenly spaced PT mu ladder (common-factor tempering). Default off.")
         ("pt_ladder_J_start", po::value(&pt_ladder_J_start)->default_value(std::numeric_limits<double>::quiet_NaN()), "Start of an evenly spaced PT J ladder (common-factor tempering). Default off.")
@@ -366,6 +368,7 @@ int main(int argc, char **argv) {
             .ladder_lmbda = pt_ladder_lmbda,
             .ladder_mu = pt_ladder_mu,
             .ladder_J = pt_ladder_J,
+            .ladder_scale = pt_ladder_scale_values,
             .swap_period_sweeps = pt_swap_period_sweeps,
             .swap_period = pt_swap_period,
             .validate_swap_weight = pt_validate_swap_weight
