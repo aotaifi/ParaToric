@@ -15,7 +15,7 @@ const esPer = kv.esPerSample ? +kv.esPerSample : 1;
 const beta = L, cfg = new Config(L, beta, { mu: 1, J: 1, h: 0.3391, lmbda: 0.3391 }), rng = new RNG(seed);
 if (kv.start === 'rnd') cfg.randomizeSpins(rng);
 const d = 0.5;
-const par = { worm: arm === 'es', dOpen: d, dTime: d, dHop: d, pTime: .35, pHop: .25, pUnhop: .25, pClose: .1, pSwap: .05 };
+const par = { worm: arm === 'es', alphaS: kv.alphaS ? +kv.alphaS : 0, alphaT: kv.alphaT ? +kv.alphaT : 0, dOpen: d, dTime: d, dHop: d, pTime: .35, pHop: .25, pUnhop: .25, pClose: .1, pSwap: .05 };
 par.C = 1 / (par.pClose * cfg.nP * beta * 2 * d);
 const es = () => esStep(cfg, () => rng.uniform(), par);
 const OBS = ['plaquette', 'star', 'sigx', 'sigz', 'energy'];

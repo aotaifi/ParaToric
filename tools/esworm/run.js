@@ -23,7 +23,7 @@ function runSim(p) { // p: {L,beta,mu,J,h,lmbda,nTherm,nSamples,nBetween,seed,st
     const { esStep } = require('./esworm.js');
     const d = Math.min(0.5, 0.45 * p.beta);
     const par = { worm: p.es.mode !== 'sw', dOpen: d, dTime: d, dHop: d, pTime: 0.35, pHop: 0.25, pUnhop: 0.25, pClose: 0.1, pSwap: 0.05,
-      bugHop: !!p.es.bugHop, brokenNf: !!p.es.brokenNf, bondFactor: p.es.bondFactor || 1, debug: !!p.es.debug };
+      alphaS: p.es.alphaS || 0, alphaT: p.es.alphaT || 0, bugHop: !!p.es.bugHop, brokenNf: !!p.es.brokenNf, bondFactor: p.es.bondFactor || 1, debug: !!p.es.debug };
     par.C = 1 / ((par.pClose / 1.0) * cfg.nP * p.beta * 2 * par.dOpen);
     cfg.esStats = { calls: 0, opened: 0, closed: 0, wormSteps: 0 };
     cfg.pExtra = p.es.pExtra;

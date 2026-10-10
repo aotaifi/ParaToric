@@ -231,6 +231,11 @@ function esStep(cfg, rng, par) {
     const ev = p => { if (!pe.has(p)) { pe.set(p, plaqEvents(cfg, K, p)); b0.set(p, plaqB0(cfg, p)); } return pe.get(p); };
     const bval = p => (b0.get(p) * (bflip[p] ? -1 : 1));
     const flipArc = (p, t, u) => -2 * J * arcIntegral(ev(p), bval(p), beta, t, u); // dlogW for flipping B_p on the arc
+    // guidance weight of open states, f = exp(-aS*dSpace(head,tail) - aT*dTime(head,tail)); open states are auxiliary,
+    // so any f keeps detailed balance; it keeps worms compact so they rarely tangle with electric clusters
+    const aS = par.alphaS || 0, aT = par.alphaT || 0, L = cfg.L;
+    const dcirc = (a, b, n) => { const d = Math.abs(a - b) % n; return Math.min(d, n - d); };
+    const logf = (hp, ht, tp, tt2) => -aS * (dcirc(hp % L, tp % L, L) + dcirc(Math.floor(hp / L), Math.floor(tp / L), L)) - aT * dcirc(ht, tt2, beta);
     // open
     for (const d of [par.dOpen, par.dTime, par.dHop]) if (!(d > 0 && d < beta / 2)) throw new Error('esStep: windows must lie in (0, beta/2)');
     const sel = [par.pTime, par.pHop, par.pUnhop, par.pClose, par.pSwap]; const selSum = sel.reduce((a, b) => a + b, 0);
@@ -238,7 +243,7 @@ function esStep(cfg, rng, par) {
     const p0 = Math.floor(rng() * nP), tt = rng() * beta, u0 = (2 * rng() - 1) * par.dOpen;
     const selOpen = 1; // open is attempted once per esStep
     let dlog = flipArc(p0, tt, u0);
-    let R = par.C * Math.exp(dlog) / Nf0 * pCloseN / (selOpen / (nP * beta * 2 * par.dOpen));
+    let R = par.C * Math.exp(dlog + logf(p0, mod(tt + u0, beta), p0, tt)) / Nf0 * pCloseN / (selOpen / (nP * beta * 2 * par.dOpen));
     if (Nf0 > 0 && rng() < R) {
       stats.opened = 1;
       // apply open
@@ -251,7 +256,8 @@ function esStep(cfg, rng, par) {
         let r = rng() * selSum, mv = 0; while (r >= sel[mv]) { r -= sel[mv]; mv++; }
         if (mv === 0) { // time shift of head
           const u = (2 * rng() - 1) * par.dTime; const d = flipArc(head.p, head.t, u);
-          if (rng() < Math.exp(d)) { const evh = ev(head.p); removeSorted(evh, head.t); const nt = mod(head.t + u, beta); insertSorted(evh, nt);
+          const df = logf(head.p, mod(head.t + u, beta), tail.p, tail.t) - logf(head.p, head.t, tail.p, tail.t);
+          if (rng() < Math.exp(d + df)) { const evh = ev(head.p); removeSorted(evh, head.t); const nt = mod(head.t + u, beta); insertSorted(evh, nt);
             if (crosses0(head.t, u, beta)) bflip[head.p] ^= 1; head.t = nt; logWopen += d; }
         } else if (mv === 1) { // hop: kink at t' = head.t + u on edge e, head moves to the other plaquette at head.t
           const e = cfg.plaq[head.p][Math.floor(rng() * 4)]; const [pa, pb] = cfg.edgePlaq[e]; const p2 = pa === head.p ? pb : pa;
@@ -262,7 +268,7 @@ function esStep(cfg, rng, par) {
           const d2 = flipArc(p2, head.t, u);
           // n_win after insertion: kinks on e within distance dHop of head.t
           const nwin = countWindow(K[e], head.t, par.dHop, beta) + 1;
-          const Rh = h * Math.exp(d1 + d2) * (par.bugHop ? 1 : 2 * par.dHop / nwin) * (par.pUnhop / par.pHop); // bugHop: broken-arm test only
+          const Rh = h * Math.exp(d1 + d2 + logf(p2, head.t, tail.p, tail.t) - logf(head.p, head.t, tail.p, tail.t)) * (par.bugHop ? 1 : 2 * par.dHop / nwin) * (par.pUnhop / par.pHop); // bugHop: broken-arm test only
           if (rng() < Rh) {
             cow(e); insertSorted(K[e], tk);
             const e1 = ev(head.p); removeSorted(e1, head.t); insertSorted(e1, tk); if (crosses0(head.t, u, beta)) bflip[head.p] ^= 1;
@@ -276,7 +282,7 @@ function esStep(cfg, rng, par) {
           let u = tk - head.t; if (u > beta / 2) u -= beta; if (u < -beta / 2) u += beta; // signed short arc head.t -> tk
           // removing the kink: B_head.p flipped on arc (tk, head.t) and B_p2 flipped on the same arc
           const d1 = flipArc(head.p, head.t, u), d2 = flipArc(p2, head.t, u);
-          const Ru = Math.exp(d1 + d2) / h * (par.pHop / (2 * par.dHop)) / (par.pUnhop / nwin);
+          const Ru = Math.exp(d1 + d2 + logf(p2, head.t, tail.p, tail.t) - logf(head.p, head.t, tail.p, tail.t)) / h * (par.pHop / (2 * par.dHop)) / (par.pUnhop / nwin);
           if (rng() < Ru) {
             cow(e); removeSorted(K[e], tk);
             const e1 = ev(head.p); removeSorted(e1, head.t); removeSorted(e1, tk); if (crosses0(head.t, u, beta)) bflip[head.p] ^= 1;
@@ -293,7 +299,7 @@ function esStep(cfg, rng, par) {
           const ex1 = existence(cfg, B, K, Q); stats.closeTries = (stats.closeTries || 0) + 1; if (ex1.Nf === 0) stats.closeInfeasible = (stats.closeInfeasible || 0) + 1;
           const Nf1 = par.brokenNf ? (ex1.Nf > 0 ? 1 : 0) : ex1.Nf;
           if (Nf1 === 0) continue;
-          const Rc = Nf1 * Math.exp(d) / par.C * (selOpen / (nP * beta * 2 * par.dOpen)) / pCloseN;
+          const Rc = Nf1 * Math.exp(d - logf(head.p, head.t, tail.p, tail.t)) / par.C * (selOpen / (nP * beta * 2 * par.dOpen)) / pCloseN;
           // Rc relative to the open state; the open-state weight is C*W_m(open), closed is W_m*Nf
           if (rng() < Rc) {
             const evt = ev(tail.p); removeSorted(evt, tail.t); removeSorted(evt, head.t); Qfinal = Q; stats.closed = 1; stats.Nf1 = ex1.Nf;
