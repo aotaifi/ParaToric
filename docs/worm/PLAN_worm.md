@@ -14,8 +14,12 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
 2. **Swendsen-Wang for the classical Z2 gauge-Higgs model** (hypothesis, ~30%, ~8 days). Needs PI approval: it is a
    change of formulation (classical, SSN-style). Kill test: z_eff(12->24) > 1.5 or gain at L=24 < 10x per CPU.
 3. **ES-dressed vison worm** (section 7 of the report): SW bonds for the Higgs term make the vison membrane free;
-   residual constraint = no linking with electric-cluster cycles. Odds ~25% (>10x at L>=32). Stage 0' kill test 2 days, no jobs.
-   Recommended next step if the PI wants to pursue flux moves at all.
+   residual constraint = no linking with electric-cluster cycles. Odds ~35% (>10x at L>=32), revised after stage 0'.
+   - Stage 0' PASSED 2026-10-10: area cost of vison loops 0.39 -> 0.005-0.009 per cell (kill line 0.03); report
+     section 8; /scratch/a/A.Otaifi/paratoric/es_stage0_20261010/; tools/es_stage0/ on branch worm/es-stage0 (f86f8d2).
+   - Next: stage 1 (update type 7 = electric SW + constrained vison worm; L=3 ED validation; tau per CPU L=16/24/32).
+     Needs PI approval (production source). Budget 8-12 days + ~300 core-h.
+     Fail: gain at L=24 < 3, or gain(32)/gain(16) < 2.
 
 ## Measured / derived inputs
 - <sigma^z> = 0.238 (L=24), 0.237 (L=16) at s*, derived from measured energies,
