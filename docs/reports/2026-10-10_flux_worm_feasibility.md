@@ -246,3 +246,33 @@ bond resampling are untested. That is stage 1.
 exact diagonalisation with a deliberately broken arm. Then tau_int(plaquette) per CPU at L = 16, 24, 32 vs
 production. Fail: gain at L=24 < 3, or gain(32)/gain(16) < 2. Estimate 8-12 days; ~300 core-h for the scaling test.
 Odds (revised up from 25%): >10x at L >= 32, ~35%.
+
+## 9. Stage 1 prototype (2026-10-10): the move decorrelates the flux in an L-independent number of steps, but the worm's cost explodes
+
+Prototype tools/esworm/ (node): port of the seven production updates (validated against exact diagonalisation of the
+2x2 torus, 39 comparisons, broken arms fail), plus the ES step (electric SW + vison worm with h, J weights; at closing,
+exact existence test over 8 global sectors). ES alone and ES + local agree with ED at all 8 points (local + ES: rms z
+1.06, max 2.48; P3 confirmed with 8 independent seeds); bond rate x0.5 and a dropped hop-ratio factor both fail
+(21/35 and 30/35 comparisons beyond 3 sigma).
+
+Scan: job 17126323 (16 single-core chains, s*, beta = L, ~6600 s sampling each), /scratch/a/A.Otaifi/esworm_tau_20261010/out2/.
+tau of the plaquette in CPU-seconds (two chains each, ordered / random start):
+
+| L | local | ES + local | gain per CPU | tau(ES arm) in samples (= ES steps) | tau(local) in sweeps | mean worm length (steps) |
+|---|---|---|---|---|---|---|
+| 6 | 0.171 / 0.163 | 0.032 / 0.064 | 3.5 | 27 / 28 | 1850 / 1775 | 4.7e3 |
+| 8 | 1.88 / 1.19 | 0.222 / 0.224 | 6.9 | 31 / 31 | 5250 / 4820 | 4.5e4 |
+| 10 | 3.82 / 5.16 | 3.98 / 3.44 | 1.2 | 44 / 36 | 8770 / 11630 | 9e5 |
+| 12 | 16.8 / 19.0 | 209 / (timed out) | 0.09 | 30 (977 samples only) | 21900 / 25000 | 7.5e7 |
+
+- Pre-set rule (keep the worm only if gain(12)/gain(6) >= 2): 0.09/3.5, so **worm v1 fails**.
+- What fails is the cost per ES step, not the move: the ES arm needs 27-44 ES steps per independent plaquette sample at
+  every L from 6 to 12, while local moves need 1800 -> 23000 sweeps (two-point slope 3.7 between L=6 and 12, finite
+  size). The mean worm length grows 4.7e3 -> 7.5e7 steps: worms that tangle with electric clusters cannot close (80%
+  of close attempts infeasible already at L=6) and wander until they untangle.
+- Per-sample tau of the ES arm at L=12 rests on 977 samples (~33 tau); its error is ~25%.
+- Next (step-back plan): replace the worm by an exact uniform resample. Add Edwards-Sokal bonds for the J term
+  (plaquette points at rate 2J on B_p = +1 stretches) and cuts for the h term (kinks plus Poisson(h) on edges); given all
+  bonds and cuts, every configuration satisfying the point constraints has equal weight, so the flux and electric sectors
+  are resampled together by drawing a uniform solution of a sparse GF(2) system (continuous-time generalised
+  Swendsen-Wang; Pizzimenti et al. arXiv:2507.13503 for the pure-gauge version). No worm, no closing problem.

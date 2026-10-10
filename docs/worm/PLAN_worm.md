@@ -55,4 +55,6 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
   /scratch/a/A.Otaifi/paratoric/hladder_endpoint_20261010/analysis_runs.json. Bare membrane cost 2 lmbda <sigma^z> = 0.161.
 
 ## Dead ends
+- ES worm v1 (constraint checked only at closing): gain per CPU 3.5 / 6.9 / 1.2 / 0.09 at L = 6 / 8 / 10 / 12, mean worm
+  length 4.7e3 -> 7.5e7; tau per ES step flat (27-44). Job 17126323, /scratch/a/A.Otaifi/esworm_tau_20261010/out2/, report s9.
 - (none measured yet in this sub-project; move-mix reweighting and CT block heat bath are closed in the main PLAN.md)
