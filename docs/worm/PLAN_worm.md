@@ -36,9 +36,13 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
      reference: Pizzimenti-Duncan-Schweinhart arXiv:2507.13503 (plaquette SW, uniform cocycle sampling, z_E 0.08 in 4D
        Z2; full text, worker; tables checked); Rieger-Kawashima cond-mat/9802104 (continuous-time cluster; abstract);
      continue (measure v1); switch only on a measured failure.
-     RUNNING: tau scan job 17126320 (array 0-3 = L 6/8/10/12, partition small, 4 CPU x <=4 h each; per L: local s1 ord,
-       local s2 rnd, es s3 ord, es s4 rnd; maxSec 6600), run dir /scratch/a/A.Otaifi/esworm_tau_20261010/ (src sha256 in
-       SHA256.txt, code = commit ad99a13), watcher pid 428118 (PPID 1) -> WATCHER.log. Decision rule: gain in tau(plaquette)
+     RUNNING: tau scan job 17126323 (array 0-15, one chain per task, partition small, 1 core x <=4 h; T = 4*iL + k,
+       L = 6/8/10/12, k = local s1 ord, local s2 rnd, es s3 ord, es s4 rnd; maxSec 6600), launch2.sbatch, run dir
+       /scratch/a/A.Otaifi/esworm_tau_20261010/ (out2/, series2/, VERDICT2_T*.txt; src sha256 in SHA256.txt, code = commit
+       ad99a13), watcher2 pid 430188 (PPID 1) -> WATCHER2.log.
+       Job 17126320 (first launcher, 4 chains per 4-core task) never started: --hint=nomultithread doubles the CPU count
+       past the small-QoS cap (PENDING QOSMaxCpuPerJobLimit). Left pending; cancel needs the PI. Its outputs (out/, series/)
+       do not collide with 17126323's. Decision rule: gain in tau(plaquette)
        per CPU-second of es over local must grow with L (gain(12)/gain(6) >= 2) to keep the worm; else switch.
      Passed over: Dirac-sheet bookkeeping so the open worm sees the constraint (history-free but needs a cycle basis
      and spanning sheets per bond sample: days, unknown payoff); per-step consistency relative to the start
