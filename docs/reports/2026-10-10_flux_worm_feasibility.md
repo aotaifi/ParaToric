@@ -159,3 +159,39 @@ active constraints, a sparse linear system over GF(2) (the Higgs extension of Pi
 - The stage-0 numbers themselves (the 0.161 is the mean only; sigma_best is predicted, not measured).
 - Somoza et al. App. A-B; Delgado Mercado et al.'s worm-length histogram (Fig. 10); the ATEAMS repository.
 - Whether the FK representation of the gauge-Higgs model percolates exactly at the MCP (argued from self-duality only).
+
+## 7. Refinement (added 2026-10-10, after PI question): integrate the Higgs term out with Swendsen-Wang bonds
+
+**Idea (hypothesis).** Split sigma^z_e = s_e g_v g_w: s carries the flux (flipped only by kinks), g is the gauge
+parity at each vertex (flipped only by star events). The Higgs term lmbda s g g is then an Ising coupling for g in a
+background frustrated exactly at the visons (B_p = -1 <=> odd product of s around p). Give it the continuous-time
+Edwards-Sokal / Swendsen-Wang decomposition (Rieger-Kawashima style):
+- bond points on each edge at Poisson rate 2 lmbda on sigma^z = +1 segments (measured density 2 x 0.3391 x 0.619 =
+  0.42 per edge per unit tau, derived from <sigma^z> = 0.238);
+- cut points on each vertex timeline = existing star events plus Poisson(mu) extra points;
+- clusters = vertex segments joined by bond points; each cluster's g flipped with probability 1/2 (an exact,
+  rejection-free update of the electric sector).
+
+**Why it removes the obstruction.** With the bonds fixed, the joint weight is W_m(s) x (bond/cut weights) x
+[every bond point satisfied]. A vison move flips s on a strip; violated bond points are repaired by flipping g on one
+side of a cut in the cluster graph, at no weight cost. The 0.161-per-cell membrane cost disappears exactly; the vison
+worm then sees only h and J (the dual transverse-field Ising weight, where the Prokof'ev-Svistunov worm is the standard
+efficient algorithm) plus one rule: a vison worldline may not link a cycle of an electric cluster (the e-m mutual
+statistics made literal). Small cycles near the worldline give a perimeter-type cost, not an area law; whether large
+critical clusters at the MCP block large vison loops is the open question.
+
+**Exactness.** The bond step is the standard Edwards-Sokal coupling; the worm acts with bonds fixed and the consistency
+check is a hard constraint that depends only on the bonds, so worm proposals stay symmetric. Bonds are resampled every
+sweep.
+
+**Cost.** Electric-sector SW: 3-4 days. Vison worm with the consistency check: 6-10 days. The engineering risk is the
+check itself (is the set of flipped bond points a cut of the cluster graph?); done naively it costs a BFS over the
+cluster, which is expensive if a cluster spans the system.
+
+**Kill test (stage 0', ~2 days, no jobs, existing checkpoints).** Build the electric clusters on L=16/24 s* snapshots
+(many bond resamplings per snapshot). For time-like vison loops of size R x T, measure the probability that the loop
+is consistent (links no cluster cycle). Pass: decay no faster than exp(-c (R+T)) or a power law. Fail: decay linear
+in area R T with rate >= 0.03. Also report whether a cluster spans the system at s*.
+
+**Odds (mine):** >10x per CPU at L >= 32, ~25%; cutting the L-growth, ~20%. It stays in the quantum code. Electric-
+sector SW alone buys nothing (stars already decorrelate in 15-175 samples vs 2050 for the plaquette).
