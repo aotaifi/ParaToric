@@ -41,7 +41,7 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
        /scratch/a/A.Otaifi/esworm_tau_20261010/ (out2/, series2/, VERDICT2_T*.txt; src sha256 in SHA256.txt, code = commit
        ad99a13), watcher2 pid 430188 (PPID 1) -> WATCHER2.log.
        Job 17126320 (first launcher, 4 chains per 4-core task) never started: --hint=nomultithread doubles the CPU count
-       past the small-QoS cap (PENDING QOSMaxCpuPerJobLimit). Left pending; cancel needs the PI. Its outputs (out/, series/)
+       past the small-QoS cap (PENDING QOSMaxCpuPerJobLimit). Cancelled with PI approval 2026-10-10 (never ran). Its outputs (out/, series/)
        do not collide with 17126323's. Decision rule: gain in tau(plaquette)
        per CPU-second of es over local must grow with L (gain(12)/gain(6) >= 2) to keep the worm; else switch.
      Passed over: Dirac-sheet bookkeeping so the open worm sees the constraint (history-free but needs a cycle basis
