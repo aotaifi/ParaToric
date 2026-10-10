@@ -54,6 +54,13 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
 - <sigma^z> = 0.238 (L=24), 0.237 (L=16) at s*, derived from measured energies,
   /scratch/a/A.Otaifi/paratoric/hladder_endpoint_20261010/analysis_runs.json. Bare membrane cost 2 lmbda <sigma^z> = 0.161.
 
+## Running
+- Guided worm (open weight exp(-alpha*(dSpace+dTime)), commit b445287, ED gate passes): alpha scan job 17127191
+  (11 single-core tasks: L 8/12/16 x alpha 0.25/0.5/1, plus local L=16 x2; 6600 s each), out3/, watcher3 pid 546747.
+  Probe (300 s, L=12): gain per CPU 6.5 (alpha 0.5), 3.9 (alpha 1) vs 0.09 unguided; at L=8 alpha=1 is worse than
+  unguided (tau 293 vs 31 samples). Caveat: tasks land on mixed node types (met-cl, th-cl); CPU-time ratios across
+  nodes carry up to ~2x noise (seen at L=6 in 17126323).
+
 ## Dead ends
 - ES worm v1 (constraint checked only at closing): gain per CPU 3.5 / 6.9 / 1.2 / 0.09 at L = 6 / 8 / 10 / 12, mean worm
   length 4.7e3 -> 7.5e7; tau per ES step flat (27-44). Job 17126323, /scratch/a/A.Otaifi/esworm_tau_20261010/out2/, report s9.
