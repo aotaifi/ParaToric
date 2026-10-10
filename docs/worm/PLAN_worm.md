@@ -18,5 +18,9 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
 - <sigma^z> = 0.238 (L=24), 0.237 (L=16) at s*, derived from measured energies,
   /scratch/a/A.Otaifi/paratoric/hladder_endpoint_20261010/analysis_runs.json. Bare membrane cost 2 lmbda <sigma^z> = 0.161.
 
+3. **ES-dressed vison worm** (section 7 of the report): SW bonds for the Higgs term make the vison membrane free;
+   residual constraint = no linking with electric-cluster cycles. Odds ~25% (>10x at L>=32). Stage 0' kill test 2 days, no jobs.
+   Recommended next step if the PI wants to pursue flux moves at all.
+
 ## Dead ends
 - (none measured yet in this sub-project; move-mix reweighting and CT block heat bath are closed in the main PLAN.md)
