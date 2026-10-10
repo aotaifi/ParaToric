@@ -290,7 +290,7 @@ function esStep(cfg, rng, par) {
           const d = flipArc(tail.p, tail.t, u);
           // closed candidate: flux at 0 flipped where bflip (after removing the defects)
           const Q = Uint8Array.from(bflip); if (crosses0(tail.t, u, beta)) Q[tail.p] ^= 1;
-          const ex1 = existence(cfg, B, K, Q);
+          const ex1 = existence(cfg, B, K, Q); stats.closeTries = (stats.closeTries || 0) + 1; if (ex1.Nf === 0) stats.closeInfeasible = (stats.closeInfeasible || 0) + 1;
           const Nf1 = par.brokenNf ? (ex1.Nf > 0 ? 1 : 0) : ex1.Nf;
           if (Nf1 === 0) continue;
           const Rc = Nf1 * Math.exp(d) / par.C * (selOpen / (nP * beta * 2 * par.dOpen)) / pCloseN;

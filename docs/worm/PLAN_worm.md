@@ -17,9 +17,30 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
    residual constraint = no linking with electric-cluster cycles. Odds ~35% (>10x at L>=32), revised after stage 0'.
    - Stage 0' PASSED 2026-10-10: area cost of vison loops 0.39 -> 0.005-0.009 per cell (kill line 0.03); report
      section 8; /scratch/a/A.Otaifi/paratoric/es_stage0_20261010/; tools/es_stage0/ on branch worm/es-stage0 (f86f8d2).
-   - Next: stage 1 (update type 7 = electric SW + constrained vison worm; L=3 ED validation; tau per CPU L=16/24/32).
-     Needs PI approval (production source). Budget 8-12 days + ~300 core-h.
+   - Stage 1 APPROVED by PI 2026-10-10 (max 2 workers, no rush). Budget 8-12 days + ~300 core-h.
      Fail: gain at L=24 < 3, or gain(32)/gain(16) < 2.
+   - Method (lead's choice): prototype first, in node (no compiler/python on th-ws-7010m51), tools/esworm/:
+     (1a) local-update QMC + exact diagonalisation of the 2x2 torus (8 spins) -> validated baseline;
+     (1b) electric SW step (cuts = stars + Poisson(mu), bonds 2 lmbda on sigma^z=+1, flip clusters);
+     (1c) vison worm on flux variables, weight h^Nk exp(J int B) only; at closing: existence test of a valid
+          sigma^z (bond parity BFS over 8 alternatives: twist set T or complement x 4 topological edge-loop flips;
+          T from kink-parity changes), then rebuild sigma^z and star events (new star at cut c iff old XOR eta-change);
+     (1d) ED gate for 1b and 1b+1c, each with a deliberately broken arm;
+     (1e) tau(plaquette) per CPU-second, local vs local+ES-worm, L = 8, 12, 16 (beta = L) in the prototype.
+     Port to production only if (1e) shows the L-growth cut.
+   - STEP-BACK 2026-10-10 (worm v1 exact but long worms: 80% of closes infeasible, mean 3569 steps at L=6 vs 113
+     without bonds; the constraint is only seen at closing):
+     tool: measure tau per CPU-second of v1 vs local at L=6-12 BEFORE redesigning; if v1 loses on cost, switch the
+       m-sector update to continuous-time generalised Swendsen-Wang (all four terms as FK bonds/cuts, uniform GF(2)
+       sampling of the flip pattern), which has no worm and no closing problem;
+     reference: Pizzimenti-Duncan-Schweinhart arXiv:2507.13503 (plaquette SW, uniform cocycle sampling, z_E 0.08 in 4D
+       Z2; full text, worker; tables checked); Rieger-Kawashima cond-mat/9802104 (continuous-time cluster; abstract);
+     continue (measure v1); switch only on a measured failure.
+     Passed over: Dirac-sheet bookkeeping so the open worm sees the constraint (history-free but needs a cycle basis
+     and spanning sheets per bond sample: days, unknown payoff); per-step consistency relative to the start
+     configuration (history-dependent open weights: detailed balance not guaranteed).
+   - Design fact found 2026-10-10: a vison loop encircling a vertex (in projection) flips that vertex's star parity
+     (mutual statistics); with fixed cuts this is a twist of the electric sector, allowed by the existence test.
 
 ## Measured / derived inputs
 - <sigma^z> = 0.238 (L=24), 0.237 (L=16) at s*, derived from measured energies,
