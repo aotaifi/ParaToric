@@ -195,3 +195,54 @@ in area R T with rate >= 0.03. Also report whether a cluster spans the system at
 
 **Odds (mine):** >10x per CPU at L >= 32, ~25%; cutting the L-growth, ~20%. It stays in the quantum code. Electric-
 sector SW alone buys nothing (stars already decorrelate in 15-175 samples vs 2050 for the plaquette).
+
+## 8. Stage 0' result (2026-10-10): PASS. Swendsen-Wang bonds remove the area law of the vison membrane
+
+Tool: tools/es_stage0/ (ckpt.js reader, validate.js, es.js, fit.js) on branch worm/es-stage0. Output:
+/scratch/a/A.Otaifi/paratoric/es_stage0_20261010/L{16,24}_s{0,1}.txt (one equilibrium snapshot per run of
+hladder_endpoint_20261010, 10 bond resamplings x 200 placements = 2000 loops per cell).
+
+**Checks before the measurement (all can fail and one was made to):**
+- Reader: parse ends exactly at EOF; all 1152 edges' flip lists = kinks + both endpoints' star events; stored edge and
+  plaquette integrals reproduced to 1e-12; flip-count caches match. A deliberately wrong edge ordering fails
+  (1104/1152 edges). Snapshot <sigma^z> 0.241, <B_p> 0.911, star events 0.906 per vertex per unit tau (run means
+  0.238, 0.902-0.904, 0.905).
+- Cut test agrees with a brute-force bridge test on 300/300 bonds; flags 300/300 random node-set boundaries as cuts.
+- Bond density 0.4240 per edge per unit tau vs predicted 2 lmbda P(sigma^z=+1) = 0.4234.
+
+**Result: probability that a time-like vison loop (R plaquettes x T in tau) is consistent**
+
+| R x T | ES L=16 (s0/s1) | ES L=24 (s0/s1) | frozen stars L=24 (s0/s1) |
+|---|---|---|---|
+| 1 x 1 | 0.925 / 0.933 | 0.924 / 0.920 | 0.667 / 0.690 |
+| 4 x 4 | 0.640 / 0.704 | 0.594 / 0.580 | 0.005 / 0.002 |
+| 8 x 8 | 0.364 / 0.443 | 0.382 / 0.290 | 0 / 0 |
+| 12 x 12 | n/a | 0.209 / 0.124 | 0 / 0 (predicted ~e^-57) |
+
+Fits of log P = a - sA*RT - sP*2(R+T) (weights from binomial errors):
+
+| arm | sA per cell | sP per unit perimeter | chi2/dof |
+|---|---|---|---|
+| frozen stars (control), L=16 / L=24 | 0.385(5) / 0.393(5) | 0.001(2) / 0.002(1) | 1.3 / 1.6 |
+| ES, L=16 s0/s1 | 0.0087(4) / 0.0051(4) | 0.0198(5) / 0.0179(5) | 13.6 / 10.0 |
+| ES, L=24 s0/s1 | 0.0053(2) / 0.0094(3) | 0.0207(3) / 0.0215(4) | 17.5 / 15.6 |
+
+- The control arm is a clean area law (chi2/dof 1.3-1.6), so the method sees one when it is there.
+- With Swendsen-Wang bonds the area coefficient drops 40-80x, to 0.005-0.009 per cell, below the pre-set kill
+  line of 0.03. Model-independent bound: at 12 x 12 (area 144), -log P / area = 0.011 (s0), 0.014 (s1).
+- The ES data are not a clean area-plus-perimeter form (chi2/dof 10-17); the coefficients are descriptive only.
+- Electric clusters at s* are near critical: largest cluster 7-12% of segments at both L, mean degree 0.86-0.89,
+  spatially winding in 0-90% of bond samples. Loops of half the system size: P = 0.36-0.44 (L=16, 8x8) vs
+  0.12-0.21 (L=24, 12x12), i.e. roughly L^-2 (two sizes, two snapshots each; derived, rough).
+
+**What this does and does not show.** It shows that, once the electric sector is put into Swendsen-Wang form, the
+Higgs-term obstruction to large flux moves is gone (by the pre-set criterion) and the remaining constraint is the
+linking rule, which costs order one even for loops of half the system size. It does not show that a worm built on it
+decorrelates the plaquette faster: the vison's own weight (h, J) and the coupling between the two sectors through
+bond resampling are untested. That is stage 1.
+
+**Stage 1 (needs the PI: it edits production source, on branch worm/es-stage0):** update type 7 = electric SW step
+(bond and cut sampling, cluster flips) + vison worm with h/J weights and the cut constraint. Validate on L=3 against
+exact diagonalisation with a deliberately broken arm. Then tau_int(plaquette) per CPU at L = 16, 24, 32 vs
+production. Fail: gain at L=24 < 3, or gain(32)/gain(16) < 2. Estimate 8-12 days; ~300 core-h for the scaling test.
+Odds (revised up from 25%): >10x at L >= 32, ~35%.
