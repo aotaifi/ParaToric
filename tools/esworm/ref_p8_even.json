@@ -1,0 +1,13 @@
+{
+ "mu": 1,
+ "J": 1,
+ "h": 0,
+ "lmbda": 0.3391,
+ "beta": 2,
+ "A": 0.8443730616392031,
+ "B": 0.9981924584012702,
+ "sigma_x": 0,
+ "sigma_z": 0.28681392821860996,
+ "H": -8.148330890236366,
+ "note": "P8 (h=0) restricted to the all-even star-parity sector, which the local updates cannot leave at h=0; derived from ED via the vertex-0 twist trick (dev/p8sector.js)"
+}
