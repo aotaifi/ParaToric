@@ -73,6 +73,14 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     the scan calibrations (was 28/133/420/1280). Scan job 17128161 (gsw L 8-24 x ord/rnd, out5/), watcher5 pid 647333.
     RESULT: tau per step 5-10 at L 8-24; cost per step 14/28/61/130/250 sweeps (L 8/12/16/20/24, ~L^3.3); gain per CPU
     71/69/59/68/~52: a constant ~50-70x, not growing. Report s12.
+- PI 2026-10-11: target L = 200-400. Approved: C++ port on branch worm/gsw-cpp (worker gsw-cpp, gates: L=3 open ED,
+  JS prototype at L=4/6, production means at L=16/24, timing L=8-32); lead works on scaling.
+- Scaling track: exact BLOCK moves (commit 5f5f8f6; outside an ell x ell spatial block the canonical decomposition is
+  pinned; twists of vertices on pinned edges pinned; outside stars/kinks unchanged: 0 of 200 moves changed them).
+  Block-only is not ergodic (ell=2 freezes star parities): always mix with local moves. Probes (400 s, + 1 local sweep
+  per sample): tau in local-sweep units: global gsw 183 (L=12); ell=8: 2095 (L=12), 3538 (L=16) => ~L^1.8 (two points);
+  ell=12 at L=16: 493 (global there: ~420). Scan job 17128991 (L 12/16/24/32 x ell 8/12), /scratch/a/A.Otaifi/esworm_block/.
+  Hypothesis: fixed-ell blocks give tau ~ L^(1.8-2) per sweep vs local ~L^2.8: gain growing ~L; plus blocks parallelise.
 - NEXT, two tracks: (a) C++ port with bit-parallel dense core (production source on a branch: PI approval) to turn the
   constant into production speed for L <= 32; (b) a solver with ~linear cost per step (needed for L >= 48: dense core
   memory ~N^2). (a) is the practical win; (b) is research with unknown odds.
