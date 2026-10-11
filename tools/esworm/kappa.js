@@ -13,7 +13,9 @@ function cum(x) {
 const res = [];
 for (const f of files) {
   const S = [];
-  for (const line of fs.readFileSync(f, 'utf8').split('\n')) { if (!line || line[0] === '#') continue; const a = line.split(' '); S.push(+a[0] + +a[1]); }
+  // KOBS=delta: odd channel delta = plaquette - star (production identity: delta_tau_avg = plaquette - star); default S
+  const odd = process.env.KOBS === 'delta';
+  for (const line of fs.readFileSync(f, 'utf8').split('\n')) { if (!line || line[0] === '#') continue; const a = line.split(' '); S.push(odd ? +a[0] - +a[1] : +a[0] + +a[1]); }
   const x = S.slice(Math.floor(frac * S.length)); const nb = 16, bl = Math.floor(x.length / nb);
   const all = cum(x), blocks = []; for (let b = 0; b < nb; b++) blocks.push(cum(x.slice(b * bl, (b + 1) * bl)));
   const err = k => { const v = blocks.map(o => o[k]); const m = v.reduce((a, c) => a + c, 0) / nb; return Math.sqrt(v.reduce((a, c) => a + (c - m) ** 2, 0) / (nb - 1) / nb); };

@@ -136,6 +136,12 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
   4.7728e-4(18) vs his chains ~4.76e-4; mean S 1.80609(7) vs ~1.8062. Cost: 8 x 3.5 h = 28 core-h (JS) vs his 6 PT
   chains 1768 core-h (sacct 17120726-33 excl. cancelled: 70.7 h x 25 cores). Variance x cost: 1.0e-13 vs 1.7e-12
   => 16x better per core-hour in JS; block-error chi2/dof for k3 1.72 (scatter error used).
+- MCP lead accepts kappa3 check (recomputed it himself from our series). KAPPA2(delta) at L=16, s=0.339 also passes:
+  6.6409e-4(31) vs his 6.6267e-4(38) (0.29 sigma), same 8 chains. His remaining gates before moving L=48/64 onto gsw:
+  (1) C++ port + ED (L=3 open) + delta_tau_avg / energy_h / energy_lmbda recorded; (3) L=32 at s*=0.3391 vs his sizing
+  run (/scratch/a/A.Otaifi/paratoric/ctladder_prod_20261011/prod/L32_size: kappa3(S) -4.92e-8(1.37e-8), <S> 1.80542,
+  kappa2(delta) 9.59e-5(4.6e-6)) with measured C++ cost per core-hour. His L=32/L=48 ladders (done Tue ~10 UTC /
+  Wed-Thu) become our large-L references.
 - NEXT, two tracks: (a) C++ port with bit-parallel dense core (production source on a branch: PI approval) to turn the
   constant into production speed for L <= 32; (b) a solver with ~linear cost per step (needed for L >= 48: dense core
   memory ~N^2). (a) is the practical win; (b) is research with unknown odds.
