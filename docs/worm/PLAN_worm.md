@@ -98,6 +98,21 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
   result (cheap test, reduce.js): core = 25-28% of variables, 51-54% of equations at L = 6/8/12/16: constant. KILLED.
   => exact global redraw costs ~N^2 per step (nested-dissection bound); practical ceiling L ~ 96-128 with a C++
      nested-dissection solver (derived). L = 200-400 needs a new idea (no exact cluster method known for this model).
+- PI 2026-10-11 (after the step-back): push on, aim L = 200-400; do not give up. Lead's correction: the "30 h/sample at
+  L=200" estimate extrapolated the single-thread JS dense solver; constants, not exponents, were the problem.
+- Nested dissection test (ndtest.js, sparse elimination of the peeled core in ND order): front width 221 / 586 / 1254,
+  top separator 1115 / 3246 / 5936, work 1.4e6 / 4.5e7 / 2.4e8 at L = 16 / 24 / 32 (L=24/32 from 6 warm steps only).
+  Fronts ~L^2 as expected for 3D. Cost model (derived): L=200 front ~5e4, dense bit-packed front ~2e12 word-ops ->
+  ~4-40 s per step on a 64-core node, ~300 MB; L=400 ~64x that.
+- SCALING PLAN (milestones, each with a done-test):
+  M1 C++ global gsw (worker gsw-cpp, running): gates G1-G4. Done = gates pass.
+  M2 C++ multifrontal GF(2) sampler (ND order, bit-packed dense fronts, OpenMP) replacing the dense core.
+     Done = same ED gate + identical distribution to M1 at L=16 + step time L=32/48/64/96 measured; target <= 10 s
+     per step at L=96 on one node.
+  M3 tau per step and start/seed agreement at L = 48-96 (C++), cross-checked against production at L <= 32.
+     Kill: tau per step growing faster than ~L^1 between 32 and 96.
+  M4 L = 128, 200 production design.
+  Running now: JS global gsw L=32/40 both starts (job 17131136, out6/); production reference table (worker).
 - NEXT, two tracks: (a) C++ port with bit-parallel dense core (production source on a branch: PI approval) to turn the
   constant into production speed for L <= 32; (b) a solver with ~linear cost per step (needed for L >= 48: dense core
   memory ~N^2). (a) is the practical win; (b) is research with unknown odds.

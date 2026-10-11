@@ -176,7 +176,16 @@ function gswStep(cfg, rng, opts = {}) {
   for (let v = 0; v < nV; v++) if (vc[v].length === 0) pushRow([tOff + v]);
   for (let e = 0; e < nE; e++) if (ec[e].length === 0) pushRow([tOff + cfg.src[e], tOff + cfg.tgt[e]]);
   const nr = rows.length;
-  if (opts.returnSystem) return { rows, rhs: Uint8Array.from(rhsArr), nVar };
+  if (opts.returnSystem) { // with a coordinate (x, y, tau) per variable for geometric orderings
+    const L = cfg.L, coord = new Float64Array(3 * nVar);
+    const mid = (c, k) => { const m = c.length; if (m === 0) return beta / 2; const a = c[k], b = k + 1 < m ? c[k + 1] : c[0] + beta; return ((a + b) / 2) % beta; };
+    for (let v = 0; v < nV; v++) { const x = v % L, y = Math.floor(v / L), c = vc[v];
+      for (let k = 0; k < Math.max(1, c.length); k++) { const i = gOff[v] + k; coord[3 * i] = x; coord[3 * i + 1] = y; coord[3 * i + 2] = mid(c, k); }
+      coord[3 * (tOff + v)] = x; coord[3 * (tOff + v) + 1] = y; coord[3 * (tOff + v) + 2] = 0; }
+    for (let e = 0; e < nE; e++) { const u = cfg.src[e], x = u % L, y = Math.floor(u / L), dx = (e & 1) ? 0 : 0.5, dy = (e & 1) ? 0.5 : 0, c = ec[e];
+      for (let k = 0; k < Math.max(1, c.length); k++) { const i = sOff[e] + k; coord[3 * i] = x + dx; coord[3 * i + 1] = y + dy; coord[3 * i + 2] = mid(c, k); } }
+    return { rows, rhs: Uint8Array.from(rhsArr), nVar, coord, L, beta };
+  }
   const rhsU = Uint8Array.from(rhsArr);
   const sol = opts.dense ? solveDense(rows, nVar, rng, rhsU) : solvePeel(rows, nVar, rng, rhsU);
   const x = sol.x, rank = sol.rank;
