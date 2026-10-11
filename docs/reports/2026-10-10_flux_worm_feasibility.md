@@ -299,3 +299,32 @@ Job 17127191, /scratch/a/A.Otaifi/esworm_tau_20261010/out3/. tau(plaquette) in C
   which at s* are near-critical). By the working rules this closes the worm line.
 - What stands: the ES move decorrelates the flux in ~30 ES steps independent of L (6-12); the obstruction is the
   conditional vison update given the electric bonds, i.e. the e-m mutual statistics with both sectors critical.
+
+## 11. Continuous-time generalised Swendsen-Wang (2026-10-11): beats critical slowing down per step; per CPU limited by the solver
+
+tools/esworm/gsw.js (commit 7e0611d). All four terms get an Edwards-Sokal decomposition (h, mu: cut points; lmbda, J: bond
+points); the new configuration is a uniform solution of a GF(2) system (dense bitset elimination). L=2 ED gate passes
+(39 comparisons, rms z 0.97, max 2.27, incl. h=0); J-bond rate x0.5 fails (35/39 beyond 3 sigma).
+Scan: job 17127772, /scratch/a/A.Otaifi/esworm_tau_20261010/out4/, two chains per entry (ordered / random start); every run
+times local sweeps on its own node, so costs are given in local-sweep equivalents.
+
+| L | tau(plaquette), gsw, SW steps | gsw cost per step (sweeps) | tau, gsw (sweep-equiv.) | tau, local (sweeps) | gain |
+|---|---|---|---|---|---|
+| 8 | 5.1 / 5.1 | 28 | 142 / 145 | 5650 / 4680 | 36 |
+| 10 | 5.9 / 5.6 | 55 | 343 / 292 | - | - |
+| 12 | 6.3 / 6.2 | 133 | 845 / 834 | 12400 / 26800 | 15-32 |
+| 16 | 7.8 / 7.0 | 420 | 3200 / 3030 | 24900 / 94600 | 8-30 |
+| 20 | 3.4 / 10.0 (1200 samples) | 1280 | 4100 / 13500 | 81000 / 107000 (not equilibrated) | 6-26 |
+
+- Pre-set kill line (tau per SW step grows with exponent <= 1.5 between L=6 and 12): 4.3 -> 6.25, exponent 0.54. PASS.
+  Between L=8 and 16 the exponent is 0.54 as well (5.1 -> 7.4). Local moves: tau in sweeps grows 5200 -> 19000 -> ~50000
+  (L = 8, 12, 16), exponent ~2.4-3.
+- Per CPU the gain shrinks with L (36 at L=8, ~6-30 at L=16-20) because the dense elimination grows as ~V^2.4: one step
+  costs 28 local sweeps at L=8 and 1280 at L=20. With a solver whose cost per step is a fixed number of sweeps, the gain
+  would be tau_local / (6-8 x that number): ~1000 at L=20 for a cost of ~10 sweeps (derived, not measured).
+- Agreement: gsw plaquette means 0.9022-0.9034 for L = 8-20 from both starts. Local chains from random starts at
+  L = 12-20 sit low (0.8996, 0.8976, 0.8923; up to 7 sigma) after 5e4 thermalisation sweeps + 2 h: local moves had
+  not equilibrated them. The gsw chains equilibrate from either start within the 200-step thermalisation.
+- The local baselines at L >= 12 are therefore uncertain (random-start chains not equilibrated; gains quoted as ranges).
+- Not yet shown: per-CPU gain growing with L, which needs a faster solver (structure: lmbda equations have 3 variables,
+  J equations 4; peeling variables that occur once, then sparse elimination on the core), and anything in the C++ code.

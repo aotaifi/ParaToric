@@ -62,7 +62,12 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
 - Scan job 17127772 (18 single-core tasks: gsw L 8/10/12/16/20 x ord/rnd; local L 8/12/16/20 x ord/rnd; node-speed
   calibration in every run), launch4.sbatch, out4/, series4/, watcher4 pid 591083.
 - Kill line (set before the scan): tau per SW step must grow with exponent <= 1.5 between L=6 and 12 (local: 3.7).
-  Then the cost per SW step (dense elimination) decides the per-CPU gain at large L: engineering, not physics.
+  RESULT: PASS, exponent 0.54 (tau 5.1/5.9/6.3/7.4 SW steps at L 8/10/12/16). Per CPU gain 36 (L=8) falling to 6-30
+  (L=16-20) because dense elimination costs 28 -> 1280 local sweeps per step (L 8 -> 20). Report s11.
+- NEXT (critical path): a solver whose cost per step stays a fixed number of sweeps. Plan: peel variables occurring
+  in one equation (XORSAT leaf removal), components separately, sparse elimination on the core; measure cost per step
+  at L = 8-24. Done = cost per step <= ~20 sweeps at L=20 with the same tau per step. Budget 2-3 days.
+  Then the C++ port (production source on a branch: needs the PI).
 
 ## Dead ends
 - Guided worm (open weight exp(-alpha*(dSpace+dTime)), b445287): gain at L=12 0.08 / 0.26 / 0.05 for alpha 0.25 / 0.5 / 1;
