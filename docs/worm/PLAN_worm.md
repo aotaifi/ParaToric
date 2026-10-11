@@ -68,6 +68,9 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
   in one equation (XORSAT leaf removal), components separately, sparse elimination on the core; measure cost per step
   at L = 8-24. Done = cost per step <= ~20 sweeps at L=20 with the same tau per step. Budget 2-3 days.
   Then the C++ port (production source on a branch: needs the PI).
+  - Solver v2 (commit 7a88084): row dedupe + XORSAT peeling + dense core; L=2 ED gate passes (max |z| 2.04), broken arm
+    fails. Workstation timing: 4.3 / 14 / 59 / 219 ms per step at L = 8/12/16/20, i.e. ~19/17/35/51 local sweeps using
+    the scan calibrations (was 28/133/420/1280). Scan job 17128161 (gsw L 8-24 x ord/rnd, out5/), watcher5 pid 647333.
 
 ## Dead ends
 - Guided worm (open weight exp(-alpha*(dSpace+dTime)), b445287): gain at L=12 0.08 / 0.26 / 0.05 for alpha 0.25 / 0.5 / 1;
