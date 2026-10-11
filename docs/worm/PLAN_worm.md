@@ -54,6 +54,16 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
 - <sigma^z> = 0.238 (L=24), 0.237 (L=16) at s*, derived from measured energies,
   /scratch/a/A.Otaifi/paratoric/hladder_endpoint_20261010/analysis_runs.json. Bare membrane cost 2 lmbda <sigma^z> = 0.161.
 
+## Running (2026-10-11): continuous-time generalised SW (switch after two failed worm versions)
+- gsw.js (commit 7e0611d): FK for all four terms (h, mu cuts; lmbda, J bonds), uniform GF(2) solution by dense bitset
+  elimination. L=2 ED gate passes (39 comparisons, rms z 0.97, max 2.27, incl. h=0); J-bond rate x0.5 fails (35/39).
+- Probes (240 s, one chain each): tau(plaquette) per SW step 3.4 / 4.3 / 5.5 at L = 4 / 6 / 8; per CPU 37x (L=6) and
+  66x (L=8) faster than local. Prior (70% freeze in the flux sector) was wrong.
+- Scan job 17127772 (18 single-core tasks: gsw L 8/10/12/16/20 x ord/rnd; local L 8/12/16/20 x ord/rnd; node-speed
+  calibration in every run), launch4.sbatch, out4/, series4/, watcher4 pid 591083.
+- Kill line (set before the scan): tau per SW step must grow with exponent <= 1.5 between L=6 and 12 (local: 3.7).
+  Then the cost per SW step (dense elimination) decides the per-CPU gain at large L: engineering, not physics.
+
 ## Dead ends
 - Guided worm (open weight exp(-alpha*(dSpace+dTime)), b445287): gain at L=12 0.08 / 0.26 / 0.05 for alpha 0.25 / 0.5 / 1;
   L=16 timed out. Job 17127191, out3/, report s10. (A 300 s probe had claimed 6.5: heavy-tailed worm cost.)
