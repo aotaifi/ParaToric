@@ -127,6 +127,10 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
   (nu_even_first_20261010/cums.json). His gain estimate: 10-250x pending C++ benchmark + kappa3 check. L=48 on hold
   until then. Requests: sector observables + production per-sample observables in the C++ port (sent to gsw-cpp).
   RUNNING: kappa3 check job 17131275 (8 gsw chains, L=16, s=0.339, /scratch/a/A.Otaifi/esworm_xcheck/k3/).
+- L=32/40 global gsw JS (job 17131136, out6/, series6/): tau per step 5.5 / 6.6 at L=32 (486 / 950 samples).
+  Second-half means: L=32 ord vs rnd plaquette 0.9010(10) / 0.9036(7) (2.2 sigma), sigma^x 2.5 sigma; L=40 (100 samples
+  each, ~15 tau, block errors underestimated ~2x) plaquette 0.9061 / 0.9017, ord star 0.8997. INCONCLUSIVE: chains too
+  short; no equilibration claim beyond L=24 until long C++ chains with sector observables (first job after C++ ED gate).
 - NEXT, two tracks: (a) C++ port with bit-parallel dense core (production source on a branch: PI approval) to turn the
   constant into production speed for L <= 32; (b) a solver with ~linear cost per step (needed for L >= 48: dense core
   memory ~N^2). (a) is the practical win; (b) is research with unknown odds.
