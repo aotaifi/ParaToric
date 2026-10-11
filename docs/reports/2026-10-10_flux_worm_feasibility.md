@@ -276,3 +276,26 @@ tau of the plaquette in CPU-seconds (two chains each, ordered / random start):
   bonds and cuts, every configuration satisfying the point constraints has equal weight, so the flux and electric sectors
   are resampled together by drawing a uniform solution of a sparse GF(2) system (continuous-time generalised
   Swendsen-Wang; Pizzimenti et al. arXiv:2507.13503 for the pure-gauge version). No worm, no closing problem.
+
+## 10. Guided worm (2026-10-11): guidance does not rescue L = 12; the worm line is closed
+
+Guidance weight exp(-alpha (dSpace + dTime)) on open states (exact; L=2 ED gate passes, 35 comparisons, max |z| 2.14).
+Job 17127191, /scratch/a/A.Otaifi/esworm_tau_20261010/out3/. tau(plaquette) in CPU-seconds; local baselines from 17126323
+(L=8: 1.88 / 1.19; L=12: 16.8 / 19.0) and 17127191 (L=16: 53 / 206, the two starts differ 4x: baseline uncertain).
+
+| L | unguided | alpha 0.25 | alpha 0.5 | alpha 1 |
+|---|---|---|---|---|
+| 8: tau_cpu (gain) | 0.223 (6.9) | 0.314 (4.9) | 0.55 (2.8) | 1.07 (1.4) |
+| 8: mean worm length | 4.5e4 | 1.3e4 | 4.7e3 | 1.5e3 |
+| 12: tau_cpu (gain) | 209 (0.09) | 222 (0.08) | 68 (0.26) | 326 (0.05) |
+| 12: mean worm length | 7.5e7 | 2.0e7 | 2.3e6 | 3.7e6 |
+| 16 | - | timed out | timed out | timed out |
+
+- Guidance shortens worms at L=8 but costs decorrelation (tau per sample 31 -> 59 -> 106 -> 218); at L=12 every arm
+  loses to local moves. Worm lengths stay heavy-tailed (means 1e6-1e7 at L=12).
+- A 300 s probe had shown gain 6.5 at L=12, alpha 0.5; the 2 h run gives 0.26. The probe missed the heavy tail of the
+  worm-length distribution (mean cost 0.048 vs 0.44 s per sample). Short probes of heavy-tailed costs are not evidence.
+- Two versions of the worm failed at the same place (the vison worm cannot close once tangled with electric clusters,
+  which at s* are near-critical). By the working rules this closes the worm line.
+- What stands: the ES move decorrelates the flux in ~30 ES steps independent of L (6-12); the obstruction is the
+  conditional vison update given the electric bonds, i.e. the e-m mutual statistics with both sectors critical.
