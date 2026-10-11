@@ -71,6 +71,11 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
   - Solver v2 (commit 7a88084): row dedupe + XORSAT peeling + dense core; L=2 ED gate passes (max |z| 2.04), broken arm
     fails. Workstation timing: 4.3 / 14 / 59 / 219 ms per step at L = 8/12/16/20, i.e. ~19/17/35/51 local sweeps using
     the scan calibrations (was 28/133/420/1280). Scan job 17128161 (gsw L 8-24 x ord/rnd, out5/), watcher5 pid 647333.
+    RESULT: tau per step 5-10 at L 8-24; cost per step 14/28/61/130/250 sweeps (L 8/12/16/20/24, ~L^3.3); gain per CPU
+    71/69/59/68/~52: a constant ~50-70x, not growing. Report s12.
+- NEXT, two tracks: (a) C++ port with bit-parallel dense core (production source on a branch: PI approval) to turn the
+  constant into production speed for L <= 32; (b) a solver with ~linear cost per step (needed for L >= 48: dense core
+  memory ~N^2). (a) is the practical win; (b) is research with unknown odds.
 
 ## Dead ends
 - Guided worm (open weight exp(-alpha*(dSpace+dTime)), b445287): gain at L=12 0.08 / 0.26 / 0.05 for alpha 0.25 / 0.5 / 1;

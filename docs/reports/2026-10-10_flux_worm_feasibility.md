@@ -328,3 +328,29 @@ times local sweeps on its own node, so costs are given in local-sweep equivalent
 - The local baselines at L >= 12 are therefore uncertain (random-start chains not equilibrated; gains quoted as ranges).
 - Not yet shown: per-CPU gain growing with L, which needs a faster solver (structure: lmbda equations have 3 variables,
   J equations 4; peeling variables that occur once, then sparse elimination on the core), and anything in the C++ code.
+
+## 12. Solver v2 scan (2026-10-11): ~50-70x per CPU at every L from 8 to 24; flat, not growing
+
+Job 17128161 (commit 7a88084: row dedupe + XORSAT peeling + dense core), /scratch/a/A.Otaifi/esworm_tau_20261010/out5/,
+two chains per L (ordered / random start), node-calibrated. Local baselines: ordered-start chains of 17127772 (the
+random-start ones had not equilibrated at L >= 12); L=24 from production (plaquette tau 2050 samples x 51200 moves /
+1152 edges = 91000 sweeps, hladder_endpoint_20261010, same seven local updates in C++).
+
+| L | tau per SW step | cost per step (local sweeps) | tau, gsw (sweeps) | tau, local (sweeps) | gain per CPU |
+|---|---|---|---|---|---|
+| 8 | 5.0 / 5.2 | 14 | 72 / 73 | 5650 (4680) | 71 |
+| 12 | 6.4 / 6.3 | 28 | 183 / 175 | 12400 | 69 |
+| 16 | 6.9 / 6.9 | 61 | 409 / 435 | 24900 | 59 |
+| 20 | 8.5 / 10.1 | 130 | 1073 / 1338 | 81000 | 68 |
+| 24 | 8.4 / 5.4 | 250 | 2085 / 1397 | ~91000 (C++) | ~52 |
+
+- tau per SW step stays 5-10 from L=8 to 24 (both chains agree within their statistics; L=20-24 rest on 3600-16000
+  samples). Plaquette means 0.9023-0.9032 from both starts at every L.
+- The per-CPU gain is a large constant (50-70x), not growing: the cost of one step in local-sweep units grows as
+  ~L^3.3 (14 -> 250 between L=8 and 24), about as fast as tau of local moves. The solver, not the physics, now sets
+  the L-scaling.
+- Why: the constraint system is local in (2+1)D, its peeled core is one giant component of ~0.3 x (number of
+  variables), and any elimination of a 3D-local system costs ~N^2 (nested-dissection bound), i.e. ~N per sweep.
+  Memory of the dense core grows as N^2: ~15 MB at L=24, ~70 GB at L=96 (derived). Large L needs a different solver.
+- What the gain means in practice is set by the C++ constants (bit-parallel elimination vs the production local
+  moves), not measured here.
