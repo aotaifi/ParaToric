@@ -121,6 +121,12 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
   ordered vs random up to 15 sigma at L=16, 78/120 pairs > 3 sigma at L=24, pil32_Lam trapped 12-18 sigma; same
   signature as the prototype's local chains from ordered starts (slow global sectors). Relevant to the main project's
   error bars: report to the PI (the main PLAN is not ours to edit).
+- MCP lead reply (2026-10-11, session a-otaifi-76): agrees with the cross-check and sector reading (his own: 8 L=24
+  singles scatter 3.5-6x beyond block errors). Figure of merit for nu is the scatter error of kappa3(S) and kappa2(delta)
+  per core-hour from >= 4 chains, not plaquette tau. Decisive check: kappa3(S) at L=16, s=0.339: -1.2022e-6(31)
+  (nu_even_first_20261010/cums.json). His gain estimate: 10-250x pending C++ benchmark + kappa3 check. L=48 on hold
+  until then. Requests: sector observables + production per-sample observables in the C++ port (sent to gsw-cpp).
+  RUNNING: kappa3 check job 17131275 (8 gsw chains, L=16, s=0.339, /scratch/a/A.Otaifi/esworm_xcheck/k3/).
 - NEXT, two tracks: (a) C++ port with bit-parallel dense core (production source on a branch: PI approval) to turn the
   constant into production speed for L <= 32; (b) a solver with ~linear cost per step (needed for L >= 48: dense core
   memory ~N^2). (a) is the practical win; (b) is research with unknown odds.
