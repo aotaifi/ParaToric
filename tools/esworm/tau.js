@@ -17,10 +17,15 @@ if (kv.start === 'rnd') cfg.randomizeSpins(rng);
 const d = 0.5;
 const par = { worm: arm === 'es', alphaS: kv.alphaS ? +kv.alphaS : 0, alphaT: kv.alphaT ? +kv.alphaT : 0, dOpen: d, dTime: d, dHop: d, pTime: .35, pHop: .25, pUnhop: .25, pClose: .1, pSwap: .05 };
 par.C = 1 / (par.pClose * cfg.nP * beta * 2 * d);
-const es = () => esStep(cfg, () => rng.uniform(), par);
+const { gswStep } = require('./gsw.js');
+const es = arm === 'gsw' ? () => { gswStep(cfg, () => rng.uniform(), {}); return { opened: 0, closed: 0, wormSteps: 0 }; }
+                         : () => esStep(cfg, () => rng.uniform(), par);
 const OBS = ['plaquette', 'star', 'sigx', 'sigz', 'energy'];
 const nE = cfg.nE;
-for (let i = 0; i < therm; i++) { for (let k = 0; k < nE; k++) cfg.localStep(rng); if (arm !== 'local' && i % sb === 0) for (let j = 0; j < esPer; j++) es(); }
+for (let i = 0; i < therm; i++) { for (let k = 0; k < nE; k++) cfg.localStep(rng); if (arm !== 'local' && (sb === 0 || i % sb === 0)) for (let j = 0; j < esPer; j++) es(); }
+// node-speed calibration: seconds per local sweep on this node (lets CPU times from different node types be compared)
+let tSweep; { const nCal = Math.max(20, Math.ceil(2e5 / nE)); const tc = process.hrtime.bigint();
+  for (let i = 0; i < nCal * nE; i++) cfg.localStep(rng); tSweep = Number(process.hrtime.bigint() - tc) / 1e9 / nCal; }
 const ser = {}; for (const o of OBS) ser[o] = new Float64Array(nS);
 let fd = kv.out ? fs.openSync(kv.out, 'w') : null; if (fd !== null) fs.writeSync(fd, '# ' + OBS.join(' ') + '\n');
 let buf = []; let esOpened = 0, esClosed = 0, wormSteps = 0;
@@ -38,8 +43,8 @@ if (fd !== null) { if (buf.length) fs.writeSync(fd, buf.join('\n') + '\n'); fs.c
 cfg.checkValid();
 for (const o of OBS) ser[o] = ser[o].subarray(0, nDone);
 const secPerSample = secs / nDone;
-console.log(`# L=${L} arm=${arm} seed=${seed} therm=${therm} sweeps, ${nDone}/${nS} samples x ${sb} sweeps (+${arm === 'local' ? 0 : esPer} ES), ${secs.toFixed(1)} s, ${secPerSample.toExponential(3)} s/sample; ES opened ${esOpened} closed ${esClosed} mean worm steps ${(wormSteps / Math.max(1, esOpened)).toFixed(0)}`);
+console.log(`# L=${L} arm=${arm} seed=${seed} therm=${therm} sweeps, ${nDone}/${nS} samples x ${sb} sweeps (+${arm === 'local' ? 0 : esPer} ES), ${secs.toFixed(1)} s, ${secPerSample.toExponential(3)} s/sample; ES opened ${esOpened} closed ${esClosed} mean worm steps ${(wormSteps / Math.max(1, esOpened)).toFixed(0)}; calibration ${tSweep.toExponential(3)} s per local sweep`);
 for (const o of OBS) {
   const x = ser[o], be = binnedError(x, 32), ti = tauInt(x, 6);
-  console.log(`${o.padEnd(10)} mean ${mean(x).toFixed(6)} err ${be.err.toExponential(2)} tau_samples ${ti.tau === null ? 'NA' : ti.tau.toFixed(1)} tau_cpu_s ${ti.tau === null ? 'NA' : (ti.tau * secPerSample).toExponential(3)}`);
+  console.log(`${o.padEnd(10)} mean ${mean(x).toFixed(6)} err ${be.err.toExponential(2)} tau_samples ${ti.tau === null ? 'NA' : ti.tau.toFixed(1)} tau_cpu_s ${ti.tau === null ? 'NA' : (ti.tau * secPerSample).toExponential(3)} tau_sweepequiv ${ti.tau === null ? 'NA' : (ti.tau * secPerSample / tSweep).toExponential(3)}`);
 }

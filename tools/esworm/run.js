@@ -19,7 +19,12 @@ function runSim(p) { // p: {L,beta,mu,J,h,lmbda,nTherm,nSamples,nBetween,seed,st
   const cfg = new Config(p.L, p.beta, { mu: p.mu, J: p.J, h: p.h, lmbda: p.lmbda },
     { rotateEvery: p.rot, bug: p.bug || 0, flatWindow: !!p.flat });
   const rng = new RNG(p.seed);
-  if (p.es) { // ES-dressed worm (esworm.js): p.es = { mode: 'sw'|'worm', pExtra, brokenNf, bondFactor }
+  if (p.es && p.es.mode === 'gsw') { // generalised SW (gsw.js); jFactor != 1 only for the broken-arm test
+    const { gswStep } = require('./gsw.js');
+    cfg.esStats = { calls: 0, opened: 0, closed: 0, wormSteps: 0 };
+    cfg.pExtra = p.es.pExtra;
+    cfg.extraUpdate = (c, r) => { gswStep(c, () => r.uniform(), { jFactor: p.es.jFactor || 1 }); c.esStats.calls++; return true; };
+  } else if (p.es) { // ES-dressed worm (esworm.js): p.es = { mode: 'sw'|'worm', pExtra, brokenNf, bondFactor }
     const { esStep } = require('./esworm.js');
     const d = Math.min(0.5, 0.45 * p.beta);
     const par = { worm: p.es.mode !== 'sw', dOpen: d, dTime: d, dHop: d, pTime: 0.35, pHop: 0.25, pUnhop: 0.25, pClose: 0.1, pSwap: 0.05,

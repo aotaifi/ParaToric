@@ -24,7 +24,7 @@ if (kv.worker) { // child: one point, JSON to stdout
   const P = kv.worker, r = ref[P], ip = allPts.indexOf(P);
   const out = runSim({ L: 2, beta: r.beta, mu: r.mu, J: r.J, h: r.h, lmbda: r.lmbda, nTherm: 20000, nSamples, nBetween,
     seed: seed0 * 1000 + ip + 1, start: ip % 2 ? 'rnd' : 'ord', bug,
-    es: kv.es ? { mode: kv.es, pExtra: parseFloat(kv.pExtra || '0.1'), alphaS: kv.alphaS ? parseFloat(kv.alphaS) : 0, alphaT: kv.alphaT ? parseFloat(kv.alphaT) : 0, bugHop: kv.bugHop === '1', brokenNf: kv.brokenNf === '1', bondFactor: kv.bondFactor ? parseFloat(kv.bondFactor) : 1, debug: kv.debug === '1' } : null, out: kv.series ? path.join(outdir, 'gate_' + P + '_bug' + bug + '.dat') : null });
+    es: kv.es ? { mode: kv.es, pExtra: parseFloat(kv.pExtra || '0.1'), jFactor: kv.jFactor ? parseFloat(kv.jFactor) : 1, alphaS: kv.alphaS ? parseFloat(kv.alphaS) : 0, alphaT: kv.alphaT ? parseFloat(kv.alphaT) : 0, bugHop: kv.bugHop === '1', brokenNf: kv.brokenNf === '1', bondFactor: kv.bondFactor ? parseFloat(kv.bondFactor) : 1, debug: kv.debug === '1' } : null, out: kv.series ? path.join(outdir, 'gate_' + P + '_bug' + bug + '.dat') : null });
   console.log(JSON.stringify({ P, res: out.res, steps: out.steps, seconds: out.seconds, es: out.cfg.esStats || null }));
 } else {
   const pts = kv.points ? kv.points.split(',') : allPts;
@@ -58,7 +58,7 @@ if (kv.worker) { // child: one point, JSON to stdout
     const args = [__filename, 'worker=' + P, 'nSamples=' + nSamples, 'nBetween=' + nBetween, 'bug=' + bug, 'seed=' + seed0, 'outdir=' + outdir];
     if (kv.series) args.push('series=1');
     if (kv.fullP8) args.push('fullP8=1');
-    for (const k of ['es', 'pExtra', 'alphaS', 'alphaT', 'bugHop', 'brokenNf', 'bondFactor', 'debug']) if (kv[k]) args.push(k + '=' + kv[k]);
+    for (const k of ['es', 'pExtra', 'jFactor', 'alphaS', 'alphaT', 'bugHop', 'brokenNf', 'bondFactor', 'debug']) if (kv[k]) args.push(k + '=' + kv[k]);
     const ch = cp.spawn(process.execPath, args, { stdio: ['ignore', 'pipe', 'inherit'] });
     let buf = '';
     ch.stdout.on('data', (d) => { buf += d; });
