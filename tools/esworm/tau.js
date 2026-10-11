@@ -12,7 +12,8 @@ const a = process.argv.slice(2);
 const L = +a[0], arm = a[1], seed = +a[2], therm = +a[3], nS = +a[4], sb = +a[5];
 const kv = {}; for (const s of a.slice(6)) { const i = s.indexOf('='); if (i > 0) kv[s.slice(0, i)] = s.slice(i + 1); }
 const esPer = kv.esPerSample ? +kv.esPerSample : 1;
-const beta = L, cfg = new Config(L, beta, { mu: 1, J: 1, h: 0.3391, lmbda: 0.3391 }), rng = new RNG(seed);
+const sCoupling = kv.s ? +kv.s : 0.3391; // h = lmbda = s on the self-dual line
+const beta = L, cfg = new Config(L, beta, { mu: 1, J: 1, h: sCoupling, lmbda: sCoupling }), rng = new RNG(seed);
 if (kv.start === 'rnd') cfg.randomizeSpins(rng);
 const d = 0.5;
 const par = { worm: arm === 'es', alphaS: kv.alphaS ? +kv.alphaS : 0, alphaT: kv.alphaT ? +kv.alphaT : 0, dOpen: d, dTime: d, dHop: d, pTime: .35, pHop: .25, pUnhop: .25, pClose: .1, pSwap: .05 };
