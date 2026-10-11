@@ -86,6 +86,18 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
   low), like local ordered-start chains: blocks cannot change global sectors (all-vertex star parity, edge-loop windings).
   Fix under test: electric SW step (O(N), flips those sectors) every sample. Job 17129569 (L=6 correctness vs global;
   L 16/24/32 ell=12 ord+rnd; L=32 ell=16), out2/, watcher2.
+- Corrected block scan 17129569 RESULT (out2/): electric SW fixes the star sector (star 0.9029-0.9036, tau 2-8 samples,
+  both starts); L=6 block+esw agrees with global gsw (plaquette 0.9038(4)/0.9041(5) vs 0.9040(3)). But with sectors
+  mixing, flux tau with ell=12 is 11000/13900 (L=24) and 3500/18500 (L=32, starts disagree) sweep-equivalents: fixed
+  blocks do not decorrelate the long-wavelength flux. ell = L/2 works (L=32 ell=16: 1470) but costs ~ global.
+- STEP-BACK (scaling, 2026-10-11; second scaling design failed):
+  tool: shrink the redraw's GF(2) system by reductions + coreductions (peeling, unit propagation, parity union-find)
+    before elimination; scales only if the irreducible core is o(N).
+  reference: Mischaikow & Nanda, Discrete Comput. Geom. 2013 (Morse reductions shrink complexes; PDF-level skim);
+    Fugacci, Iuricich, De Floriani arXiv:1811.04485 (reductions + coreductions; abstract).
+  result (cheap test, reduce.js): core = 25-28% of variables, 51-54% of equations at L = 6/8/12/16: constant. KILLED.
+  => exact global redraw costs ~N^2 per step (nested-dissection bound); practical ceiling L ~ 96-128 with a C++
+     nested-dissection solver (derived). L = 200-400 needs a new idea (no exact cluster method known for this model).
 - NEXT, two tracks: (a) C++ port with bit-parallel dense core (production source on a branch: PI approval) to turn the
   constant into production speed for L <= 32; (b) a solver with ~linear cost per step (needed for L >= 48: dense core
   memory ~N^2). (a) is the practical win; (b) is research with unknown odds.

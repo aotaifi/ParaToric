@@ -176,6 +176,7 @@ function gswStep(cfg, rng, opts = {}) {
   for (let v = 0; v < nV; v++) if (vc[v].length === 0) pushRow([tOff + v]);
   for (let e = 0; e < nE; e++) if (ec[e].length === 0) pushRow([tOff + cfg.src[e], tOff + cfg.tgt[e]]);
   const nr = rows.length;
+  if (opts.returnSystem) return { rows, rhs: Uint8Array.from(rhsArr), nVar };
   const rhsU = Uint8Array.from(rhsArr);
   const sol = opts.dense ? solveDense(rows, nVar, rng, rhsU) : solvePeel(rows, nVar, rng, rhsU);
   const x = sol.x, rank = sol.rank;
