@@ -18,7 +18,9 @@ const d = 0.5;
 const par = { worm: arm === 'es', alphaS: kv.alphaS ? +kv.alphaS : 0, alphaT: kv.alphaT ? +kv.alphaT : 0, dOpen: d, dTime: d, dHop: d, pTime: .35, pHop: .25, pUnhop: .25, pClose: .1, pSwap: .05 };
 par.C = 1 / (par.pClose * cfg.nP * beta * 2 * d);
 const { gswStep } = require('./gsw.js');
-const es = arm === 'gsw' ? () => { gswStep(cfg, () => rng.uniform(), {}); return { opened: 0, closed: 0, wormSteps: 0 }; }
+const ell = kv.ell ? +kv.ell : 0; // block move of ell x ell vertices (0 = whole lattice)
+const es = arm === 'gsw' ? () => { const o = ell > 0 && ell < L ? { block: { x0: Math.floor(rng.uniform() * L), y0: Math.floor(rng.uniform() * L), ell } } : {};
+                             gswStep(cfg, () => rng.uniform(), o); return { opened: 0, closed: 0, wormSteps: 0 }; }
                          : () => esStep(cfg, () => rng.uniform(), par);
 const OBS = ['plaquette', 'star', 'sigx', 'sigz', 'energy'];
 const nE = cfg.nE;
