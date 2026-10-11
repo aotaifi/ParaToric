@@ -17,6 +17,70 @@ function lowerBound(a, x) { let lo = 0, hi = a.length; while (lo < hi) { const m
 function mergeSorted(...arrs) { const out = [].concat(...arrs); out.sort((p, q) => p - q); return out; }
 function poissonUnion(base, rate, beta, rng) { const c = base.slice(); let t = expRand(rng, rate); while (t < beta) { c.push(t); t += expRand(rng, rate); } c.sort((p, q) => p - q); return c; }
 
+// Uniformly random solution of the homogeneous GF(2) system rows (each row: list of variable indices, XOR = 0).
+// Dense bitset Gauss-Jordan elimination; free variables uniform, pivots determined.
+function solveDense(rows, nVar, rng) {
+  const W = (nVar + 31) >>> 5, nr = rows.length;
+  const M = new Uint32Array(nr * W);
+  for (let r = 0; r < nr; r++) for (const v of rows[r]) M[r * W + (v >>> 5)] ^= (1 << (v & 31)) >>> 0;
+  const pivCol = [], pivRowOf = new Int32Array(nVar).fill(-1);
+  let rank = 0;
+  for (let col = 0; col < nVar && rank < nr; col++) {
+    const wi = col >>> 5, bit = (1 << (col & 31)) >>> 0;
+    let pr = -1; for (let r = rank; r < nr; r++) if (M[r * W + wi] & bit) { pr = r; break; }
+    if (pr < 0) continue;
+    if (pr !== rank) for (let k = 0; k < W; k++) { const a = M[pr * W + k]; M[pr * W + k] = M[rank * W + k]; M[rank * W + k] = a; }
+    for (let r = 0; r < nr; r++) if (r !== rank && (M[r * W + wi] & bit)) { const ro = r * W, po = rank * W; for (let k = wi; k < W; k++) M[ro + k] ^= M[po + k]; }
+    pivCol.push(col); pivRowOf[col] = rank; rank++;
+  }
+  // rows beyond rank are zero (the system is consistent: the current configuration solves it)
+  const x = new Uint8Array(nVar);
+  for (let col = 0; col < nVar; col++) if (pivRowOf[col] < 0) x[col] = rng() < 0.5 ? 1 : 0;
+  for (let i = pivCol.length - 1; i >= 0; i--) { // RREF: pivot = XOR of the free variables in its row
+    const col = pivCol[i], ro = pivRowOf[col] * W; let v = 0;
+    for (let k = col >>> 5; k < W; k++) { let word = M[ro + k]; if (k === col >>> 5) word &= ~(((1 << (col & 31)) >>> 0) | (((1 << (col & 31)) >>> 0) - 1)) >>> 0;
+      while (word) { const b = 31 - Math.clz32(word & -word); const c = (k << 5) + b; if (pivRowOf[c] < 0) v ^= x[c]; word &= word - 1; } }
+    x[col] = v;
+  }
+  return { x, rank };
+}
+
+// Same distribution, faster: peel (XORSAT leaf removal). A variable that occurs in exactly one remaining equation can
+// always be set last to satisfy it, so equation and variable are removed; this repeats until a core is left. The core
+// is solved uniformly (dense), variables in no equation are uniform, peeled variables are set in reverse order.
+// The map (core solution, free bits) -> full solution is a bijection, so the result is uniform over all solutions.
+function solvePeel(rows, nVar, rng) {
+  const nr = rows.length;
+  const deg = new Int32Array(nVar), start = new Int32Array(nVar + 1);
+  for (const r of rows) for (const v of r) deg[v]++;
+  for (let v = 0; v < nVar; v++) start[v + 1] = start[v] + deg[v];
+  const inc = new Int32Array(start[nVar]), fill = start.slice(0, nVar);
+  for (let r = 0; r < nr; r++) for (const v of rows[r]) inc[fill[v]++] = r;
+  const alive = new Uint8Array(nr).fill(1), peeledVar = [], peeledRow = [];
+  const stack = []; for (let v = 0; v < nVar; v++) if (deg[v] === 1) stack.push(v);
+  while (stack.length) {
+    const v = stack.pop(); if (deg[v] !== 1) continue;
+    let r = -1; for (let k = start[v]; k < start[v + 1]; k++) if (alive[inc[k]]) { r = inc[k]; break; }
+    if (r < 0) continue;
+    alive[r] = 0; peeledVar.push(v); peeledRow.push(r);
+    for (const u of rows[r]) { deg[u]--; if (deg[u] === 1) stack.push(u); }
+  }
+  // core
+  const coreRows = [], map = new Int32Array(nVar).fill(-1), back = [];
+  for (let r = 0; r < nr; r++) if (alive[r]) { const cr = []; for (const v of rows[r]) { if (map[v] < 0) { map[v] = back.length; back.push(v); } cr.push(map[v]); } coreRows.push(cr); }
+  const core = coreRows.length ? solveDense(coreRows, back.length, rng) : { x: new Uint8Array(0), rank: 0 };
+  const x = new Uint8Array(nVar), set = new Uint8Array(nVar);
+  for (let i = 0; i < back.length; i++) { x[back[i]] = core.x[i]; set[back[i]] = 1; }
+  const isPeeled = new Uint8Array(nVar); for (const v of peeledVar) isPeeled[v] = 1;
+  for (let v = 0; v < nVar; v++) if (!set[v] && !isPeeled[v]) { x[v] = rng() < 0.5 ? 1 : 0; set[v] = 1; }
+  for (let i = peeledVar.length - 1; i >= 0; i--) {
+    const v = peeledVar[i], r = peeledRow[i]; let s = 0;
+    for (const u of rows[r]) if (u !== v) s ^= x[u];
+    x[v] = s; set[v] = 1;
+  }
+  return { x, rank: core.rank + peeledVar.length, coreRows: coreRows.length, coreVars: back.length };
+}
+
 function gswStep(cfg, rng, opts = {}) {
   const { nV, nE, nP, beta, mu, h, J, lmbda } = cfg;
   const jRate = 2 * J * (opts.jFactor || 1);
@@ -37,7 +101,9 @@ function gswStep(cfg, rng, opts = {}) {
   const pre = (c, tau) => c.length > 0 && tau < c[0]; // in the [0, first cut) part of the wrap segment
   // ---- equations as sparse lists of variable indices (XOR), rhs 0
   const rows = [];
-  const pushRow = vars => { const m = new Map(); for (const x of vars) m.set(x, (m.get(x) || 0) ^ 1); const r = []; for (const [x, b] of m) if (b) r.push(x); rows.push(r); };
+  const seen = new Set(); // identical equations (e.g. several J bonds on the same four segments) are kept once
+  const pushRow = vars => { const m = new Map(); for (const x of vars) m.set(x, (m.get(x) || 0) ^ 1); const r = []; for (const [x, b] of m) if (b) r.push(x);
+    r.sort((a, b) => a - b); const key = r.join(','); if (r.length === 0 || seen.has(key)) return; seen.add(key); rows.push(r); };
   // lmbda bonds on sigma^z = +1 stretches
   for (let e = 0; e < nE; e++) {
     const u = cfg.src[e], w = cfg.tgt[e];
@@ -76,30 +142,9 @@ function gswStep(cfg, rng, opts = {}) {
   // twists need a cut: vertex without cuts -> t_v = 0; edge without cuts -> t_u + t_w = 0
   for (let v = 0; v < nV; v++) if (vc[v].length === 0) pushRow([tOff + v]);
   for (let e = 0; e < nE; e++) if (ec[e].length === 0) pushRow([tOff + cfg.src[e], tOff + cfg.tgt[e]]);
-  // ---- dense GF(2) elimination (bitsets), uniform random solution
-  const W = (nVar + 31) >>> 5;
   const nr = rows.length;
-  const M = new Uint32Array(nr * W);
-  for (let r = 0; r < nr; r++) for (const x of rows[r]) M[r * W + (x >>> 5)] ^= (1 << (x & 31)) >>> 0;
-  const pivCol = [], pivRowOf = new Int32Array(nVar).fill(-1);
-  let rank = 0;
-  for (let col = 0; col < nVar && rank < nr; col++) {
-    const wi = col >>> 5, bit = (1 << (col & 31)) >>> 0;
-    let pr = -1; for (let r = rank; r < nr; r++) if (M[r * W + wi] & bit) { pr = r; break; }
-    if (pr < 0) continue;
-    if (pr !== rank) for (let k = 0; k < W; k++) { const a = M[pr * W + k]; M[pr * W + k] = M[rank * W + k]; M[rank * W + k] = a; }
-    for (let r = 0; r < nr; r++) if (r !== rank && (M[r * W + wi] & bit)) { const ro = r * W, po = rank * W; for (let k = wi; k < W; k++) M[ro + k] ^= M[po + k]; }
-    pivCol.push(col); pivRowOf[col] = rank; rank++;
-  }
-  // rows beyond rank must be zero (system is consistent: the current configuration solves it)
-  const x = new Uint8Array(nVar);
-  for (let col = 0; col < nVar; col++) if (pivRowOf[col] < 0) x[col] = rng() < 0.5 ? 1 : 0;
-  for (let i = pivCol.length - 1; i >= 0; i--) { // RREF: pivot = XOR of free variables in its row
-    const col = pivCol[i], ro = pivRowOf[col] * W; let v = 0;
-    for (let k = col >>> 5; k < W; k++) { let word = M[ro + k]; if (k === col >>> 5) word &= ~(((1 << (col & 31)) >>> 0) | (((1 << (col & 31)) >>> 0) - 1)) >>> 0;
-      while (word) { const b = 31 - Math.clz32(word & -word); const c = (k << 5) + b; if (pivRowOf[c] < 0) v ^= x[c]; word &= word - 1; } }
-    x[col] = v;
-  }
+  const sol = opts.dense ? solveDense(rows, nVar, rng) : solvePeel(rows, nVar, rng);
+  const x = sol.x, rank = sol.rank;
   // ---- rebuild configuration
   const oldP = opts.measureChange ? snapshotFlux(cfg) : null;
   const tw = v => x[tOff + v];
@@ -119,7 +164,7 @@ function gswStep(cfg, rng, opts = {}) {
     cfg.kinks[e] = nk;
     cfg.spin0[e] = (s0 ^ g0(cfg.src[e]) ^ g0(cfg.tgt[e])) ? -1 : 1;
   }
-  const out = { nVar, nRows: nr, rank, free: nVar - rank };
+  const out = { nVar, nRows: nr, rank, free: nVar - rank, coreRows: sol.coreRows, coreVars: sol.coreVars };
   if (opts.measureChange) out.fluxChange = fluxChange(cfg, oldP);
   return out;
 }
