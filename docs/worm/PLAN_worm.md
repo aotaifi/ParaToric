@@ -81,6 +81,11 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
   per sample): tau in local-sweep units: global gsw 183 (L=12); ell=8: 2095 (L=12), 3538 (L=16) => ~L^1.8 (two points);
   ell=12 at L=16: 493 (global there: ~420). Scan job 17128991 (L 12/16/24/32 x ell 8/12), /scratch/a/A.Otaifi/esworm_block/.
   Hypothesis: fixed-ell blocks give tau ~ L^(1.8-2) per sweep vs local ~L^2.8: gain growing ~L; plus blocks parallelise.
+- Block scan 17128991 RESULT (out/): tau in sweep-equivalents, ell=12: 1459 / 1915 / 2506 at L = 16/24/32 (~L^0.8);
+  ell=8: 1410 / 2880 / 13280 (too small at L=32). BUT block chains sit 3-16 sigma off equilibrium (plaquette high, star
+  low), like local ordered-start chains: blocks cannot change global sectors (all-vertex star parity, edge-loop windings).
+  Fix under test: electric SW step (O(N), flips those sectors) every sample. Job 17129569 (L=6 correctness vs global;
+  L 16/24/32 ell=12 ord+rnd; L=32 ell=16), out2/, watcher2.
 - NEXT, two tracks: (a) C++ port with bit-parallel dense core (production source on a branch: PI approval) to turn the
   constant into production speed for L <= 32; (b) a solver with ~linear cost per step (needed for L >= 48: dense core
   memory ~N^2). (a) is the practical win; (b) is research with unknown odds.
