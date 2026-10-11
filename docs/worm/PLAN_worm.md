@@ -113,6 +113,14 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
      Kill: tau per step growing faster than ~L^1 between 32 and 96.
   M4 L = 128, 200 production design.
   Running now: JS global gsw L=32/40 both starts (job 17131136, out6/); production reference table (worker).
+- CROSS-CHECK vs MCP-lead production (2026-10-11): reference table /scratch/a/A.Otaifi/esworm_xcheck/production_reference.md
+  (55 runs, L 8-32; worker; reproduces hladder plaquette 0.902945(881)). gsw prototype chains (job 17128161, ord+rnd)
+  vs production PT-only pooled means with scatter errors: 30 comparisons (plaquette, star, E/L^2, sigma_x, sigma_z at
+  L = 8, 16, 24), max |z| 2.22 (gsw_vs_production.txt, tools/esworm/xcheck.js). gsw starts agree with each other.
+  Production single replicas (local moves) do NOT agree among themselves at L >= 16: star splits ~0.899 / ~0.904,
+  ordered vs random up to 15 sigma at L=16, 78/120 pairs > 3 sigma at L=24, pil32_Lam trapped 12-18 sigma; same
+  signature as the prototype's local chains from ordered starts (slow global sectors). Relevant to the main project's
+  error bars: report to the PI (the main PLAN is not ours to edit).
 - NEXT, two tracks: (a) C++ port with bit-parallel dense core (production source on a branch: PI approval) to turn the
   constant into production speed for L <= 32; (b) a solver with ~linear cost per step (needed for L >= 48: dense core
   memory ~N^2). (a) is the practical win; (b) is research with unknown odds.
