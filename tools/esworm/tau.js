@@ -19,8 +19,11 @@ const par = { worm: arm === 'es', alphaS: kv.alphaS ? +kv.alphaS : 0, alphaT: kv
 par.C = 1 / (par.pClose * cfg.nP * beta * 2 * d);
 const { gswStep } = require('./gsw.js');
 const ell = kv.ell ? +kv.ell : 0; // block move of ell x ell vertices (0 = whole lattice)
+const esw = kv.esw === '1'; // also one electric SW step (O(N); flips global twist / edge-loop sectors) per sample
+const parSW = { worm: false };
 const es = arm === 'gsw' ? () => { const o = ell > 0 && ell < L ? { block: { x0: Math.floor(rng.uniform() * L), y0: Math.floor(rng.uniform() * L), ell } } : {};
-                             gswStep(cfg, () => rng.uniform(), o); return { opened: 0, closed: 0, wormSteps: 0 }; }
+                             gswStep(cfg, () => rng.uniform(), o); if (esw) esStep(cfg, () => rng.uniform(), parSW);
+                             return { opened: 0, closed: 0, wormSteps: 0 }; }
                          : () => esStep(cfg, () => rng.uniform(), par);
 const OBS = ['plaquette', 'star', 'sigx', 'sigz', 'energy'];
 const nE = cfg.nE;
