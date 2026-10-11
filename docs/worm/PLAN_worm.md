@@ -131,6 +131,11 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
   Second-half means: L=32 ord vs rnd plaquette 0.9010(10) / 0.9036(7) (2.2 sigma), sigma^x 2.5 sigma; L=40 (100 samples
   each, ~15 tau, block errors underestimated ~2x) plaquette 0.9061 / 0.9017, ord star 0.8997. INCONCLUSIVE: chains too
   short; no equilibration claim beyond L=24 until long C++ chains with sector observables (first job after C++ ED gate).
+- KAPPA3 CHECK PASSED (job 17131275, /scratch/a/A.Otaifi/esworm_xcheck/k3/, kappa.js, 10% discarded, 8 chains, scatter
+  errors): L=16, s=0.339: kappa3(S) = -1.2079e-6 +- 6.1e-8 vs MCP lead -1.2022e-6 +- 3.1e-8 (0.08 sigma); kappa2 =
+  4.7728e-4(18) vs his chains ~4.76e-4; mean S 1.80609(7) vs ~1.8062. Cost: 8 x 3.5 h = 28 core-h (JS) vs his 6 PT
+  chains 1768 core-h (sacct 17120726-33 excl. cancelled: 70.7 h x 25 cores). Variance x cost: 1.0e-13 vs 1.7e-12
+  => 16x better per core-hour in JS; block-error chi2/dof for k3 1.72 (scatter error used).
 - NEXT, two tracks: (a) C++ port with bit-parallel dense core (production source on a branch: PI approval) to turn the
   constant into production speed for L <= 32; (b) a solver with ~linear cost per step (needed for L >= 48: dense core
   memory ~N^2). (a) is the practical win; (b) is research with unknown odds.
