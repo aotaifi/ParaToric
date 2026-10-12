@@ -91,6 +91,7 @@ struct SimSpec {
     int    gsw_nd_dense_vars = 4096;       // nd: switch to the dense routine when at most this many core variables are not yet eliminated
     int    gsw_nd_dense_rows = 0;          // nd: ... or when at most this many unused rows are left (0: off)
     int    gsw_nd_leaf = 64;               // nd: boxes of at most this many core variables are not bisected further
+    bool   random_start = false;           // z basis, Boost lattice: tau = 0 spins uniform random +-1 with no events, instead of all default_spin
 };
 
 /**

@@ -84,6 +84,7 @@ int main(int argc, char **argv) {
         int gsw_nd_dense_vars;
         int gsw_nd_dense_rows;
         int gsw_nd_leaf;
+        bool random_start;
 
         po::options_description desc("Run extended toric code QMC simulation");
         desc.add_options()
@@ -138,6 +139,7 @@ int main(int argc, char **argv) {
         ("gsw_nd_dense_vars", po::value(&gsw_nd_dense_vars)->default_value(4096), "gsw_solver nd: switch to the dense routine when at most this many core variables are left.")
         ("gsw_nd_dense_rows", po::value(&gsw_nd_dense_rows)->default_value(0), "gsw_solver nd: ... or when at most this many unused rows are left (0 = off).")
         ("gsw_nd_leaf", po::value(&gsw_nd_leaf)->default_value(64), "gsw_solver nd: boxes with at most this many core variables are not bisected further.")
+        ("random_start", po::value(&random_start)->default_value(false), "z basis, Boost lattice: start from uniformly random edge spins at tau=0 (no events) instead of all default_spin.")
         ("process_index,procid", po::value(&process_index), "Identifier of process (for debugging).")
         ("lattice_type,lat", po::value(&lattice_type), "Type of lattice used.")
         ("lattice_backend,latbe", po::value(&lattice_backend)->default_value("boost"), "Lattice backend used by benchmark modes (boost or flat_square).")
@@ -198,7 +200,8 @@ int main(int argc, char **argv) {
             .gsw_solver = gsw_solver,
             .gsw_nd_dense_vars = gsw_nd_dense_vars,
             .gsw_nd_dense_rows = gsw_nd_dense_rows,
-            .gsw_nd_leaf = gsw_nd_leaf
+            .gsw_nd_leaf = gsw_nd_leaf,
+            .random_start = random_start
         };
         paratoric::OutSpec out_spec = {
             .path_out = path_output_directory,
