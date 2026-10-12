@@ -242,6 +242,13 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     with gate 3 (-3.67(0.87)e-8, 0.95 sigma); kappa2(delta) 9.22e-5(0.13e-5); <S> 1.805860(57); +1/-1 starts agree (0.7 /
     0.2 sigma); <star_parity> -0.002(2), <wilson_x> 0.039(1), <winding_x> 0.001(3). Projection: 3% needs ~5.5e6 samples
     (planned 6.0e6, 5.4e6 after discard): on the edge; extend ~10% if the final is > 3.1%. Speed 0.70 s/step.
+  - 19:00 both arrays fully running (64 + 64). gsw-nd idle since 16:55 without reporting; lead read its files:
+    N1 PASS (nd/n1_full_seed1.txt: 200 random systems x 3 nd variants, uniformity KS p 0.08-0.96, 0 violations;
+    broken variants fail 108/109 core>0 systems at p<1e-6). N4 (nd/n4.log, 20 steps from ordered start, one core):
+    L=48 nd 0.52-0.63 s/step (solve 10.5-13.6 s/20) vs dense 23.1 s/step same run => ~40x; 0.26 GB vs 2.4 GB.
+    L=64 nd 1.7-1.8 s/step, 0.7 GB. Per-step nd cost L^3.6 (48->64). N2/N3 sruns 17158994/6 cancelled before start
+    (cause unknown); worker asked to rerun N2/N3 and report. Derived (unvalidated) nd costs for kappa3(S) 10%: L=64
+    ~0.5k core-h, L=96 ~3.6k, L=128 ~13k.
 
 ## Update 2026-10-12 (sector observables, worker gsw-sector)
 - build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,
