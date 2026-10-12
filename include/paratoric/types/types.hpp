@@ -87,6 +87,7 @@ struct SimSpec {
     bool   gsw_only = false;               // every Metropolis step is replaced by one gSW step (validation, benchmarks)
     double gsw_j_bond_factor = 1.;         // validation only: scales the J bond rate; anything but 1 is a deliberately broken sampler
     bool   gsw_verify = false;             // validation only: check each step's constraint system against the pre-update state
+    bool   random_start = false;           // z basis, Boost lattice: tau = 0 spins uniform random +-1 with no events, instead of all default_spin
 };
 
 /**

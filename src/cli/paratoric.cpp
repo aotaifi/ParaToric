@@ -80,6 +80,7 @@ int main(int argc, char **argv) {
         bool gsw_only;
         double gsw_j_bond_factor;
         bool gsw_verify;
+        bool random_start;
 
         po::options_description desc("Run extended toric code QMC simulation");
         desc.add_options()
@@ -130,6 +131,7 @@ int main(int argc, char **argv) {
         ("gsw_only", po::value(&gsw_only)->default_value(false), "Replace every Metropolis step by one generalised Swendsen-Wang step (validation, benchmarks).")
         ("gsw_j_bond_factor", po::value(&gsw_j_bond_factor)->default_value(1.0), "Validation only: scale the gSW J bond rate. Anything but 1 is a deliberately broken sampler.")
         ("gsw_verify", po::value(&gsw_verify)->default_value(false), "Validation only: check every gSW step against the pre-update configuration (slow).")
+        ("random_start", po::value(&random_start)->default_value(false), "z basis, Boost lattice: start from uniformly random edge spins at tau=0 (no events) instead of all default_spin.")
         ("process_index,procid", po::value(&process_index), "Identifier of process (for debugging).")
         ("lattice_type,lat", po::value(&lattice_type), "Type of lattice used.")
         ("lattice_backend,latbe", po::value(&lattice_backend)->default_value("boost"), "Lattice backend used by benchmark modes (boost or flat_square).")
@@ -186,7 +188,8 @@ int main(int argc, char **argv) {
             .gsw_every = gsw_every,
             .gsw_only = gsw_only,
             .gsw_j_bond_factor = gsw_j_bond_factor,
-            .gsw_verify = gsw_verify
+            .gsw_verify = gsw_verify,
+            .random_start = random_start
         };
         paratoric::OutSpec out_spec = {
             .path_out = path_output_directory,

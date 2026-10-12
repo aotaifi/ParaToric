@@ -1194,7 +1194,18 @@ public:
     // Merge the all-flip lists from kinks and star events, then rebuild every cache and integrated energy from scratch.
     void gsw_rebuild_derived();
 
-private:   
+    // ---- Sector observables (square lattice, z basis). Conventions: vertex index = y * L + x; an edge with
+    // orientation "x" runs from (x, y) to (x + 1, y) ("horizontal"), "y" from (x, y) to (x, y + 1) ("vertical").
+    // Closed-loop meaning only on periodic lattices; open ones return what is defined (a row then holds L - 1 edges).
+    // (-1)^(number of star events, all vertices, all of [0, beta)).
+    double sector_star_parity();
+    // Average over the L rows (along_x) or columns of the product of sigma^z over the edges of that line, at tau = 0.
+    double sector_wilson(bool along_x);
+    // (-1)^(number of h-kinks on the L edges joining column 0 to column 1 ("x" edges with source x = 0), or row 0 to
+    // row 1 ("y" edges with source y = 0, if not along_x)), over all of [0, beta). For L = 2 only edges with source 0 count.
+    double sector_winding(bool along_x);
+
+private:
     char BASIS;
     int LATTICE_DIMENSIONALITY;
     std::string LATTICE_TYPE;   

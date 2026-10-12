@@ -4349,4 +4349,54 @@ void Lattice::gsw_rebuild_derived() {
     init_potential_energy();
 }
 
+double Lattice::sector_star_parity() {
+    std::size_t count = 0;
+    for (int v = 0; v < get_vertex_count(); ++v) {
+        count += g[static_cast<size_t>(v)].star_flips.size();
+    }
+    return (count % 2 == 0) ? 1. : -1.;
+}
+
+double Lattice::sector_wilson(bool along_x) {
+    if (LATTICE_TYPE != "square") {
+        throw std::invalid_argument("The Wilson-loop sector observables need the square lattice.");
+    }
+    const int L = SYSTEM_SIZE;
+    const std::string wanted = along_x ? "x" : "y";
+    std::vector<int> line_product(static_cast<size_t>(L), 1);
+    for (const auto& edg : egde_cache_) {
+        if (g[edg].orientation != wanted) {
+            continue;
+        }
+        const int src = static_cast<int>(boost::source(edg, g));
+        const int line = along_x ? src / L : src % L; // row y0 for "x" edges, column x0 for "y" edges
+        line_product[static_cast<size_t>(line)] *= g[edg].spin;
+    }
+    double sum = 0.;
+    for (int p : line_product) {
+        sum += p;
+    }
+    return sum / static_cast<double>(L);
+}
+
+double Lattice::sector_winding(bool along_x) {
+    if (LATTICE_TYPE != "square") {
+        throw std::invalid_argument("The winding sector observables need the square lattice.");
+    }
+    const int L = SYSTEM_SIZE;
+    const std::string wanted = along_x ? "x" : "y";
+    std::size_t kinks = 0;
+    for (const auto& edg : egde_cache_) {
+        if (g[edg].orientation != wanted) {
+            continue;
+        }
+        const int src = static_cast<int>(boost::source(edg, g));
+        const int coordinate = along_x ? src % L : src / L; // x of the source for "x" edges, y for "y" edges
+        if (coordinate == 0) {
+            kinks += g[edg].single_spin_flips.size();
+        }
+    }
+    return (kinks % 2 == 0) ? 1. : -1.;
+}
+
 } // namespace paratoric

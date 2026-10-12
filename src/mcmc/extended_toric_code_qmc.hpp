@@ -1133,8 +1133,31 @@ class ExtendedToricCodeQMC {
                 return lat.get_non_diag_tuple_energy_z()/static_cast<double>(lat.get_vertex_count() * mu);
         };
 
-        std::function<double(LatticeT&, double, double, double, double)> 
-        plaquette_z_obs 
+        // Sector observables (z basis, square Boost lattice only, see Lattice::sector_*): +-1 valued per-sample series.
+        template<typename F>
+        static std::function<double(LatticeT&, double, double, double, double)> sector_obs(F f) {
+            return [f](LatticeT& lat, double, double, double, double) -> double {
+                if constexpr (Basis == 'z' && std::same_as<LatticeT, Lattice>) {
+                    return f(lat);
+                } else {
+                    UNUSED(lat);
+                    throw std::invalid_argument("The sector observables need the z basis and the Boost lattice backend.");
+                }
+            };
+        }
+        std::function<double(LatticeT&, double, double, double, double)>
+        star_parity_obs = sector_obs([](auto& lat) { return lat.sector_star_parity(); });
+        std::function<double(LatticeT&, double, double, double, double)>
+        wilson_x_obs = sector_obs([](auto& lat) { return lat.sector_wilson(true); });
+        std::function<double(LatticeT&, double, double, double, double)>
+        wilson_y_obs = sector_obs([](auto& lat) { return lat.sector_wilson(false); });
+        std::function<double(LatticeT&, double, double, double, double)>
+        winding_x_obs = sector_obs([](auto& lat) { return lat.sector_winding(true); });
+        std::function<double(LatticeT&, double, double, double, double)>
+        winding_y_obs = sector_obs([](auto& lat) { return lat.sector_winding(false); });
+
+        std::function<double(LatticeT&, double, double, double, double)>
+        plaquette_z_obs
         = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             if constexpr (Basis == 'x') 
                 return lat.get_non_diag_tuple_energy_x()/static_cast<double>(lat.get_plaquette_count() * J); 
@@ -1250,8 +1273,13 @@ class ExtendedToricCodeQMC {
             // TODO fix
             {"sigma_z_dynamical_susceptibility", "susceptibility", sigma_z_dynamical_susceptibility_obs, 0},
             {"staggered_imaginary_times", "real", staggered_imaginary_times_obs},
+            {"star_parity", "real", star_parity_obs},
             {"star_x", "real", star_x_obs},
-            {"string_number", "real", string_number_obs}
+            {"string_number", "real", string_number_obs},
+            {"wilson_x", "real", wilson_x_obs},
+            {"wilson_y", "real", wilson_y_obs},
+            {"winding_x", "real", winding_x_obs},
+            {"winding_y", "real", winding_y_obs}
             };
         
         /**
@@ -1855,6 +1883,14 @@ class ExtendedToricCodeQMC {
          */
         void gsw_step(LatticeT& lat, double& integrated_pot_energy, double beta, double h, double mu, double J, double lmbda);
         void log_gsw_summary() const;
+
+        /**
+         * @brief If config.sim_spec.random_start, replace the fresh lattice's uniform initial spins by independent
+         * uniform +-1 spins at tau = 0 (no kinks, no star events), drawn from the simulation RNG in edge-cache order,
+         * then rebuild all caches. Any event-free spin pattern is an admissible configuration, so no gauge fixing is
+         * needed. z basis, Boost lattice only. Call right after the lattice is built, before the potential energy is totalled.
+         */
+        void apply_random_start(LatticeT& lat, const Config& config);
 
         template<typename T>
         requires std::integral<T> || std::floating_point<T>
@@ -4414,6 +4450,24 @@ void ExtendedToricCodeQMC<Basis, LatticeT>::configure_gsw(const Config& config) 
 
 template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
+void ExtendedToricCodeQMC<Basis, LatticeT>::apply_random_start(LatticeT& lat, const Config& config) {
+    if (!config.sim_spec.random_start) {
+        return;
+    }
+    if constexpr (Basis == 'z' && std::same_as<LatticeT, Lattice>) {
+        const int edge_count = lat.get_edge_count();
+        for (int e = 0; e < edge_count; ++e) {
+            lat.gsw_set_spin0(e, random_index(2) == 0 ? -1 : 1);
+        }
+        lat.gsw_rebuild_derived();
+    } else {
+        UNUSED(lat);
+        throw std::invalid_argument("random_start needs the z basis and the Boost lattice backend.");
+    }
+}
+
+template<char Basis, typename LatticeT>
+requires ValidBasis<Basis>
 void ExtendedToricCodeQMC<Basis, LatticeT>::log_gsw_summary() const {
     if (gsw_updater_.steps == 0) {
         return;
@@ -4565,7 +4619,8 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_thermalization(
 
     // Initialize Lattice
     auto lat = LatticeT(config.lat_spec, rng);
-    
+    apply_random_start(lat, config);
+
     double integrated_pot_energy = total_integrated_pot_energy(
         lat, config.param_spec.h, config.param_spec.mu, config.param_spec.J, config.param_spec.lmbda
     );
@@ -4792,6 +4847,7 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
 
     // Initialize Lattice
     auto lat = LatticeT(config.lat_spec, rng);
+    apply_random_start(lat, config);
 
     int pt_ladder_index = pt_enabled ? pt_rank : 0;
     double runtime_h = pt_enabled ? config.pt_spec.ladder_s[static_cast<size_t>(pt_ladder_index)] : config.param_spec.h;
@@ -5868,6 +5924,7 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_core_update_benchmark(
     configure_gsw(config);
 
     auto lat = LatticeT(config.lat_spec, rng);
+    apply_random_start(lat, config);
     double integrated_pot_energy = total_integrated_pot_energy(
         lat, config.param_spec.h, config.param_spec.mu, config.param_spec.J, config.param_spec.lmbda
     );
