@@ -87,6 +87,10 @@ struct SimSpec {
     bool   gsw_only = false;               // every Metropolis step is replaced by one gSW step (validation, benchmarks)
     double gsw_j_bond_factor = 1.;         // validation only: scales the J bond rate; anything but 1 is a deliberately broken sampler
     bool   gsw_verify = false;             // validation only: check each step's constraint system against the pre-update state
+    std::string gsw_solver = "dense";      // GF(2) solver of the gSW update: "dense" or "nd" (nested-dissection order, hybrid sparse/dense)
+    int    gsw_nd_dense_vars = 4096;       // nd: switch to the dense routine when at most this many core variables are not yet eliminated
+    int    gsw_nd_dense_rows = 0;          // nd: ... or when at most this many unused rows are left (0: off)
+    int    gsw_nd_leaf = 64;               // nd: boxes of at most this many core variables are not bisected further
 };
 
 /**

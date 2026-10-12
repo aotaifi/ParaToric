@@ -4405,6 +4405,16 @@ void ExtendedToricCodeQMC<Basis, LatticeT>::configure_gsw(const Config& config) 
     gsw_updater_ = GswUpdater{};
     gsw_updater_.j_bond_rate_factor = config.sim_spec.gsw_j_bond_factor;
     gsw_updater_.verify_current_state = config.sim_spec.gsw_verify;
+    if (config.sim_spec.gsw_solver == "nd") {
+        gsw_updater_.solver = gf2::Solver::nested_dissection;
+    } else if (config.sim_spec.gsw_solver == "dense") {
+        gsw_updater_.solver = gf2::Solver::dense;
+    } else {
+        throw std::invalid_argument("gsw_solver must be \"dense\" or \"nd\".");
+    }
+    gsw_updater_.nd_leaf = config.sim_spec.gsw_nd_leaf;
+    gsw_updater_.nd_dense_vars = config.sim_spec.gsw_nd_dense_vars;
+    gsw_updater_.nd_dense_rows = config.sim_spec.gsw_nd_dense_rows;
     if (gsw_every_ > 0 || gsw_only_) {
         if constexpr (Basis != 'z' || !std::same_as<LatticeT, Lattice>) {
             throw std::invalid_argument("The generalised Swendsen-Wang update needs the z basis and the Boost lattice backend.");
@@ -4423,6 +4433,14 @@ void ExtendedToricCodeQMC<Basis, LatticeT>::log_gsw_summary() const {
         "gSW summary: steps={} seconds_build={:.6g} seconds_solve={:.6g} seconds_rebuild={:.6g} mean_variables={:.6g} mean_core_rows={:.6g}",
         gsw_updater_.steps, gsw_updater_.seconds_build, gsw_updater_.seconds_solve, gsw_updater_.seconds_rebuild,
         static_cast<double>(gsw_updater_.variables_sum) / n, static_cast<double>(gsw_updater_.core_rows_sum) / n);
+    const auto& ls = gsw_updater_.linear_solver();
+    BOOST_LOG_TRIVIAL(info) << std::format(
+        "gSW solver: kind={} seconds_peel={:.6g} seconds_order={:.6g} seconds_sparse={:.6g} seconds_dense={:.6g} "
+        "nd_dense_vars={} nd_dense_rows={} nd_leaf={} max_front={} mean_dense_rows={:.6g} mean_dense_cols={:.6g} mean_sparse_work={:.6g}",
+        gsw_updater_.solver == gf2::Solver::nested_dissection ? "nd" : "dense", ls.seconds_peel, ls.seconds_order,
+        ls.seconds_sparse, ls.seconds_dense, gsw_updater_.nd_dense_vars, gsw_updater_.nd_dense_rows, gsw_updater_.nd_leaf,
+        ls.nd_max_front_seen, static_cast<double>(ls.nd_dense_rows_sum) / n, static_cast<double>(ls.nd_dense_cols_sum) / n,
+        static_cast<double>(ls.nd_work_sum) / n);
 }
 
 template<char Basis, typename LatticeT>

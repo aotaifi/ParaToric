@@ -1182,6 +1182,8 @@ public:
         std::vector<int> edge_target;
         std::vector<int> plaquette_offset;  // CSR over plaquette_edge: plaquette p owns [offset[p], offset[p+1])
         std::vector<int> plaquette_edge;    // edge indices
+        std::vector<double> vertex_x;       // real-space position of each vertex (for the nested-dissection order of the solver)
+        std::vector<double> vertex_y;
     };
     const GswTopology& gsw_topology();
     // Event storage of edge e (kinks) and vertex v (star events), to be overwritten by the update.

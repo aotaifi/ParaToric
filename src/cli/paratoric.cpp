@@ -80,6 +80,10 @@ int main(int argc, char **argv) {
         bool gsw_only;
         double gsw_j_bond_factor;
         bool gsw_verify;
+        std::string gsw_solver;
+        int gsw_nd_dense_vars;
+        int gsw_nd_dense_rows;
+        int gsw_nd_leaf;
 
         po::options_description desc("Run extended toric code QMC simulation");
         desc.add_options()
@@ -130,6 +134,10 @@ int main(int argc, char **argv) {
         ("gsw_only", po::value(&gsw_only)->default_value(false), "Replace every Metropolis step by one generalised Swendsen-Wang step (validation, benchmarks).")
         ("gsw_j_bond_factor", po::value(&gsw_j_bond_factor)->default_value(1.0), "Validation only: scale the gSW J bond rate. Anything but 1 is a deliberately broken sampler.")
         ("gsw_verify", po::value(&gsw_verify)->default_value(false), "Validation only: check every gSW step against the pre-update configuration (slow).")
+        ("gsw_solver", po::value(&gsw_solver)->default_value("dense"), "gSW linear solver: dense (bit-packed elimination of the whole core) or nd (nested-dissection order, sparse then dense).")
+        ("gsw_nd_dense_vars", po::value(&gsw_nd_dense_vars)->default_value(4096), "gsw_solver nd: switch to the dense routine when at most this many core variables are left.")
+        ("gsw_nd_dense_rows", po::value(&gsw_nd_dense_rows)->default_value(0), "gsw_solver nd: ... or when at most this many unused rows are left (0 = off).")
+        ("gsw_nd_leaf", po::value(&gsw_nd_leaf)->default_value(64), "gsw_solver nd: boxes with at most this many core variables are not bisected further.")
         ("process_index,procid", po::value(&process_index), "Identifier of process (for debugging).")
         ("lattice_type,lat", po::value(&lattice_type), "Type of lattice used.")
         ("lattice_backend,latbe", po::value(&lattice_backend)->default_value("boost"), "Lattice backend used by benchmark modes (boost or flat_square).")
@@ -186,7 +194,11 @@ int main(int argc, char **argv) {
             .gsw_every = gsw_every,
             .gsw_only = gsw_only,
             .gsw_j_bond_factor = gsw_j_bond_factor,
-            .gsw_verify = gsw_verify
+            .gsw_verify = gsw_verify,
+            .gsw_solver = gsw_solver,
+            .gsw_nd_dense_vars = gsw_nd_dense_vars,
+            .gsw_nd_dense_rows = gsw_nd_dense_rows,
+            .gsw_nd_leaf = gsw_nd_leaf
         };
         paratoric::OutSpec out_spec = {
             .path_out = path_output_directory,

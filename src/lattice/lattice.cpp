@@ -4319,6 +4319,12 @@ const Lattice::GswTopology& Lattice::gsw_topology() {
         topo.edge_source[i] = u;
         topo.edge_target[i] = v;
     }
+    topo.vertex_x.resize(static_cast<size_t>(topo.vertex_count));
+    topo.vertex_y.resize(static_cast<size_t>(topo.vertex_count));
+    for (int v = 0; v < topo.vertex_count; ++v) {
+        topo.vertex_x[static_cast<size_t>(v)] = g[static_cast<size_t>(v)].x;
+        topo.vertex_y[static_cast<size_t>(v)] = g[static_cast<size_t>(v)].y;
+    }
     topo.plaquette_offset.assign(1, 0);
     for (const auto& pedges : plaquette_edges_cache_) {
         for (const Edge& e : pedges) {

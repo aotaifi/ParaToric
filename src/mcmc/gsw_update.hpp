@@ -48,6 +48,12 @@ public:
     double j_bond_rate_factor = 1.0;
     // Test hook: check before solving that the current configuration satisfies the system that was built.
     bool verify_current_state = false;
+    // Linear solver: dense elimination of the whole core, or nested-dissection order (see gf2_sampler.hpp).
+    gf2::Solver solver = gf2::Solver::dense;
+    int nd_leaf = 64;
+    int nd_dense_vars = 4096;
+    int nd_dense_rows = 0;
+    const gf2::UniformSolutionSampler& linear_solver() const { return solver_; }
 
     // Wall-clock seconds accumulated in the three phases, and the number of steps.
     double seconds_build = 0.;
@@ -93,7 +99,14 @@ public:
         n_var += nV;
 
         // ---- equations
+        solver_.solver = solver;
+        solver_.nd_leaf = nd_leaf;
+        solver_.nd_dense_vars = nd_dense_vars;
+        solver_.nd_dense_rows = nd_dense_rows;
         solver_.reset(n_var);
+        if (solver == gf2::Solver::nested_dissection) {
+            assign_coordinates(topo, beta);
+        }
         if (lmbda > 0.) {
             const double rate = 2. * lmbda;
             for (int e = 0; e < nE; ++e) {
@@ -291,6 +304,54 @@ private:
     static bool is_pre(const std::vector<double>& cuts, const std::vector<std::int32_t>& off, int i, double tau) {
         return off[static_cast<std::size_t>(i) + 1] > off[static_cast<std::size_t>(i)] &&
                tau < cuts[static_cast<std::size_t>(off[static_cast<std::size_t>(i)])];
+    }
+
+    // Space-time position of every variable for the nested-dissection order of the solver: edge segments sit at the
+    // edge midpoint, vertex segments and twist bits at their vertex (twist bits at tau = 0), segments at the midpoint
+    // of their tau interval (a wrapping segment at the midpoint of its wrapped interval). tau is scaled by
+    // (spatial extent) / beta, so that a box of the space-time system is as long in tau as in space. Periodic
+    // wrap-around is ignored: variables coupled across the seam simply end up in separators.
+    void assign_coordinates(const Lattice::GswTopology& topo, double beta) {
+        const int nV = topo.vertex_count;
+        double xmin = 1e300, xmax = -1e300, ymin = 1e300, ymax = -1e300;
+        for (int v = 0; v < nV; ++v) {
+            xmin = std::min(xmin, topo.vertex_x[static_cast<std::size_t>(v)]);
+            xmax = std::max(xmax, topo.vertex_x[static_cast<std::size_t>(v)]);
+            ymin = std::min(ymin, topo.vertex_y[static_cast<std::size_t>(v)]);
+            ymax = std::max(ymax, topo.vertex_y[static_cast<std::size_t>(v)]);
+        }
+        const double scale = (std::max(xmax - xmin, ymax - ymin) + 1.) / beta;
+        for (int v = 0; v < nV; ++v) {
+            const auto vx = static_cast<float>(topo.vertex_x[static_cast<std::size_t>(v)]);
+            const auto vy = static_cast<float>(topo.vertex_y[static_cast<std::size_t>(v)]);
+            const int m = vcut_count(v);
+            const double* c = vcuts_.data() + vcut_off_[static_cast<std::size_t>(v)];
+            for (int k = 0; k < std::max(1, m); ++k) {
+                solver_.coord(g_off_[static_cast<std::size_t>(v)] + k, vx, vy, static_cast<float>(segment_mid(c, m, k, beta) * scale));
+            }
+            solver_.coord(t_off_ + v, vx, vy, 0.F);
+        }
+        for (int e = 0; e < topo.edge_count; ++e) {
+            const auto u = static_cast<std::size_t>(topo.edge_source[static_cast<std::size_t>(e)]);
+            const auto w = static_cast<std::size_t>(topo.edge_target[static_cast<std::size_t>(e)]);
+            const auto ex = static_cast<float>(0.5 * (topo.vertex_x[u] + topo.vertex_x[w]));
+            const auto ey = static_cast<float>(0.5 * (topo.vertex_y[u] + topo.vertex_y[w]));
+            const int m = ecut_count(e);
+            const double* c = ecuts_.data() + ecut_off_[static_cast<std::size_t>(e)];
+            for (int k = 0; k < std::max(1, m); ++k) {
+                solver_.coord(s_off_[static_cast<std::size_t>(e)] + k, ex, ey, static_cast<float>(segment_mid(c, m, k, beta) * scale));
+            }
+        }
+    }
+    // midpoint of segment k of a timeline with m cuts c (the last segment wraps around beta)
+    static double segment_mid(const double* c, int m, int k, double beta) {
+        if (m == 0) {
+            return 0.5 * beta;
+        }
+        const double a = c[k];
+        const double b = k + 1 < m ? c[k + 1] : c[0] + beta;
+        const double t = 0.5 * (a + b);
+        return t >= beta ? t - beta : t;
     }
 
     // The configuration before the update, written in the variables of the system (test hook).
