@@ -142,6 +142,26 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
   run (/scratch/a/A.Otaifi/paratoric/ctladder_prod_20261011/prod/L32_size: kappa3(S) -4.92e-8(1.37e-8), <S> 1.80542,
   kappa2(delta) 9.59e-5(4.6e-6)) with measured C++ cost per core-hour. His L=32/L=48 ladders (done Tue ~10 UTC /
   Wed-Thu) become our large-L references.
+- C++ GATE G1 PASSED (2026-10-12, verified by lead; worker gsw-cpp branch worm/gsw-cpp, build
+  /scratch/a/A.Otaifi/gsw_cpp_20261011/build/paratoric, runs g1/{A,B,C,D}, ED ed/*/exact_*.json, compare via
+  scripts/gsw/compare_chains.py on compute node, srun 17155478, 1000 samples discarded): L=3 open, 4 coupling points
+  (A,B: s*=0.3391 beta 1,4; C: h .6 lm .25 mu 1.2 J .8 beta 2; D: h .15 lm .9 mu .6 J 1.5 beta 3), 8 chains per arm,
+  6 observables incl. delta_tau_avg, energy_h, energy_lmbda. gsw-only and gsw+local: 48 comparisons, max z 2.72
+  (scatter errors, 7 dof; block errors max 1.75). Broken arm (J pin rate x0.5): fails at all 4 points, max z 163-1118.
+  = MCP lead's gate (1). Chains at L=3 cost ~7 s each.
+- C++ TIMING MEASURED (2026-10-12, lead, /scratch/a/A.Otaifi/gsw_cpp_20261011/lead_timing, one core, small partition,
+  gsw-only, beta=L, s*): 0.85 ms / 17 ms / 0.24 s / 1.93 s per step at L = 8/16/24/32; solve is 98% at L=32; dense core
+  rows 443 / 3.6k / 12.2k / 30.3k; peak RSS 240 MB (L=32). L=16->32 per-step cost x113 (~L^6.8). vs JS on the cluster at
+  L=16 (k3 check: 28 core-h / 926k steps = 0.109 s/step): C++ 6.4x faster, not the assumed 20x.
+  => kappa3(S) at L=16 to the k3-check precision would cost 4.4 core-h in C++ vs 1768 for the PT ladder (half the error)
+  => ~100x better variance per core-hour (derived). Dense extrapolation (L^6.8, unvalidated): L=48 ~30 s/step, L=64
+  ~3.5 min/step and ~8 GB core matrix. Beyond L~48 the nested-dissection solver (M2) is required.
+- RUNNING: gate (3), job 17155547 (gate3_L32/launch.sbatch, watcher gate3_L32/watch.sh PID 1346141 PPID 1 ->
+  WATCHER_VERDICT.txt): L=32 s*, 8 chains (default_spin +1 x4, -1 x4), 300 therm + 12000 gSW steps each (~6.6 h),
+  checkpoints every 30 min. Done = kappa3(S), kappa2(delta), <S> compared with L32_size (scatter errors over 8 chains,
+  10% discard) + first-half/second-half and +1/-1 start agreement. Expected kappa3 error ~1e-8 (derived from the L=16
+  error assuming kappa2(S) falls like kappa2(delta), x6.9: unvalidated). Cost 53 core-h.
+- Worker gsw-cpp (2026-10-12 brief): sector observables, random start, G2 vs JS at L=6. Silent 15 h before that.
 - NEXT, two tracks: (a) C++ port with bit-parallel dense core (production source on a branch: PI approval) to turn the
   constant into production speed for L <= 32; (b) a solver with ~linear cost per step (needed for L >= 48: dense core
   memory ~N^2). (a) is the practical win; (b) is research with unknown odds.
