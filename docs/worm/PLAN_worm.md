@@ -249,6 +249,12 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     L=64 nd 1.7-1.8 s/step, 0.7 GB. Per-step nd cost L^3.6 (48->64). N2/N3 sruns 17158994/6 cancelled before start
     (cause unknown); worker asked to rerun N2/N3 and report. Derived (unvalidated) nd costs for kappa3(S) 10%: L=64
     ~0.5k core-h, L=96 ~3.6k, L=128 ~13k.
+  - ~20:30 ND GATES VERIFIED BY LEAD (worker ran them 19:01-19:10 but did not report; nd/lead_check.sh, nd/lead_n3.py):
+    N2 L=3 ED, points A-D, 8 chains/arm, two nd configs (g1_prod dv4096 leaf64; g1_sparse dv0 leaf4): correct arms max z
+    3.03 / 3.13 (both D gsw-only), broken arm z 129-1292. Follow-up D with 32 fresh chains per config (nd/lead_D32):
+    max z 1.01 (prod), 0.98 (sparse), 1.12 (dense) => the 3.0 was a fluctuation. N3 nd vs dense L=8 (nd0) and L=16 (nd0,
+    nd4096), 4 chains, 2e4 steps: max |z| 1.39 over 4 observables. => ND solver exact; production use pending the merged
+    build (sector observables + nd), restart test and L=48 checkpoint compatibility (worker gsw-nd, build_prod2).
 
 ## Update 2026-10-12 (sector observables, worker gsw-sector)
 - build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,
