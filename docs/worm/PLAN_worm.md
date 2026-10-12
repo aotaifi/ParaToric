@@ -161,6 +161,14 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
   checkpoints every 30 min. Done = kappa3(S), kappa2(delta), <S> compared with L32_size (scatter errors over 8 chains,
   10% discard) + first-half/second-half and +1/-1 start agreement. Expected kappa3 error ~1e-8 (derived from the L=16
   error assuming kappa2(S) falls like kappa2(delta), x6.9: unvalidated). Cost 53 core-h.
+- GATE (3) PRELIMINARY, 6 of 8 chains (c2-c7, rome nodes, 2.3 h each = 14.0 core-h; kappa_h5.py 0.1 discard,
+  scatter errors): kappa3(S) -3.75e-8(1.17e-8) vs ref -4.92e-8(1.37e-8): 0.65 sigma; kappa2(delta) 9.21e-5(0.15e-5) vs
+  9.59e-5(0.46e-5): 0.79 sigma; <S> 1.805907(76) vs 1.80542 (ref error not yet known; ct32_size row in
+  production_reference: plaq 0.903271(201), star 0.902148(233)); +1 and -1 starts agree; <delta> -1.6e-4(0.9e-4)
+  (self-dual point). Cost: ref job 17128038 = 4.59e6 CPU-s on 258 threads = 637 physical core-h (whole 129-rung ladder).
+  Variance x core-h: kappa3 62x, kappa2(delta) 450x in favour of gsw at s* (the ladder also gives the other rungs).
+  Per-step speed on rome nodes 0.68 s vs 1.93 s on hua08 (node type matters 2.8x). Per-rank obs.h5 of L32_size are
+  walkers, not rungs (rank128 plaq 0.9008): reference values taken from the MCP lead's own analysis.
 - Worker gsw-cpp (2026-10-12 brief): sector observables, random start, G2 vs JS at L=6. Silent 15 h before that.
 - NEXT, two tracks: (a) C++ port with bit-parallel dense core (production source on a branch: PI approval) to turn the
   constant into production speed for L <= 32; (b) a solver with ~linear cost per step (needed for L >= 48: dense core
