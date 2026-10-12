@@ -182,6 +182,17 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
   for 64.8k steps, tau_eff 6.4 steps), so r = sqrt(6/n_eff)/|gamma1|, gamma1 = k3/k2^1.5 = 0.115 (L=16), 0.078 (L=32,
   +-30%). Extrapolated gamma1 ~ L^-0.56: 0.062 (L=48), 0.053 (L=64). Steps for r=3% (tau 7): L=32 7e6 (1.3k core-h),
   L=48 1.2e7 (38-72k core-h), L=64 1.7e7 (~410k core-h dense). => 3% at L>=48 needs M2 or a looser target.
+- MCP lead decision (2026-10-12, "within the PI's go"; PI to confirm budget in session): L=48 target ~10% (nu fit
+  16-48 gives ~+-0.014; s* systematic ~0.03 dominates). Approved: L=32 to 3% (~1.3k core-h) + L=48 to ~10% (<= 7k
+  core-h). L=64/96 held until the sparse solver is benchmarked. Submit only after gate-3 finals + sector/random-start
+  gates + a checkpoint-restart test with gsw; send job ids and ETA to mcp-lead.
+- M2 STARTED 2026-10-12: worker gsw-nd (Sonnet, high effort: performance-critical algorithm), branch worm/gsw-nd
+  (worktree paratoric_worktrees/gsw-nd, off the WIP commit), build_nd/, runs nd/. Design: per-variable space-time
+  coords, recursive coordinate bisection ND on the peeled core, sparse elimination in ND order with shortest-row pivots,
+  dense bit-packed tail for the last K variables, --gsw_solver dense|nd. Gates N1 (uniformity chi2 on brute-forced small
+  systems + broken variant), N2 (L=3 ED), N3 (dense vs nd L=8/16), N4 (timing L=16-48/64). Derived expectation (front
+  rows w_r^2 x sep w_c /64 word-ops, ndtest fronts): L=48 ~0.2-0.5 s/step (~40x dense), L=64 ~1-3 s, L=200 ~15 min
+  single core / ~15-30 s on 64 cores. Unvalidated. If N4 confirms >=10x at L=48, switch the L=48 run to nd mid-way.
 - Worker gsw-cpp STOPPED 2026-10-12 ~15:40 UTC (silent since 10-11 08:27, no reply to two messages); its uncommitted
   port backed up to /scratch/a/A.Otaifi/gsw_cpp_20261011/src_backup_20261012/. New worker gsw-sector (Sonnet,
   medium): WIP commit of the port, sector observables (star_parity, wilson_x/y, winding_x/y), --random_start, gates
