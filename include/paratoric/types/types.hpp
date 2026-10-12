@@ -82,6 +82,11 @@ struct SimSpec {
     bool   custom_therm             = false; // used only by sampling
     int    seed                     = 0;     // 0 means random seed
     std::vector<std::string> observables{};
+    // Generalised Swendsen-Wang update (z basis, Boost lattice, tools in src/mcmc/gsw_update.hpp). Off by default.
+    std::int64_t gsw_every = 0;            // > 0: one gSW step after every gsw_every-th Metropolis step
+    bool   gsw_only = false;               // every Metropolis step is replaced by one gSW step (validation, benchmarks)
+    double gsw_j_bond_factor = 1.;         // validation only: scales the J bond rate; anything but 1 is a deliberately broken sampler
+    bool   gsw_verify = false;             // validation only: check each step's constraint system against the pre-update state
 };
 
 /**

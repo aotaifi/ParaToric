@@ -17,6 +17,7 @@
 #include <iostream>
 #include <iterator>
 #include <limits>
+#include <map>
 #include <numeric>
 #include <queue>
 #include <random>
@@ -4299,6 +4300,53 @@ bool Lattice::event_vectors_are_sorted() const {
         }
     }
     return true;
+}
+
+const Lattice::GswTopology& Lattice::gsw_topology() {
+    if (gsw_topology_ready_) {
+        return gsw_topology_;
+    }
+    GswTopology topo;
+    topo.vertex_count = static_cast<int>(boost::num_vertices(g));
+    topo.edge_count = static_cast<int>(egde_cache_.size());
+    topo.plaquette_count = static_cast<int>(plaquette_edges_cache_.size());
+    std::map<Edge, int> edge_index;
+    topo.edge_source.resize(egde_cache_.size());
+    topo.edge_target.resize(egde_cache_.size());
+    for (size_t i = 0; i < egde_cache_.size(); ++i) {
+        edge_index.emplace(egde_cache_[i], static_cast<int>(i));
+        const auto [u, v] = vertices_of_edge(egde_cache_[i]);
+        topo.edge_source[i] = u;
+        topo.edge_target[i] = v;
+    }
+    topo.plaquette_offset.assign(1, 0);
+    for (const auto& pedges : plaquette_edges_cache_) {
+        for (const Edge& e : pedges) {
+            topo.plaquette_edge.push_back(edge_index.at(e));
+        }
+        topo.plaquette_offset.push_back(static_cast<int>(topo.plaquette_edge.size()));
+    }
+    gsw_topology_ = std::move(topo);
+    gsw_topology_ready_ = true;
+    return gsw_topology_;
+}
+
+void Lattice::gsw_rebuild_derived() {
+    for (const auto& edg : egde_cache_) {
+        auto& data = g[edg];
+        const auto& stars_u = g[boost::source(edg, g)].star_flips;
+        const auto& stars_w = g[boost::target(edg, g)].star_flips;
+        auto& all = data.spin_flips;
+        all.clear();
+        all.reserve(data.single_spin_flips.size() + stars_u.size() + stars_w.size());
+        std::merge(data.single_spin_flips.begin(), data.single_spin_flips.end(), stars_u.begin(), stars_u.end(),
+                   std::back_inserter(all));
+        const auto middle = static_cast<std::ptrdiff_t>(all.size());
+        all.insert(all.end(), stars_w.begin(), stars_w.end());
+        std::inplace_merge(all.begin(), all.begin() + middle, all.end());
+    }
+    init_observable_caches_();
+    init_potential_energy();
 }
 
 } // namespace paratoric

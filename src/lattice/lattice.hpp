@@ -1171,6 +1171,29 @@ public:
     void read_checkpoint_state(std::istream& in);
     bool event_vectors_are_sorted() const;
 
+    // ---- Support for the generalised Swendsen-Wang update (z basis, see mcmc/gsw_update.hpp) ----
+    // The update rewrites all kinks, all star events and the spins at tau = 0 from a GF(2) solution, using
+    // plain integer indices: edges are numbered as in the edge cache, vertices by their descriptor.
+    struct GswTopology {
+        int vertex_count = 0;
+        int edge_count = 0;
+        int plaquette_count = 0;
+        std::vector<int> edge_source;       // per edge index
+        std::vector<int> edge_target;
+        std::vector<int> plaquette_offset;  // CSR over plaquette_edge: plaquette p owns [offset[p], offset[p+1])
+        std::vector<int> plaquette_edge;    // edge indices
+    };
+    const GswTopology& gsw_topology();
+    // Event storage of edge e (kinks) and vertex v (star events), to be overwritten by the update.
+    std::vector<double>& gsw_kinks(int e) { return g[egde_cache_[static_cast<size_t>(e)]].single_spin_flips; }
+    std::vector<double>& gsw_star_events(int v) { return g[static_cast<size_t>(v)].star_flips; }
+    // All flips (kinks and the star events of both end vertices) of edge e, sorted; valid after gsw_rebuild_derived().
+    const std::vector<double>& gsw_all_flips(int e) const { return g[egde_cache_[static_cast<size_t>(e)]].spin_flips; }
+    int gsw_spin0(int e) const { return g[egde_cache_[static_cast<size_t>(e)]].spin; }
+    void gsw_set_spin0(int e, int spin) { g[egde_cache_[static_cast<size_t>(e)]].spin = spin; }
+    // Merge the all-flip lists from kinks and star events, then rebuild every cache and integrated energy from scratch.
+    void gsw_rebuild_derived();
+
 private:   
     char BASIS;
     int LATTICE_DIMENSIONALITY;
@@ -1223,6 +1246,8 @@ private:
     double total_integrated_edge_energy_cache_ = 0.;
     double total_integrated_star_energy_cache_ = 0.;
     double total_integrated_plaquette_energy_cache_ = 0.;
+    GswTopology gsw_topology_{};
+    bool gsw_topology_ready_ = false;
 
     struct SnapshotSpoolState {
         std::filesystem::path path{};

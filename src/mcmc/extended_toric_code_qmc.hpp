@@ -5,6 +5,7 @@
 
 #include "lattice/lattice.hpp"
 #include "lattice/flat_square_lattice.hpp"
+#include "mcmc/gsw_update.hpp"
 #include "logging/trivial_log.hpp"
 #include "paratoric/types/types.hpp"
 #include "rng/rng.hpp"
@@ -590,6 +591,8 @@ class ExtendedToricCodeQMC {
         Result get_core_update_benchmark(
             const Config& config
         );
+
+        const GswUpdater& gsw_updater() const { return gsw_updater_; }
 
         double validate_parallel_tempering_swap_weight_debug(
             const Config& config,
@@ -1276,6 +1279,12 @@ class ExtendedToricCodeQMC {
         std::uint64_t active_block_accepted_ = 0;
         double active_block_acceptance_ratio_sum_ = 0.;
 
+        // Generalised Swendsen-Wang update (see gsw_update.hpp); off unless configure_gsw() enables it.
+        GswUpdater gsw_updater_{};
+        std::int64_t gsw_every_ = 0;
+        bool gsw_only_ = false;
+        std::int64_t gsw_counter_ = 0;
+
         struct SampleCheckpointState {
             std::int64_t completed_samples = 0;
             std::int64_t production_metropolis_steps = 0;
@@ -1830,6 +1839,22 @@ class ExtendedToricCodeQMC {
             LatticeT& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
             double h, double mu, double J, double lmbda
         );
+
+        /**
+         * @brief Read the generalised Swendsen-Wang options from the config (z basis, Boost lattice only).
+         *
+         * With config.sim_spec.gsw_every = N > 0, one gSW step follows every N-th Metropolis step; with gsw_only,
+         * every Metropolis step is replaced by one gSW step. Both off (the default) leaves behaviour unchanged.
+         */
+        void configure_gsw(const Config& config);
+
+        /**
+         * @brief One continuous-time generalised Swendsen-Wang step. Rewrites all kinks, star events and spins at
+         * tau = 0, rebuilds every lattice cache and integrated energy, and resets integrated_pot_energy to the
+         * rebuilt total.
+         */
+        void gsw_step(LatticeT& lat, double& integrated_pot_energy, double beta, double h, double mu, double J, double lmbda);
+        void log_gsw_summary() const;
 
         template<typename T>
         requires std::integral<T> || std::floating_point<T>
@@ -4373,10 +4398,58 @@ void ExtendedToricCodeQMC<Basis, LatticeT>::metropolis_step_spin_tuple_combinati
 
 template<char Basis, typename LatticeT>
 requires ValidBasis<Basis>
+void ExtendedToricCodeQMC<Basis, LatticeT>::configure_gsw(const Config& config) {
+    gsw_every_ = std::max(config.sim_spec.gsw_every, std::int64_t{0});
+    gsw_only_ = config.sim_spec.gsw_only;
+    gsw_counter_ = 0;
+    gsw_updater_ = GswUpdater{};
+    gsw_updater_.j_bond_rate_factor = config.sim_spec.gsw_j_bond_factor;
+    gsw_updater_.verify_current_state = config.sim_spec.gsw_verify;
+    if (gsw_every_ > 0 || gsw_only_) {
+        if constexpr (Basis != 'z' || !std::same_as<LatticeT, Lattice>) {
+            throw std::invalid_argument("The generalised Swendsen-Wang update needs the z basis and the Boost lattice backend.");
+        }
+    }
+}
+
+template<char Basis, typename LatticeT>
+requires ValidBasis<Basis>
+void ExtendedToricCodeQMC<Basis, LatticeT>::log_gsw_summary() const {
+    if (gsw_updater_.steps == 0) {
+        return;
+    }
+    const double n = static_cast<double>(gsw_updater_.steps);
+    BOOST_LOG_TRIVIAL(info) << std::format(
+        "gSW summary: steps={} seconds_build={:.6g} seconds_solve={:.6g} seconds_rebuild={:.6g} mean_variables={:.6g} mean_core_rows={:.6g}",
+        gsw_updater_.steps, gsw_updater_.seconds_build, gsw_updater_.seconds_solve, gsw_updater_.seconds_rebuild,
+        static_cast<double>(gsw_updater_.variables_sum) / n, static_cast<double>(gsw_updater_.core_rows_sum) / n);
+}
+
+template<char Basis, typename LatticeT>
+requires ValidBasis<Basis>
+void ExtendedToricCodeQMC<Basis, LatticeT>::gsw_step(
+    LatticeT& lat, double& integrated_pot_energy, double beta, double h, double mu, double J, double lmbda
+) {
+    if constexpr (Basis == 'z' && std::same_as<LatticeT, Lattice>) {
+        gsw_updater_.step(lat, *rng, beta, h, mu, J, lmbda);
+        integrated_pot_energy = total_integrated_pot_energy(lat, h, mu, J, lmbda);
+    } else {
+        UNUSED(lat); UNUSED(integrated_pot_energy); UNUSED(beta); UNUSED(h); UNUSED(mu); UNUSED(J); UNUSED(lmbda);
+        throw std::invalid_argument("The generalised Swendsen-Wang update needs the z basis and the Boost lattice backend.");
+    }
+}
+
+template<char Basis, typename LatticeT>
+requires ValidBasis<Basis>
 void ExtendedToricCodeQMC<Basis, LatticeT>::metropolis_step(
     LatticeT& lat, double& integrated_pot_energy, double& acc_ratio, double beta, 
     double h, double mu, double J, double lmbda
 ) {
+    if (gsw_only_) {
+        gsw_step(lat, integrated_pot_energy, beta, h, mu, J, lmbda);
+        acc_ratio = 1.;
+        return;
+    }
     const int rnd = random_index(7);
     active_update_type_ = rnd;
     acc_ratio = 0.;
@@ -4397,6 +4470,10 @@ void ExtendedToricCodeQMC<Basis, LatticeT>::metropolis_step(
     }  
     record_update_attempt(rnd, acc_ratio);
     active_update_type_ = -1;
+    if (gsw_every_ > 0 && ++gsw_counter_ >= gsw_every_) {
+        gsw_counter_ = 0;
+        gsw_step(lat, integrated_pot_energy, beta, h, mu, J, lmbda);
+    }
 
 #ifndef NDEBUG
     double integrated_pot_energy_check = total_integrated_pot_energy(
@@ -4470,6 +4547,7 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_thermalization(
     }
 
     if (config.sim_spec.seed != 0) rng->set_seed(config.sim_spec.seed);
+    configure_gsw(config);
 
     const auto thermalization_count = static_cast<size_t>(std::max(config.sim_spec.N_thermalization, std::int64_t{0}));
     std::vector<double> acc_ratio_vector;
@@ -4574,6 +4652,7 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
     }
 
     if (config.sim_spec.seed != 0) rng->set_seed(config.sim_spec.seed);
+    configure_gsw(config);
 
     bool pt_enabled = config.pt_spec.enabled || !config.pt_spec.ladder_s.empty();
     int pt_world_size = 1;
@@ -5748,6 +5827,8 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_sample(
     pt_diagnostics.final_J = runtime_J;
     pt_diagnostics.final_lmbda = runtime_lmbda;
 
+    log_gsw_summary();
+
     return Result{
         .series=std::move(observable_vector), 
         .production_acceptance=std::move(production_acceptance),
@@ -5784,6 +5865,7 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_core_update_benchmark(
     }
 
     if (config.sim_spec.seed != 0) rng->set_seed(config.sim_spec.seed);
+    configure_gsw(config);
 
     auto lat = LatticeT(config.lat_spec, rng);
     double integrated_pot_energy = total_integrated_pot_energy(
@@ -5820,6 +5902,8 @@ Result ExtendedToricCodeQMC<Basis, LatticeT>::get_core_update_benchmark(
             integrated_pot_energy,
             integrated_pot_energy_check));
     }
+
+    log_gsw_summary();
 
     return Result{
         .production_acceptance=std::move(diagnostics)

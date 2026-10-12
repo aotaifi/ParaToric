@@ -76,6 +76,10 @@ int main(int argc, char **argv) {
         int pt_swap_period = 0;
         bool pt_validate_swap_weight;
         int process_index;
+        std::int64_t gsw_every;
+        bool gsw_only;
+        double gsw_j_bond_factor;
+        bool gsw_verify;
 
         po::options_description desc("Run extended toric code QMC simulation");
         desc.add_options()
@@ -122,6 +126,10 @@ int main(int argc, char **argv) {
         ("pt_swap_period_sweeps", po::value(&pt_swap_period_sweeps)->default_value(2.0), "PT neighbor-swap attempt period in sweeps; one sweep is 2*L^2 Metropolis updates.")
         ("pt_swap_period", po::value(&pt_swap_period), "Legacy PT neighbor-swap attempt period in raw Metropolis updates. Do not combine with pt_swap_period_sweeps.")
         ("pt_validate_swap_weight", po::value(&pt_validate_swap_weight)->default_value(false), "Recompute PT swap weights at every swap attempt and record max deviation.")
+        ("gsw_every", po::value(&gsw_every)->default_value(0), "z basis, Boost lattice: one generalised Swendsen-Wang step after every N-th Metropolis step (0 = off).")
+        ("gsw_only", po::value(&gsw_only)->default_value(false), "Replace every Metropolis step by one generalised Swendsen-Wang step (validation, benchmarks).")
+        ("gsw_j_bond_factor", po::value(&gsw_j_bond_factor)->default_value(1.0), "Validation only: scale the gSW J bond rate. Anything but 1 is a deliberately broken sampler.")
+        ("gsw_verify", po::value(&gsw_verify)->default_value(false), "Validation only: check every gSW step against the pre-update configuration (slow).")
         ("process_index,procid", po::value(&process_index), "Identifier of process (for debugging).")
         ("lattice_type,lat", po::value(&lattice_type), "Type of lattice used.")
         ("lattice_backend,latbe", po::value(&lattice_backend)->default_value("boost"), "Lattice backend used by benchmark modes (boost or flat_square).")
@@ -174,7 +182,11 @@ int main(int argc, char **argv) {
             .N_resamples = N_resamples,
             .custom_therm = custom_therm,
             .seed = seed,
-            .observables = obs
+            .observables = obs,
+            .gsw_every = gsw_every,
+            .gsw_only = gsw_only,
+            .gsw_j_bond_factor = gsw_j_bond_factor,
+            .gsw_verify = gsw_verify
         };
         paratoric::OutSpec out_spec = {
             .path_out = path_output_directory,
