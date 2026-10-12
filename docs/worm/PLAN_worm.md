@@ -228,6 +228,15 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
   L=32 1.2-3.2k, L=48 2.5-4.7k core-h. Watcher watch.sh PID 1502739 PPID 1 -> WATCHER_VERDICT.txt. PI budget confirmation
   asked in session (approval so far relayed by mcp-lead).
 
+## TAKEOVER 2026-10-12 ~17:50 UTC (PI away; defaults accepted by silence, plus PI: "of course we run on faster solver if it works")
+- Ceiling: 8,300 core-h production (L=32 + L=48) + 300 core-h solver tests; L=32 may extend to 9.3e6 steps.
+- If ND passes N1-N4: move remaining L=48 to ND, and run L=64 production on ND (PI explicit), paid from the L=48
+  savings, total still <= 8,600 core-h. Size L=64 from the measured ND timing; target ~10% on kappa3(S).
+- No email except emergency; cancel only own failed jobs; branches pushed to aotaifi, never main; no paper edits.
+- Check-in: Tue 2026-10-13 ~16:00 UTC (L=32 final, L=48 interim, ND timing).
+- LOG:
+  - 17:50 L=32 17159255 47/64 running; L=48 17159256 pending; watcher PID 1502739; gsw-nd worker running.
+
 ## Update 2026-10-12 (sector observables, worker gsw-sector)
 - build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,
   winding_x/y, --random_start. S2 random start vs ED L=3 open re-run by lead: max z 1.91 (pass). S1 L=4 periodic: gsw arms
