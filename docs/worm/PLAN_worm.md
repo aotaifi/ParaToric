@@ -169,7 +169,24 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
   Variance x core-h: kappa3 62x, kappa2(delta) 450x in favour of gsw at s* (the ladder also gives the other rungs).
   Per-step speed on rome nodes 0.68 s vs 1.93 s on hua08 (node type matters 2.8x). Per-rank obs.h5 of L32_size are
   walkers, not rungs (rank128 plaq 0.9008): reference values taken from the MCP lead's own analysis.
-- Worker gsw-cpp (2026-10-12 brief): sector observables, random start, G2 vs JS at L=6. Silent 15 h before that.
+  MCP lead (session mcp-lead, 2026-10-12): <S> 1.80542 = physical rung 128, second half (30k samples), stitched
+  across walkers by ladder_index_by_sample (his k3.py, scratchpad of session 9fb6266c); no error computed; block error
+  >= ~3e-4 => offset <= 1.5 sigma. He considers gate (3) passed once the 8-chain finals arrive; send them.
+- PI (via mcp-lead, 2026-10-12): approves L=48/64 (then 96) production on gsw at s*, beta=L, conditional on gate-3
+  finals: >= 8 chains (half +1, half -1 start), per-sample star_x, plaquette_z_tau_avg, delta_tau_avg, energy_h,
+  energy_lmbda + sector observables; target kappa3(S) <= 3% relative from chain scatter. Cost/ETA to mcp-lead first.
+- L=48 TIMING MEASURED (lead_timing48/, srun 17158804, th-cl-rome01n4, 20 steps from ordered start): L=32 1.27 s/step,
+  L=48 21.5 s/step (ratio 16.9 = L^7.0), core rows 34k / 117k, peak RSS 0.23 / 2.4 GB. (gate-3 chains on rome: 0.68
+  s/step at L=32 averaged over 12k steps; so L=48 ~11.5-21.5 s/step.) Extrapolated L=64: ~87 s/step, ~10 GB (dense).
+- COST MODEL for kappa3(S) relative error r (derived): var(k3) ~ 6 k2^3 / n_eff (checked at L=32: gives n_eff 10.2k
+  for 64.8k steps, tau_eff 6.4 steps), so r = sqrt(6/n_eff)/|gamma1|, gamma1 = k3/k2^1.5 = 0.115 (L=16), 0.078 (L=32,
+  +-30%). Extrapolated gamma1 ~ L^-0.56: 0.062 (L=48), 0.053 (L=64). Steps for r=3% (tau 7): L=32 7e6 (1.3k core-h),
+  L=48 1.2e7 (38-72k core-h), L=64 1.7e7 (~410k core-h dense). => 3% at L>=48 needs M2 or a looser target.
+- Worker gsw-cpp STOPPED 2026-10-12 ~15:40 UTC (silent since 10-11 08:27, no reply to two messages); its uncommitted
+  port backed up to /scratch/a/A.Otaifi/gsw_cpp_20261011/src_backup_20261012/. New worker gsw-sector (Sonnet,
+  medium): WIP commit of the port, sector observables (star_parity, wilson_x/y, winding_x/y), --random_start, gates
+  S1-S3, build into build2/ (build/ is in use by job 17155547).
+- Worker gsw-cpp (2026-10-12 brief, superseded): sector observables, random start, G2 vs JS at L=6. Silent 15 h before that.
 - NEXT, two tracks: (a) C++ port with bit-parallel dense core (production source on a branch: PI approval) to turn the
   constant into production speed for L <= 32; (b) a solver with ~linear cost per step (needed for L >= 48: dense core
   memory ~N^2). (a) is the practical win; (b) is research with unknown odds.
