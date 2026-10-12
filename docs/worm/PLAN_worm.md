@@ -208,3 +208,35 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
 - ES worm v1 (constraint checked only at closing): gain per CPU 3.5 / 6.9 / 1.2 / 0.09 at L = 6 / 8 / 10 / 12, mean worm
   length 4.7e3 -> 7.5e7; tau per ES step flat (27-44). Job 17126323, /scratch/a/A.Otaifi/esworm_tau_20261010/out2/, report s9.
 - (none measured yet in this sub-project; move-mix reweighting and CT block heat bath are closed in the main PLAN.md)
+
+## Update 2026-10-12 evening: gate 3 final, production submitted
+- GATE (3) FINAL, 8/8 chains (job 17155547, gate3_L32/final_8chains.txt): kappa3(S) -3.67e-8(0.87e-8) vs -4.92e-8(1.37e-8)
+  0.77 sigma; kappa2(delta) 9.19e-5(0.12e-5) vs 9.59e-5(0.46e-5) 0.84 sigma; <S> 1.805886(64) vs 1.80542 (>= 3e-4 error,
+  <= 1.5 sigma); kappa2(S) 6.18e-5(0.04e-5); <delta> -1.0e-4(0.8e-4); halves agree. Cost 24.3 core-h. Variance x core-h
+  vs ladder 17128038 (637 core-h): kappa3 65x, kappa2(delta) 390x. Skewness gamma1(L=32) = 0.0755 (+-24%); tau_eff for
+  k3 = 4.6 steps (n_eff 18.7k of 86.4k). Sent to mcp-lead.
+- Lead verified gsw-sector gates (srun re-analysis): S1 gsw-only vs gsw+local max |z| 1.68 over 7 obs; broken arm
+  |z| 143-2133; local-only per-chain wilson_x means 0.001-0.66 vs 0.184 (trapped at L=4), flips 36-82x fewer than gSW.
+  S2 random start vs ED: max z 1.91 (4 chains), 1.66 / 0.93 (8 chains). (The section below was appended to this file by
+  another writer, not this session; numbers now verified.)
+- CHECKPOINT-RESTART TEST PASSED (gsw_cpp_20261011/restart_test, build2, L=8): restarted chain bit-identical to the
+  uninterrupted chain on all 9 observables (400 samples, restart at 200).
+- PRODUCTION SUBMITTED 2026-10-12 ~17:30 UTC (/scratch/a/A.Otaifi/gsw_prod_20261012/, launch.sbatch, frozen binary
+  bin/paratoric_95a1731 sha256 9fba3828...f886, -C amd, gsw-only, 300 therm, seeds 1000L+T, even T +1 start, odd -1):
+  L=32 job 17159255, 64 chains x 94000 steps (6.0e6 steps; 3% needs 3.5-9.3e6 given gamma1 +-24%; extend if short),
+  -t 3 d; L=48 job 17159256, 64 x 12500 steps (8.0e5; ~10% if gamma1(48) ~0.062: unvalidated), -t 6 d. Expected cost
+  L=32 1.2-3.2k, L=48 2.5-4.7k core-h. Watcher watch.sh PID 1502739 PPID 1 -> WATCHER_VERDICT.txt. PI budget confirmation
+  asked in session (approval so far relayed by mcp-lead).
+
+## Update 2026-10-12 (sector observables, worker gsw-sector)
+- build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,
+  winding_x/y, --random_start. S2 random start vs ED L=3 open re-run by lead: max z 1.91 (pass). S1 L=4 periodic: gsw arms
+  agree (max z 1.68), broken arm fails (z 143-2133); gSW flips sector parities 36-82x more per sample than local-only;
+  local-only wilson_x chain means 0.001-0.66 vs 0.1835(6) (trapped). winding_x == star parity in columns 0,1 (identity,
+  0 violations). build2 reproduces build/ chain at L=32, cost +2-3.5%. Use build2 for M3 long chains.
+- GATE (3) L=32 (job 17155547, gate3_L32/analyse.py, srun 17159237; 8 chains x 12000 steps, 10% discard, scatter errors):
+  kappa3(S) -3.67e-8(0.87e-8) vs L32_size -4.92e-8(1.37e-8) 0.8 sigma; kappa2(delta) 9.19e-5(0.12e-5) vs 9.59e-5(0.46e-5)
+  0.8 sigma; <S> 1.805886(64) vs 1.80542 (ref error unknown; single 129-rung ladder, start=1): 7 of our sigma, OPEN.
+  [SUPERSEDED by the lead's entry above: the MCP lead gives his <S> error >= 3e-4 => <= 1.5 sigma; gate passed. Cost is
+  24.3 physical core-h (sacct counts 2 threads/core). The MCP lead is session "mcp-lead"; the finals were delivered.]
+  +1/-1 starts agree 0.9 sigma, halves agree. Cost 51 core-h. Message to MCP lead not delivered (a-otaifi-76 gone).
