@@ -236,6 +236,12 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
 - Check-in: Tue 2026-10-13 ~16:00 UTC (L=32 final, L=48 interim, ND timing).
 - LOG:
   - 17:50 L=32 17159255 47/64 running; L=48 17159256 pending; watcher PID 1502739; gsw-nd worker running.
+  - Interim tools: tools/esworm/ckptseries.js (reads the series out of ckpt.bin; exact vs obs.h5 on restart_test/P, 9
+    obs x 200 samples, max diff 0) and tools/esworm/interim.js (per-chain cumulants, chain-scatter errors, +1/-1 split).
+  - L=32 interim after ~35 min (62 chains, 141.7k samples, 10% discard): kappa3(S) -2.71e-8(0.51e-8) (18.8%), consistent
+    with gate 3 (-3.67(0.87)e-8, 0.95 sigma); kappa2(delta) 9.22e-5(0.13e-5); <S> 1.805860(57); +1/-1 starts agree (0.7 /
+    0.2 sigma); <star_parity> -0.002(2), <wilson_x> 0.039(1), <winding_x> 0.001(3). Projection: 3% needs ~5.5e6 samples
+    (planned 6.0e6, 5.4e6 after discard): on the edge; extend ~10% if the final is > 3.1%. Speed 0.70 s/step.
 
 ## Update 2026-10-12 (sector observables, worker gsw-sector)
 - build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,
