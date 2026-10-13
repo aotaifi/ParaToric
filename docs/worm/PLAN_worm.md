@@ -376,6 +376,8 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     17181289), so they do not start on the old binary; resubmit with the sigma_z_tau_avg binary after its gates (scontrol
     hold is broken on the login node). Running: L=64 3 points (291 tasks), L=96 .34058 (128) + .34068 (9 started; rest
     pending, kept: same binary within a point). L=192 test: MaxRSS 32 GB after ~30 steps (100G requested).
+    16:35 also cancelled L=96 .34078 (17181273, no task had started; mcp-lead: one L=96 point must carry
+    sigma_z_tau_avg). Resubmit list after gates: L=24/32/48 x5, L=96 .34078, L=128 .34068.
   - Stop rule: monitor checkpoints (interim.js) and cancel each point at its kappa3 target. Re-centre L>=64 if mcp-lead's
     18:00 s* moves > 5e-5 (stage-1 arrays already started: would mean adding points, not moving them).
 
