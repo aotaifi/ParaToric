@@ -390,7 +390,9 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     dZ/ds 2004(95) (old Z: 7.3x, 111 sigma); O=S slope identity passes with new and old Z (0.65 sigma); Z4 restart
     bit-identical; Z5 new binary == old binary bit-for-bit on the 13 old columns; Z3 old ckpt + extra column refused
     cleanly. Binary bin/paratoric_d6122f0 (sha256 ce6e9598...606e, worm/gsw-nd d6122f0 pushed). Resubmission prepared:
-    launch_nu2.sbatch (dirs suffixed _z, 14 obs), submit_nu2.sh; awaiting mcp-lead's read.
+    launch_nu2.sbatch (dirs suffixed _z, 14 obs), submit_nu2.sh; mcp-lead read both + z2_120k.out: GO.
+    SUBMITTED (jobs2.txt, watcher watch2.sh PID 1950000 -> WATCHER_VERDICT2.txt): L=96 .34078 17184861; L=24 x5
+    17184862-66; L=32 x5 17184867-71; L=48 x5 17184872-76; L=128 .34068 17184877.
   - Worker mhist: tools/esworm/mhist.js committed (2744f19); its L=32 gate failed only because of the equal-time Z; needs
     re-gating on points that carry sigma_z_tau_avg (the new L=32 campaign points).
   - Stop rule: monitor checkpoints (interim.js) and cancel each point at its kappa3 target. Re-centre L>=64 if mcp-lead's
