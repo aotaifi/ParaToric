@@ -301,6 +301,10 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     request >= 14G (2.09 GB x 1.5^3.6 ~ 9 GB). L=64 chains at 2.09 of 3G: watched.
   - mcp-lead: launcher OK; stop rule = caps only (drop 1%); scan before L=96; no --nice for L=24/32, keep for L=48.
     Budget +3k awaits PI confirmation in session.
+  - ~06:50 PI: "Yes" (+3k core-h for the scan; new total ceiling 11.6k). s-scan SUBMITTED (submit_all.sh, jobs.txt):
+    L=24 17168816-20 (s .3361/.3376/.3391/.3406/.3421, -t 1:33), L=32 17168821-24 (4 off-s* points, -t 3:07), L=48
+    17168825-28 (--nice=1000, -t 7:48); 32 chains each, caps by walltime. Watcher gsw_scan_20261013/watch.sh PID 1813316
+    -> WATCHER_VERDICT.txt (TIMEOUT = intended stop). Job ids sent to mcp-lead.
 
 ## Update 2026-10-12 (sector observables, worker gsw-sector)
 - build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,
