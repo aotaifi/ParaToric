@@ -338,6 +338,9 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     L=32 s=.3399 17177789, .3413 17177791 (cap 100 each); L=48 s=.3399 17177790, .3413 17177792 (cap 250 each, no nice);
     L=64 s=0.3406 17177793 (128 chains, -t 7:48 => <= 1.0k core-h, --mem 4G; production budget). Scan budget: 2.0k + 0.7k
     <= 3k approved; production 3.27k + 1.0k <= 8k. L=96 decision ~16:00 after his joint fit.
+  - 10:38 all 448 chains running; L=64 s=.3406 MaxRSS 1.82 GB of 4G.
+  - 12:58 L=32 s=.3399 / .3413 done (cap): Binder(delta) 0.3304(88) / 0.2631(80); kappa3(S) -5.297(106) / -7.047(182) e-8.
+    L=32 Binder curve s .3361-.3421: .057/.118/.246(prod)/.330/.342/.263/.031. Sent to mcp-lead.
 
 ## Update 2026-10-12 (sector observables, worker gsw-sector)
 - build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,
