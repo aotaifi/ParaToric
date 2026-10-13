@@ -1108,8 +1108,24 @@ class ExtendedToricCodeQMC {
                 return (lat.get_diag_single_energy()/static_cast<double>(lat.get_edge_count()));
         };
 
-        std::function<std::complex<double>(LatticeT&, double, double, double, double)> 
-        sigma_z_static_susceptibility_obs 
+        // Imaginary-time average of sum_e sigma^z_e / N_edges, i.e.
+        // Z / (beta * N_edges) with Z = int_0^beta sum_e sigma^z_e(tau) dtau.  In the z
+        // basis Z is the per-edge sum of spin times segment length over [0, beta)
+        // (Lattice::total_integrated_edge_energy, O(#edges + #events)); sigma_z is
+        // diagonal there, so unlike the equal-time sigma_z this is the full time
+        // integral that appears in d<.>/d(lmbda) reweighting.  The x-basis branch keeps
+        // the equal-time estimator, as sigma_x_tau_avg does for sigma_x.
+        std::function<double(LatticeT&, double, double, double, double)>
+        sigma_z_tau_avg_obs
+        = [](LatticeT& lat, double h, double lmbda, double mu, double J) {
+            if constexpr (Basis == 'x')
+                return lat.get_non_diag_single_energy_x()/static_cast<double>(lat.get_edge_count() * lmbda);
+            else
+                return lat.total_integrated_edge_energy()/static_cast<double>(lat.get_beta() * lat.get_edge_count());
+        };
+
+        std::function<std::complex<double>(LatticeT&, double, double, double, double)>
+        sigma_z_static_susceptibility_obs
         = [](LatticeT& lat, double h, double lmbda, double mu, double J) { 
             if constexpr (Basis == 'x') return lat.get_non_diag_M_M(); 
             else return lat.get_diag_M_M();
@@ -1269,6 +1285,7 @@ class ExtendedToricCodeQMC {
             // where beta and h are already in hand, not here. Deliberate, not pending.
             {"sigma_x_dynamical_susceptibility", "susceptibility", sigma_x_dynamical_susceptibility_obs, 0},
             {"sigma_z", "real", sigma_z_obs},
+            {"sigma_z_tau_avg", "real", sigma_z_tau_avg_obs},
             {"sigma_z_static_susceptibility", "susceptibility", sigma_z_static_susceptibility_obs, 0},
             // TODO fix
             {"sigma_z_dynamical_susceptibility", "susceptibility", sigma_z_dynamical_susceptibility_obs, 0},
