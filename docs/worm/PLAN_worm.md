@@ -294,6 +294,13 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     L=48), sent for his review. Measured: Binder ratio(delta) at L=32 s* = +0.253(0.0075) (2.95% from 3.25e6 samples) =>
     1% needs ~2.8e7 samples/point (0.28k / 0.79k / ~5.5k core-h at L=24/32/48); at caps ~2.4 / 2.8 / 4.7% (derived).
     Dry run: start Oct 19 (queue full with own production).
+  - L=96 job 17167975: ALL 256 tasks OUT_OF_MEMORY after 10-14 min (--mem 5G; logged by watcher nd2 at 06:00, not
+    noticed until 06:13). Cause: memory sized from the 15-step ordered-start timing run (2.3 GB); equilibrated chains need
+    ~3x more (running L=64 chains: MaxRSS 1.85-2.09 GB vs 0.7 GB in the timing run; L=48 0.55 GB vs 0.26). Cost ~51
+    core-h. Not resubmitted: mcp-lead now ranks the s-scan before L=96 (L=96 useless while s* uncertain). For a later L=96:
+    request >= 14G (2.09 GB x 1.5^3.6 ~ 9 GB). L=64 chains at 2.09 of 3G: watched.
+  - mcp-lead: launcher OK; stop rule = caps only (drop 1%); scan before L=96; no --nice for L=24/32, keep for L=48.
+    Budget +3k awaits PI confirmation in session.
 
 ## Update 2026-10-12 (sector observables, worker gsw-sector)
 - build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,
