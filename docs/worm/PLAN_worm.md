@@ -255,6 +255,23 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     max z 1.01 (prod), 0.98 (sparse), 1.12 (dense) => the 3.0 was a fluctuation. N3 nd vs dense L=8 (nd0) and L=16 (nd0,
     nd4096), 4 chains, 2e4 steps: max |z| 1.39 over 4 observables. => ND solver exact; production use pending the merged
     build (sector observables + nd), restart test and L=48 checkpoint compatibility (worker gsw-nd, build_prod2).
+  - Merged build verified by lead (worm/gsw-nd 7b37b7c = 5a3551c nd + 95a1731 sector; restart_nd/): nd restart bit-identical
+    at L=8 (all 9 obs, prod and sparse settings); a COPY of dense L=48 checkpoint c1 (56 samples) restarted with nd runs
+    and appends 20 physical samples (plaquette 0.902, star 0.900; compat/lead_check.py); ED point A max z 0.87.
+    N4 table also: L=32 nd 0.15 s/step vs dense 1.32 (same node) => 9x.
+  - 2026-10-13 05:07 SWITCH TO ND: scancel own arrays 17159255/6 (dense; ran 17:00-05:07); all 128 ckpt.bin read cleanly
+    (ckpt writes are atomic tmp+rename) and backed up as ckpt_dense_final.bin. Dense-phase results:
+    L=32 3.61e6 samples (64 chains, ~56k each): kappa3(S) -4.144e-8(0.101e-8) = 2.4% (3% target already met);
+    kappa2(delta) 9.304e-5(0.022e-5); <S> 1.805890(12); +1 vs -1 starts: <S> z -1.5, kappa3 z 2.2 (watch).
+    gamma1(32) = 0.085, tau_eff ~2.2 steps (better than the 4.6 assumed).
+    L=48 77k samples (~1.2k/chain, naples nodes ~29 s/step dense): kappa3(S) -3.6e-9(1.4e-9) (40%), kappa2(S) 1.85e-5,
+    gamma1(48) ~0.045 (+-40%; extrapolation said 0.062).
+  - Resubmitted on nd (launch_nd.sbatch, bin/paratoric_7b37b7c sha256 fff82892...edf3, dv4096 dr0 leaf64, restart from
+    ckpt): L=32 job 17167263 NS 94000 (to ~1.9%, ~100 core-h more); L=48 job 17167264 NS 70000 (target ~5%: 4.5e6
+    samples, ~0.9k core-h); NEW L=64 job 17167265 NS 31000 x 64 (2.0e6 steps, target ~10% if gamma1(64)~0.04, ~1-1.2k
+    core-h, ~13-19 h/chain). Watcher watch_nd.sh PID 1775706 -> WATCHER_VERDICT_nd.txt. c0 L=32 restart confirmed from
+    provenance.txt. Core-h so far ~0.8k (dense phase); projected total ~3k of 8.6k ceiling => L=96 (10% ~3.6k derived)
+    fits: PI's call at check-in.
 
 ## Update 2026-10-12 (sector observables, worker gsw-sector)
 - build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,
