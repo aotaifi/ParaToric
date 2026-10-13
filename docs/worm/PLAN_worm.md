@@ -284,6 +284,8 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     cancelling remaining chains. L=96 skewness from interim at ~09-10 UTC decides (10% needs 4.5k if skew 0.031, ~17k if
     0.015). L=32 split by start (dense phase): kappa3 +1 -3.927(0.13)e-8 vs -1 -4.361(0.15)e-8, z 2.20; sector obs
     split |z| <= 1.82 (no trapping signal). Report split again at final.
+  - mcp-lead accepts caps (8.0k total; L=48 and L=64 stop at 10%). Wants the L=96 projection at 09-10 UTC with skewness
+    and its error. Keep every ckpt.bin of stopped chains (he recomputes from them).
 
 ## Update 2026-10-12 (sector observables, worker gsw-sector)
 - build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,
