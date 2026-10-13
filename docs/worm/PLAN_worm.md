@@ -318,6 +318,12 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
   - Scan L=24 all 5 points DONE at cap (TIMEOUT, 2.4-2.7e6 samples each): Binder(delta) .119/.194/.286/.316/.193 at
     s .3361/.3376/.3391/.3406/.3421 (non-monotonic); kappa3(S) -0.945/-1.186/-1.797/-2.363/-2.619 e-7. Binder(delta) at s*
     falls with L: 0.286 / 0.246 / 0.142 (L=24/32/48). Sent to mcp-lead (his fit).
+  - 09:00 L=64 STOPPED at target (8.8%; scancel 17167265/17167644, 256 ckpt kept). L=64 FINAL (L64/final_ckpt.txt, 2.0e6
+    samples): kappa3(S) -7.00e-10(0.61e-10) 8.6% (second half -6.42(0.84)e-10); kappa2(S) 7.705e-6(0.015e-6); <S>
+    1.805990(6); kappa2(delta) 1.1489e-5(0.0030e-5); Binder(delta) 0.059(0.007); gamma1 0.033. Split p = 0.70.
+  - Core-h (sacct CPUTimeRAW/2): production incl. gate 3 + lost L=96 = 3.27k of 8k; scan 0.78k of <= 2k cap (running).
+  - gamma1(S) 0.084 / 0.052 / 0.033 at L=32/48/64 (~L^-1.6) => L=96 10% ~10k core-h, 20% ~2.6k (derived). Held: decision
+    after the scan (mcp-lead + PI).
 
 ## Update 2026-10-12 (sector observables, worker gsw-sector)
 - build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,
