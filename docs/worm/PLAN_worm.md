@@ -286,6 +286,14 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     split |z| <= 1.82 (no trapping signal). Report split again at final.
   - mcp-lead accepts caps (8.0k total; L=48 and L=64 stop at 10%). Wants the L=96 projection at 09-10 UTC with skewness
     and its error. Keep every ckpt.bin of stopped chains (he recomputes from them).
+  - 05:40 L=32 nd speed: c0 17.6k steps in 30.5 min = 0.104 s/step (rome05n2), 6.7x the dense production rate.
+  - ~06:00 mcp-lead requests s-scan (says PI approved +3k core-h; NOT yet confirmed by PI in session => not submitted):
+    self-dual line, s = 0.3361/0.3376/0.3406/0.3421 at L=24/32/48 + L=24 at s*, 32 chains/point, stop at Binder
+    kappa4(delta)/kappa2(delta)^2 error <= 1% or caps L24 50 / L32 100 / L48 250 core-h (L=48 low priority).
+    Launcher /scratch/a/A.Otaifi/gsw_scan_20261013/launch_scan.sbatch (walltime = cap/32, ckpt every 10 min, --nice for
+    L=48), sent for his review. Measured: Binder ratio(delta) at L=32 s* = +0.253(0.0075) (2.95% from 3.25e6 samples) =>
+    1% needs ~2.8e7 samples/point (0.28k / 0.79k / ~5.5k core-h at L=24/32/48); at caps ~2.4 / 2.8 / 4.7% (derived).
+    Dry run: start Oct 19 (queue full with own production).
 
 ## Update 2026-10-12 (sector observables, worker gsw-sector)
 - build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,
