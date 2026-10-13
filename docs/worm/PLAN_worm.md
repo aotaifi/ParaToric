@@ -361,6 +361,17 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     .34018-.34118 (17181284-8) 2%. stage 3 nice 1000: L=128 .34068 (17181289, 8%, 28G, -t 84 h).
   - L=192 test job 17181263 (100G; 150G is above the QoS per-job memory cap, QOSMaxMemoryPerJob) running on naples24;
     watcher watch192.sh -> timebig/WATCHER_192.txt.
+  - mcp-lead read launcher/submit script: OK. Re-centring = add points at new s*, don't move running ones. Wants a
+    multi-histogram tool: worker mhist (Sonnet, medium) building tools/esworm/mhist.js (WHAM, jackknife over chain index);
+    gate: leave-one-out at L=32 .3399/.3406/.3413 within 1 sigma + break test (one weight perturbed must fail).
+  - CORRECTION (~16:00): s-reweighting with the recorded series is NOT exact. z-basis energy_lmbda per sample is
+    -lmbda*sum sigma^z at ONE time slice (energy_lmbda_obs: -lat.get_diag_single_energy()*lmbda); found by worker mhist
+    (README_reweight.md: Cov(Z, n_h/s+Z) = 3.99e6 vs d<Z>/ds = 1.9e5 at L=32; the n_h identity passes). My reweight.js
+    "validation" passed only because its errors were 2-5x the direct ones. energy_h (-n_h/beta) is fine. mcp-lead: slopes
+    d<O>/ds for tau-averaged O are still unbiased (time-translation invariance), only noisier; exponential reweighting and
+    Cov(Z,Z) fail. Decision (a): keep running points; resubmit not-yet-started points with a binary that records
+    sigma_z_tau_avg once its gates pass (mcp-lead reads gate output first). Worker sztau building it (build_prod3, gates
+    Z1 ED, Z2 identities incl. O=S, Z3 restart compat from a copied L=64 ckpt, Z4 restart bit-identity).
   - Stop rule: monitor checkpoints (interim.js) and cancel each point at its kappa3 target. Re-centre L>=64 if mcp-lead's
     18:00 s* moves > 5e-5 (stage-1 arrays already started: would mean adding points, not moving them).
 
