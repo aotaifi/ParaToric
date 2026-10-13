@@ -378,6 +378,11 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     pending, kept: same binary within a point). L=192 test: MaxRSS 32 GB after ~30 steps (100G requested).
     16:35 also cancelled L=96 .34078 (17181273, no task had started; mcp-lead: one L=96 point must carry
     sigma_z_tau_avg). Resubmit list after gates: L=24/32/48 x5, L=96 .34078, L=128 .34068.
+  - Scan complete. L=48 Binder(delta) .3361/.3376/.3399/.3406/.3413/.3421: .013/.046/.295/.360/.125/-.514. L=64 s=.3406
+    (17177793, 128 chains, 2.4e6): kappa3(S) -2.650e-9(0.090e-9) 3.4%, Binder .363(14); Binder at .3406 vs L=24/32/48/64:
+    .316/.342/.360/.363. Split p 0.21.
+  - L=192 TEST (17181263, naples24): 108 s/step, 62.8 GB peak after 100 steps => feasible: --mem 96G, ~26k core-h for
+    10% at s*, ~8.8 d/chain at 128 chains. Sent to mcp-lead; decision after stage 1.
   - Stop rule: monitor checkpoints (interim.js) and cancel each point at its kappa3 target. Re-centre L>=64 if mcp-lead's
     18:00 s* moves > 5e-5 (stage-1 arrays already started: would mean adding points, not moving them).
 
