@@ -352,6 +352,17 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     extrapolated -> proposed 100-step test first, ~3 core-h). Totals ~81k (L128 3-pt, no L192) to ~123k.
   - Reweighting along s is exact (tools/esworm/reweight.js; L=32 0.3406->0.3399/0.3413 and L=24 0.3391->0.3376/0.3406 match
     direct runs within 1.4 sigma) but ESS fraction 0.08-0.16 at |ds|=0.0007 (L=32): multi-histogram gain ~30-50% only.
+  - mcp-lead trimmed plan to ~41k core-h (stages). PI in session: "budget is free do whatever is needed" => submitted all
+    stages at once (~15:30 UTC), priorities by nice: /scratch/a/A.Otaifi/gsw_nu_20261013/ (launch_nu.sbatch, submit_nu.sh,
+    jobs.txt; 128 chains/point, ckpt every 20 min, walltime with margin; watcher watch.sh PID 1909685 ->
+    WATCHER_VERDICT.txt, TIMEOUT = error, CANCELLED = stopped at target). s* = 0.34068:
+    stage 1 nice 0: L=64 s .34052/.34068/.34084 (17181268-70, 2.5%, 4G, -t 30 h); L=96 .34058/.34068/.34078 (17181271-3,
+    4%, 14G, -t 84 h). stage 2 nice 500: L=24 .33948-.34188 (17181274-8), L=32 .33988-.34148 (17181279-83) 1.5%, L=48
+    .34018-.34118 (17181284-8) 2%. stage 3 nice 1000: L=128 .34068 (17181289, 8%, 28G, -t 84 h).
+  - L=192 test job 17181263 (100G; 150G is above the QoS per-job memory cap, QOSMaxMemoryPerJob) running on naples24;
+    watcher watch192.sh -> timebig/WATCHER_192.txt.
+  - Stop rule: monitor checkpoints (interim.js) and cancel each point at its kappa3 target. Re-centre L>=64 if mcp-lead's
+    18:00 s* moves > 5e-5 (stage-1 arrays already started: would mean adding points, not moving them).
 
 ## Update 2026-10-12 (sector observables, worker gsw-sector)
 - build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,
