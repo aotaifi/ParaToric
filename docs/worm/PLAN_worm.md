@@ -309,6 +309,15 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     -4.087e-8(0.075e-8) 1.84%; kappa2(S) 6.2018e-5(0.0084e-5); <S> 1.805880(10); kappa2(delta) 9.283e-5(0.018e-5);
     Binder kappa4/kappa2^2(delta) +0.2460(0.0058); gamma1 -0.0837(0.0015). Start split max |z| 2.21 (Binder), kappa3 1.92;
     second half only: kappa3 -4.027(0.099)e-8 split z 0.17, Binder split -1.61 => fluctuation reading. Sent to mcp-lead.
+  - 06:55 interim: L=48 5.7% (1.73e6), L=64 kappa3 -5.33(1.00)e-10 18.8% (6.5e5), gamma1(64) ~0.025.
+  - 08:36 L=48 STOPPED at target (scancel 17167264/17167643; 192 ckpt kept, no .tmp). L=48 FINAL (ckpt, 4.13e6 samples,
+    L48/final_ckpt.txt): kappa3(S) -4.109e-9(0.149e-9) 3.6%; kappa2(S) 1.8354e-5; <S> 1.805960(6); kappa2(delta)
+    2.7501e-5(0.0056e-5); Binder(delta) 0.1416(0.0069); gamma1 ~0.052.
+  - Start split permutation test (tools/esworm/splittest.js, max|z| over 6 obs vs 2000 random halvings): L=48 p 0.13
+    (10% discard) / 0.17 (50%); L=32 (dense-phase series) p 0.18 / 0.09 => no significant start dependence.
+  - Scan L=24 all 5 points DONE at cap (TIMEOUT, 2.4-2.7e6 samples each): Binder(delta) .119/.194/.286/.316/.193 at
+    s .3361/.3376/.3391/.3406/.3421 (non-monotonic); kappa3(S) -0.945/-1.186/-1.797/-2.363/-2.619 e-7. Binder(delta) at s*
+    falls with L: 0.286 / 0.246 / 0.142 (L=24/32/48). Sent to mcp-lead (his fit).
 
 ## Update 2026-10-12 (sector observables, worker gsw-sector)
 - build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,

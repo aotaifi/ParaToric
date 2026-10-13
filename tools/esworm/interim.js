@@ -18,18 +18,19 @@ for (const c of fs.readdirSync(dir).filter(d => /^c\d+$/.test(d)).sort((a, b) =>
   const S = x.map(r => r[1] + r[2]), D = x.map(r => r[3]);
   const mom = a => { const n = a.length, m = a.reduce((s, v) => s + v, 0) / n; let c2 = 0, c3 = 0; for (const v of a) { const d = v - m; c2 += d * d; c3 += d * d * d; } return [m, c2 / n, c3 / n]; };
   const [mS, k2S, k3S] = mom(S), [, k2D] = mom(D);
+  const mD = D.reduce((s, v) => s + v, 0) / D.length; let c4 = 0; for (const v of D) c4 += (v - mD) ** 4; const bD = (c4 / D.length - 3 * k2D * k2D) / (k2D * k2D);
   const avg = j => x.reduce((s, r) => s + r[j], 0) / x.length;
-  rows.push({ c, n: x.length, total: X.length, mS, k2S, k3S, k2D, sp: avg(8), wx: avg(9), wnx: avg(11) });
+  rows.push({ c, n: x.length, total: X.length, mS, k2S, k3S, k2D, bD, sp: avg(8), wx: avg(9), wnx: avg(11) });
 }
 for (const r of rows) console.log(`${r.c.padEnd(4)} n ${String(r.n).padStart(6)}/${r.total}  <S> ${r.mS.toFixed(6)}  k2S ${r.k2S.toExponential(3)}  k3S ${r.k3S.toExponential(3)}  k2d ${r.k2D.toExponential(3)}  star_par ${r.sp.toFixed(3)} wilson_x ${r.wx.toFixed(3)} winding_x ${r.wnx.toFixed(3)}`);
 if (rows.length > 1) {
   const n = rows.length;
-  for (const k of ['mS', 'k2S', 'k3S', 'k2D', 'sp', 'wx', 'wnx']) {
+  for (const k of ['mS', 'k2S', 'k3S', 'k2D', 'bD', 'sp', 'wx', 'wnx']) {
     const v = rows.map(r => r[k]), m = v.reduce((a, b) => a + b, 0) / n, se = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / (n - 1) / n);
-    console.log(`combined ${k.padEnd(4)} ${m.toExponential(5)} +- ${se.toExponential(2)}` + (k === 'k3S' ? `  (rel ${(se / Math.abs(m) * 100).toFixed(1)}%)` : ''));
+    console.log(`combined ${k.padEnd(4)} ${m.toExponential(5)} +- ${se.toExponential(2)}` + ((k === 'k3S' || k === 'bD') ? `  (rel ${(se / Math.abs(m) * 100).toFixed(1)}%)` : ''));
   }
   // even (start +1) vs odd (start -1) chains
-  for (const k of ['mS', 'k3S']) {
+  for (const k of ['mS', 'k3S', 'k2D', 'bD', 'sp', 'wx']) {
     const g = p => rows.filter(r => (+r.c.slice(1)) % 2 === p).map(r => r[k]);
     const st = v => { const m = v.reduce((a, b) => a + b, 0) / v.length; return [m, Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / (v.length - 1) / v.length)]; };
     const [a, ea] = st(g(0)), [b, eb] = st(g(1));
