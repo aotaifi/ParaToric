@@ -305,6 +305,10 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     L=24 17168816-20 (s .3361/.3376/.3391/.3406/.3421, -t 1:33), L=32 17168821-24 (4 off-s* points, -t 3:07), L=48
     17168825-28 (--nice=1000, -t 7:48); 32 chains each, caps by walltime. Watcher gsw_scan_20261013/watch.sh PID 1813316
     -> WATCHER_VERDICT.txt (TIMEOUT = intended stop). Job ids sent to mcp-lead.
+  - 06:50 L=32 FINAL (17167263 64/64 COMPLETED; L32/final.txt, final_L.py, 10% discard, 5.41e6 samples): kappa3(S)
+    -4.087e-8(0.075e-8) 1.84%; kappa2(S) 6.2018e-5(0.0084e-5); <S> 1.805880(10); kappa2(delta) 9.283e-5(0.018e-5);
+    Binder kappa4/kappa2^2(delta) +0.2460(0.0058); gamma1 -0.0837(0.0015). Start split max |z| 2.21 (Binder), kappa3 1.92;
+    second half only: kappa3 -4.027(0.099)e-8 split z 0.17, Binder split -1.61 => fluctuation reading. Sent to mcp-lead.
 
 ## Update 2026-10-12 (sector observables, worker gsw-sector)
 - build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,
