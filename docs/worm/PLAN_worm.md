@@ -328,6 +328,9 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     (L=16 -> 64) while Binder(delta) and skew(S) -> 0: s=0.3391 is OFF-CRITICAL. No L=96 there; he picks the L=96 point
     after the L=32/48 scan crossings. Lead hypothesis sent: L=24 Binder peak at 0.3406-0.3421 => s_c may sit at/above the
     scan's top edge; proposed extension s=0.3436/0.3451 at L=24/32 (300 core-h) if the L=32 peak is at the edge too.
+  - RULE (mcp-lead agreed): when the L=32 scan points finish (~11:30), if the L=32 Binder(delta) maximum is at s >= 0.3406
+    submit s=0.3436/0.3451 at L=24 and L=32 (same launcher/caps, 300 core-h, within the PI's +3k); else don't. Send job
+    ids either way. His caveat: the crossing between sizes matters, not the peak (delta may turn bimodal beyond it).
 
 ## Update 2026-10-12 (sector observables, worker gsw-sector)
 - build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,
