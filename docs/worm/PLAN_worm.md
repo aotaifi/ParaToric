@@ -272,6 +272,13 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     core-h, ~13-19 h/chain). Watcher watch_nd.sh PID 1775706 -> WATCHER_VERDICT_nd.txt. c0 L=32 restart confirmed from
     provenance.txt. Core-h so far ~0.8k (dense phase); projected total ~3k of 8.6k ceiling => L=96 (10% ~3.6k derived)
     fits: PI's call at check-in.
+  - 05:30 PI: "run them all and better parallelise to save walltime". Done by more independent chains (thermalisation
+    300 steps/chain = 3-4% overhead): L=48 +128 chains (job 17167643, c64-191, NS 23000), L=64 +192 chains (17167644,
+    c64-255, NS 8000), L=96 256 chains (17167975, NS 9000, --mem 5G; timing96/: 15 steps in 110 s incl. setup => <= 7.4
+    s/step, 2.3 GB, th-cl-rome02n3). Watcher watch_nd2.sh PID 1785070 -> WATCHER_VERDICT_nd2.txt. ~670 chains running at
+    05:35. Stopping rule: analyse checkpoints (interim.js); when a size reaches its target (L=48 ~5%, L=64 ~10%, L=96
+    ~10%) cancel its remaining chains (data are in ckpt series). Projected core-h total ~7.9k of 8.6k (L=96 ~4.9k at
+    full NS). ETA: L=32 ~08 UTC, L=48/L=64 ~10-11 UTC Tue, L=96 Wed 05-15 UTC.
 
 ## Update 2026-10-12 (sector observables, worker gsw-sector)
 - build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,
