@@ -279,6 +279,11 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     05:35. Stopping rule: analyse checkpoints (interim.js); when a size reaches its target (L=48 ~5%, L=64 ~10%, L=96
     ~10%) cancel its remaining chains (data are in ckpt series). Projected core-h total ~7.9k of 8.6k (L=96 ~4.9k at
     full NS). ETA: L=32 ~08 UTC, L=48/L=64 ~10-11 UTC Tue, L=96 Wed 05-15 UTC.
+  - 05:40 mcp-lead: approval was <= 8k core-h; no more chains. Max at current NS ~9.3-11.3k => CAPS (binding 8.0k):
+    spent 0.8 + L32 0.14 + L48 <= 0.45 (back to 10%, not 5%) + L64 <= 1.1 + L96 <= 5.5k. Stop each size at target by
+    cancelling remaining chains. L=96 skewness from interim at ~09-10 UTC decides (10% needs 4.5k if skew 0.031, ~17k if
+    0.015). L=32 split by start (dense phase): kappa3 +1 -3.927(0.13)e-8 vs -1 -4.361(0.15)e-8, z 2.20; sector obs
+    split |z| <= 1.82 (no trapping signal). Report split again at final.
 
 ## Update 2026-10-12 (sector observables, worker gsw-sector)
 - build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,
