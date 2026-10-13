@@ -372,6 +372,10 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     Cov(Z,Z) fail. Decision (a): keep running points; resubmit not-yet-started points with a binary that records
     sigma_z_tau_avg once its gates pass (mcp-lead reads gate output first). Worker sztau building it (build_prod3, gates
     Z1 ED, Z2 identities incl. O=S, Z3 restart compat from a copied L=64 ckpt, Z4 restart bit-identity).
+  - 16:25 cancelled the 16 campaign arrays that had not started a single task (L=24/32/48 stage 2: 17181274-88; L=128:
+    17181289), so they do not start on the old binary; resubmit with the sigma_z_tau_avg binary after its gates (scontrol
+    hold is broken on the login node). Running: L=64 3 points (291 tasks), L=96 .34058 (128) + .34068 (9 started; rest
+    pending, kept: same binary within a point). L=192 test: MaxRSS 32 GB after ~30 steps (100G requested).
   - Stop rule: monitor checkpoints (interim.js) and cancel each point at its kappa3 target. Re-centre L>=64 if mcp-lead's
     18:00 s* moves > 5e-5 (stage-1 arrays already started: would mean adding points, not moving them).
 
