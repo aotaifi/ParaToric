@@ -341,6 +341,17 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
   - 10:38 all 448 chains running; L=64 s=.3406 MaxRSS 1.82 GB of 4G.
   - 12:58 L=32 s=.3399 / .3413 done (cap): Binder(delta) 0.3304(88) / 0.2631(80); kappa3(S) -5.297(106) / -7.047(182) e-8.
     L=32 Binder curve s .3361-.3421: .057/.118/.246(prod)/.330/.342/.263/.031. Sent to mcp-lead.
+  - ~14:00 mcp-lead: PI approved budget for publishable nu (nu +-0.005, s* +-2e-5); PI to confirm in session before any
+    submission. Grid at s*=0.34068 (provisional), 5 points/size, windows ~L^-1.5, 128 chains/point; targets kappa3(S)
+    1.5% (L<=48), 2.5% (64), 4% (96), 8% (128); + L=128 5-pt and L=192 (s*, 10%) rows requested.
+  - Measured (timebig/, srun 17180441/2, s=0.34068, equilibrated): L=96 7.8 s/step, 7.4 GB (200 steps, rome01n1); L=128
+    23.7 s/step, 16.2 GB (100 steps, met-cl-lx022). Precision constant c = r^2 N at s=0.3406 (scan): 1180/1040/1780/2470
+    at L=24/32/48/64 (~L^1.0). Skewness at 0.3406: 0.118/0.113/0.099/0.090.
+  - COST TABLE sent to mcp-lead (core-h): L24 0.7k, L32 1.1k, L48 8.9k, L64 12.7k, L96 37k (32-41k), L128 3-pt 21k (over
+    his 15k cap) / s* only 5.6k / 5-pt 37k, L192 (s*, 10%) 26k (20-33k; ~113 s/step, ~55-60 GB, 8.8 d/chain at 128 chains;
+    extrapolated -> proposed 100-step test first, ~3 core-h). Totals ~81k (L128 3-pt, no L192) to ~123k.
+  - Reweighting along s is exact (tools/esworm/reweight.js; L=32 0.3406->0.3399/0.3413 and L=24 0.3391->0.3376/0.3406 match
+    direct runs within 1.4 sigma) but ESS fraction 0.08-0.16 at |ds|=0.0007 (L=32): multi-histogram gain ~30-50% only.
 
 ## Update 2026-10-12 (sector observables, worker gsw-sector)
 - build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,
