@@ -324,6 +324,10 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
   - Core-h (sacct CPUTimeRAW/2): production incl. gate 3 + lost L=96 = 3.27k of 8k; scan 0.78k of <= 2k cap (running).
   - gamma1(S) 0.084 / 0.052 / 0.033 at L=32/48/64 (~L^-1.6) => L=96 10% ~10k core-h, 20% ~2.6k (derived). Held: decision
     after the scan (mcp-lead + PI).
+  - mcp-lead (09:20): recomputed L=64 kappa3 -6.985(0.587)e-10 (agrees). At s=0.3391 effective nu drifts 0.70 -> 1.06
+    (L=16 -> 64) while Binder(delta) and skew(S) -> 0: s=0.3391 is OFF-CRITICAL. No L=96 there; he picks the L=96 point
+    after the L=32/48 scan crossings. Lead hypothesis sent: L=24 Binder peak at 0.3406-0.3421 => s_c may sit at/above the
+    scan's top edge; proposed extension s=0.3436/0.3451 at L=24/32 (300 core-h) if the L=32 peak is at the edge too.
 
 ## Update 2026-10-12 (sector observables, worker gsw-sector)
 - build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,
