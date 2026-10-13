@@ -385,6 +385,14 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     10% at s*, ~8.8 d/chain at 128 chains. Sent to mcp-lead; decision after stage 1.
     mcp-lead: deferred, leaning no (10% at L=128/192 pins nu only to ~+-0.05; an L^-0.11 correction changes only ~7%
     between L=96 and 192, so L=192 cannot separate a slow correction from a deviation in x_A).
+  - ~19:40 sigma_z_tau_avg GATES PASSED (worker sztau did not report; lead read/re-ran: sztau/zall.out, z2_120k.out,
+    lead_check.sh): Z1 ED A z -0.36, D -1.35 (variance 0.56x/0.16x of equal-time); Z2 L=8 Cov(Z,n_h/s+Z) 2010(9) vs
+    dZ/ds 2004(95) (old Z: 7.3x, 111 sigma); O=S slope identity passes with new and old Z (0.65 sigma); Z4 restart
+    bit-identical; Z5 new binary == old binary bit-for-bit on the 13 old columns; Z3 old ckpt + extra column refused
+    cleanly. Binary bin/paratoric_d6122f0 (sha256 ce6e9598...606e, worm/gsw-nd d6122f0 pushed). Resubmission prepared:
+    launch_nu2.sbatch (dirs suffixed _z, 14 obs), submit_nu2.sh; awaiting mcp-lead's read.
+  - Worker mhist: tools/esworm/mhist.js committed (2744f19); its L=32 gate failed only because of the equal-time Z; needs
+    re-gating on points that carry sigma_z_tau_avg (the new L=32 campaign points).
   - Stop rule: monitor checkpoints (interim.js) and cancel each point at its kappa3 target. Re-centre L>=64 if mcp-lead's
     18:00 s* moves > 5e-5 (stage-1 arrays already started: would mean adding points, not moving them).
 
