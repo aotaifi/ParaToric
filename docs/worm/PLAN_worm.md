@@ -331,6 +331,13 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
   - RULE (mcp-lead agreed): when the L=32 scan points finish (~11:30), if the L=32 Binder(delta) maximum is at s >= 0.3406
     submit s=0.3436/0.3451 at L=24 and L=32 (same launcher/caps, 300 core-h, within the PI's +3k); else don't. Send job
     ids either way. His caveat: the crossing between sizes matters, not the peak (delta may turn bimodal beyond it).
+  - 09:44 L=32 scan done (cap): Binder(delta) .0566(43)/.1177(56)/.3421(89)/.031(9) at s .3361/.3376/.3406/.3421;
+    kappa3(S) -1.447/-2.265/-6.554/-6.185 e-8. mcp-lead: s* ~0.3403-0.3410 (Binder at 0.3406 flat in L: .316/.342/.340(29)
+    at L=24/32/48; at 0.3421 negative at L=48 => first-order side). Extension NOT submitted (his newer instruction).
+  - ~09:55 SUBMITTED (submit_dense.sh, jobs_dense.txt, watcher watch_dense.sh PID 1867899 -> WATCHER_VERDICT_dense.txt):
+    L=32 s=.3399 17177789, .3413 17177791 (cap 100 each); L=48 s=.3399 17177790, .3413 17177792 (cap 250 each, no nice);
+    L=64 s=0.3406 17177793 (128 chains, -t 7:48 => <= 1.0k core-h, --mem 4G; production budget). Scan budget: 2.0k + 0.7k
+    <= 3k approved; production 3.27k + 1.0k <= 8k. L=96 decision ~16:00 after his joint fit.
 
 ## Update 2026-10-12 (sector observables, worker gsw-sector)
 - build2 (/scratch/a/A.Otaifi/gsw_cpp_20261011/build2/paratoric, gsw-cpp 95a1731, local only): star_parity, wilson_x/y,
