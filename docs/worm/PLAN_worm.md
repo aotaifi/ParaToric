@@ -383,6 +383,8 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     .316/.342/.360/.363. Split p 0.21.
   - L=192 TEST (17181263, naples24): 108 s/step, 62.8 GB peak after 100 steps => feasible: --mem 96G, ~26k core-h for
     10% at s*, ~8.8 d/chain at 128 chains. Sent to mcp-lead; decision after stage 1.
+    mcp-lead: deferred, leaning no (10% at L=128/192 pins nu only to ~+-0.05; an L^-0.11 correction changes only ~7%
+    between L=96 and 192, so L=192 cannot separate a slow correction from a deviation in x_A).
   - Stop rule: monitor checkpoints (interim.js) and cancel each point at its kappa3 target. Re-centre L>=64 if mcp-lead's
     18:00 s* moves > 5e-5 (stage-1 arrays already started: would mean adding points, not moving them).
 
