@@ -12,7 +12,7 @@ const rows = [];
 for (const c of fs.readdirSync(dir).filter(d => /^c\d+$/.test(d)).sort((a, b) => +a.slice(1) - +b.slice(1))) {
   const ck = path.join(dir, c, 'ckpt.bin'); if (!fs.existsSync(ck)) continue;
   const tmp = path.join(dir, c, 'ckpt_series.txt');
-  try { execFileSync(process.execPath, [reader, '13', ck, tmp], { stdio: ['ignore', 'ignore', 'ignore'] }); } catch (e) { console.log(`${c}: unreadable`); continue; }
+  try { execFileSync(process.execPath, [reader, process.env.NOBS || '13', ck, tmp], { stdio: ['ignore', 'ignore', 'ignore'] }); } catch (e) { console.log(`${c}: unreadable`); continue; }
   const X = fs.readFileSync(tmp, 'utf8').trim().split('\n').map(l => l.split(' ').map(Number));
   const x = X.slice(Math.floor(frac * X.length)); if (x.length < minSamples) continue;
   const S = x.map(r => r[1] + r[2]), D = x.map(r => r[3]);

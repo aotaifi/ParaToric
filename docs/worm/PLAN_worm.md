@@ -393,6 +393,12 @@ Report: docs/reports/2026-10-10_flux_worm_feasibility.md. Main ParaToric PLAN.md
     launch_nu2.sbatch (dirs suffixed _z, 14 obs), submit_nu2.sh; mcp-lead read both + z2_120k.out: GO.
     SUBMITTED (jobs2.txt, watcher watch2.sh PID 1950000 -> WATCHER_VERDICT2.txt): L=96 .34078 17184861; L=24 x5
     17184862-66; L=32 x5 17184867-71; L=48 x5 17184872-76; L=128 .34068 17184877.
+  - 00:07 L=24 s=.33948 (17184862) ran to its 4 h walltime (118 TIMEOUT): my miss, the small sizes were not in my 50-min
+    precision check and the chains run until stopped. It reached kappa3 0.9% (target 1.5%), ~3x the planned core-h
+    (~0.4k extra). Fix: autostop.sh (PID 2011178, PPID 1, log autostop.log) checks every 10 min and scancels an array
+    once kappa3 rel <= target (24/32 1.5%, 48 2%, 64 2.5%, 96 4%, 128 8%) on two consecutive checks with >= 100 chains.
+    interim.js now takes NOBS=14 for the _z points.
+  - 00:14 L=64 3.1-3.5%, L=96 7.0-7.2% (kappa3 rel).
   - Worker mhist: tools/esworm/mhist.js committed (2744f19); its L=32 gate failed only because of the equal-time Z; needs
     re-gating on points that carry sigma_z_tau_avg (the new L=32 campaign points).
   - Stop rule: monitor checkpoints (interim.js) and cancel each point at its kappa3 target. Re-centre L>=64 if mcp-lead's
